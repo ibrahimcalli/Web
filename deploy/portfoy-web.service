@@ -1,0 +1,54 @@
+# ═══════════════════════════════════════════════════════════════
+#  Portföy Gayrimenkul — Systemd Servis Dosyası
+#  Dosya: /etc/systemd/system/portfoy-web.service
+#
+#  Aktifleştir:
+#    sudo cp portfoy-web.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now portfoy-web
+# ═══════════════════════════════════════════════════════════════
+
+[Unit]
+Description=Portföy Gayrimenkul Web Servisi
+Documentation=https://portfoygayrimenkul.com.tr
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=portfoy
+Group=portfoy
+WorkingDirectory=/opt/portfoy_web
+
+Environment="PATH=/opt/portfoy_web/venv/bin"
+Environment="PYTHONPATH=/opt/portfoy_web"
+
+# Uygulama başlatma — 2 worker process
+ExecStart=/opt/portfoy_web/venv/bin/uvicorn app:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 2 \
+    --log-level warning \
+    --access-log
+
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Hata durumunda otomatik yeniden başlat
+Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Loglama
+StandardOutput=append:/opt/portfoy_web/logs/app.log
+StandardError=append:/opt/portfoy_web/logs/error.log
+
+# Güvenlik kısıtlamaları
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/portfoy_web
+
+[Install]
+WantedBy=multi-user.target
