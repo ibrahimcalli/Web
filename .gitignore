@@ -4,3 +4,5 @@ __pycache__/
 *.db
 static/uploads/*
 .env
+.venv/
+*.db
