@@ -1,8 +1,81 @@
-venv/
+# -------------------------
+# Python
+# -------------------------
 __pycache__/
-*.pyc
-*.db
-static/uploads/*
-.env
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
 .venv/
+env/
+ENV/
+
+# -------------------------
+# Database
+# -------------------------
 *.db
+*.sqlite
+*.sqlite3
+
+# -------------------------
+# Logs
+# -------------------------
+*.log
+logs/
+
+# -------------------------
+# Uploads / Runtime Data
+# -------------------------
+uploads/
+static/uploads/
+
+# -------------------------
+# IDE
+# -------------------------
+.vscode/
+.idea/
+
+# -------------------------
+# AI / Local Config
+# -------------------------
+opencode.json
+.cursor/
+.claude/
+.codex/
+
+# -------------------------
+# Environment
+# -------------------------
+.env
+.env.*
+!.env.example
+
+# -------------------------
+# OS
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# Test & Cache
+# -------------------------
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# -------------------------
+# Build
+# -------------------------
+dist/
+build/
+*.egg-info/
+
+# -------------------------
+# Backup
+# -------------------------
+*.bak
+*.old
+*.tmp
+*.swp
