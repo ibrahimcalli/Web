@@ -79,3 +79,4 @@ build/
 *.old
 *.tmp
 *.swp
+*.bak
