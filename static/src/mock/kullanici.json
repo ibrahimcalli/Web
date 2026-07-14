@@ -1,0 +1,47 @@
+{
+  "oturum": null,
+  "demo_hesaplar": [
+    {
+      "id": 1,
+      "ad_soyad": "Portföy Gayrimenkul",
+      "email": "bilgi@portfoygayrimenkul.com.tr",
+      "sifre": "admin123",
+      "rol": "admin",
+      "aktif": 1,
+      "onay": 1,
+      "profil_resmi": ""
+    },
+    {
+      "id": 2,
+      "ad_soyad": "Demo Kullanıcı",
+      "email": "demo@ornek.com",
+      "sifre": "demo1234",
+      "rol": "kullanici",
+      "aktif": 1,
+      "onay": 1,
+      "profil_resmi": ""
+    }
+  ],
+  "liste": [
+    {
+      "id": 1,
+      "ad_soyad": "İbrahim ÇALLI",
+      "email": "admin@icgayrimenkul.com",
+      "rol": "admin",
+      "aktif": 1,
+      "olusturma": "2026-06-19 07:18:54",
+      "profil_resmi": "",
+      "onay": 1
+    },
+    {
+      "id": 2,
+      "ad_soyad": "İbrahim ÇALLI",
+      "email": "bilgi@portfoygayrimenkul.com.tr",
+      "rol": "admin",
+      "aktif": 1,
+      "olusturma": "2026-06-20 02:45:31",
+      "profil_resmi": "",
+      "onay": 1
+    }
+  ]
+}
