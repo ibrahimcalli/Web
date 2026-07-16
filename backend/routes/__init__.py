@@ -10,6 +10,7 @@ from backend.routes.icerik_router import (
 )
 from backend.routes.content_router import router as content_router
 from backend.routes.sitemap_router import router as sitemap_router
+from backend.routes.system_router import router as system_router
 
 # Not: backend/routes/pwa_assets.py ARTIK KULLANILMIYOR
 # PWA dosyaları (manifest.json, sw.js, offline.html, favicon.ico)
@@ -26,4 +27,5 @@ __all__ = [
     "blog_router",
     "content_router",
     "sitemap_router",
+    "system_router",
 ]

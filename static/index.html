@@ -452,6 +452,14 @@ img{max-width:100%;height:auto}
       <div class="sidebar-item" onclick="adminSayfa('kullanicilar')"><span class="sidebar-ikon">👥</span> Kullanıcılar</div>
       <div class="sidebar-item" onclick="adminSayfa('ayarlar')"><span class="sidebar-ikon">⚙️</span> Site Ayarları</div>
       <div class="sidebar-item" onclick="adminSayfa('hesabim')"><span class="sidebar-ikon">🔑</span> Hesabım</div>
+      <div class="sidebar-sect" style="margin-top:1rem;">SİSTEM</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-durum')"><span class="sidebar-ikon">📊</span> Durum</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-log')"><span class="sidebar-ikon">📋</span> Log</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-test')"><span class="sidebar-ikon">🧪</span> System Test</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-komutlar')"><span class="sidebar-ikon">📝</span> Commands</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-bakim')"><span class="sidebar-ikon">🔧</span> Bakım</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-kilavuz')"><span class="sidebar-ikon">📖</span> Kılavuz</div>
+      <div class="sidebar-item" onclick="adminSayfa('sistem-ai')"><span class="sidebar-ikon">🤖</span> AI Tanılama</div>
     </aside>
     <main class="admin-icerik" id="admin-ic">
       <div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>
@@ -871,6 +879,9 @@ img{max-width:100%;height:auto}
 <script src="/src/ui/seo.js"></script>
 <script src="/src/ui/pwa.js"></script>
 <script src="/src/ui/img-optimizer.js"></script>
+
+<!-- Admin Sistem Paneli — Durum, Log, Test, Komutlar, Bakım, AI Tanılama, Kılavuz -->
+<script src="/src/ui/admin-sistem.js"></script>
 
 <!-- Hamburger Menü + Admin Sidebar Toggle + Tablo data-label (mevcut JS'i etkilemez) -->
 <script>

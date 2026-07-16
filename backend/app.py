@@ -18,6 +18,7 @@ from backend.routes import (
     blog_router,
     content_router,
     sitemap_router,
+    system_router,
 )
 
 
@@ -80,6 +81,10 @@ def create_app() -> FastAPI:
     # OpenAPI'de görünmez ama çalışır (SEO için):
     # Not: Sitemap dinamik (DB'den portföy/blog URL'leri) — StaticFiles DEĞİL router.
     app.include_router(sitemap_router, tags=["SEO"])
+    
+    # ─── Admin Sistem ─────────────────────────────────────────────────────────
+    # Durum, log, test, komutlar, bakım, AI tanılama, kılavuz
+    app.include_router(system_router, tags=["Sistem"])
     
     # ─── PWA Asset'ler ────────────────────────────────────────────────────────
     # Artık WhitelistedStaticFiles ile mount ediliyor (yukarıda pwa_root).

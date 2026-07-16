@@ -1,35 +1,119 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-#  Portföy Gayrimenkul — Güncelleme Scripti
-#  Kullanım: sudo bash update.sh
+#  Portföy Gayrimenkul — Güncelleme Scripti (Local PC Production)
+#
+#  Mimari: GitHub → Local PC (/home/ibrahim/.../emlak_web) → systemd → Cloudflare
+#  Kullanım: sudo bash deploy/update.sh
+#
+#  İşlem sırası:
+#    1. Git tag ile snapshot al (rollback için)
+#    2. DB + uploads yedekle
+#    3. Git pull (en son kod)
+#    4. build_release.py çalıştır (CSS/JS minify)
+#    5. Servis restart (emlak-api)
+#    6. Health check + smoke test
+#    7. Başarısızsa otomatik rollback (git checkout tag)
 # ═══════════════════════════════════════════════════════════════
-
-APP_DIR="/opt/portfoy_web"
-APP_USER="portfoy"
-YESIL='\033[0;32m'; MAVI='\033[0;34m'; NC='\033[0m'
-log() { echo -e "${MAVI}[•]${NC} $1"; }
-ok()  { echo -e "${YESIL}[✓]${NC} $1"; }
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_DIR="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/lib.sh"
 
-log "Servis durduruluyor..."
-systemctl stop portfoy-web
+banner "Portföy Gayrimenkul — Güncelleme"
 
-log "Yedek alınıyor..."
-cp "$APP_DIR/emlak_web.db" "$APP_DIR/logs/emlak_web_$(date +%Y%m%d_%H%M).db" 2>/dev/null || true
+# Argümanlar (require_root'tan ÖNCE)
+NO_PULL=false
+NO_BUILD=false
+for arg in "$@"; do
+    case "$arg" in
+        --no-pull) NO_PULL=true ;;
+        --no-build) NO_BUILD=true ;;
+        --help|-h)
+            echo "Kullanım: sudo bash $(basename "$0") [--no-pull] [--no-build]"
+            echo "  --no-pull   Git pull yapma (yerel değişiklikleri deploy et)"
+            echo "  --no-build  build_release.py çalıştırma (CSS/JS minify atla)"
+            exit 0 ;;
+    esac
+done
 
-log "Dosyalar güncelleniyor..."
-[ -f "$SOURCE_DIR/app.py" ]         && cp "$SOURCE_DIR/app.py"         "$APP_DIR/"
-[ -f "$SOURCE_DIR/requirements.txt" ] && cp "$SOURCE_DIR/requirements.txt" "$APP_DIR/"
-[ -d "$SOURCE_DIR/static" ]         && rsync -a --exclude='uploads/' "$SOURCE_DIR/static/" "$APP_DIR/static/"
+# Root kontrolü — sistem yoksa şifre iste
+log "Repo: $REPO_DIR"
+log "Servis: $APP_SERVICE"
+log "Port: $APP_PORT"
+log "Domain: $DOMAIN"
 
-log "Bağımlılıklar güncelleniyor..."
-sudo -u "$APP_USER" "$APP_DIR/venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
+# ─── 1. Snapshot al (git tag + DB backup) ──────────────────────
+BEFORE_HASH=$(git_full_hash)
+LABEL="pre_update_$(date +%Y%m%d_%H%M%S)_${BEFORE_HASH:0:7}"
+log "Snapshot alınıyor: $LABEL"
+snapshot_release "$LABEL" || warn "Snapshot alınamadı — devam ediliyor"
 
-chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+# ─── 2. Git pull ───────────────────────────────────────────────
+if [ "$NO_PULL" = false ]; then
+    log "Git pull ($REPO_DIR)..."
+    (cd "$REPO_DIR" && git fetch --quiet origin)
+    (cd "$REPO_DIR" && git pull --ff-only origin "$(git_branch)" 2>&1 || true)
+    AFTER_HASH=$(git_full_hash)
+    if [ "$AFTER_HASH" = "$BEFORE_HASH" ]; then
+        warn "Git hash değişmedi — yine de deploy ediliyor"
+    else
+        ok "Yeni git hash: ${AFTER_HASH:0:7}"
+    fi
+else
+    log "--no-pull: Git pull atlandı (yerel değişiklikler deploy ediliyor)"
+fi
 
-log "Servis başlatılıyor..."
-systemctl start portfoy-web
-sleep 2
-systemctl is-active --quiet portfoy-web && ok "Güncelleme tamamlandı ✓" || echo "Hata — log: journalctl -u portfoy-web -n 20"
+# ─── 3. build_release.py çalıştır (CSS/JS minify) ──────────────
+if [ "$NO_BUILD" = false ]; then
+    if [ -f "$REPO_DIR/build_release.py" ]; then
+        log "build_release.py çalıştırılıyor..."
+        (cd "$REPO_DIR" && python3 build_release.py) || \
+            warn "build_release.py başarısız — devam ediliyor"
+        ok "Build tamam"
+    else
+        warn "build_release.py bulunamadı — atlandı"
+    fi
+else
+    log "--no-build: build_release.py atlandı"
+fi
+
+# ─── 4. Servis restart (root gerekli) ─────────────────────────
+log "Servis restart ($APP_SERVICE)..."
+require_root
+systemctl restart "$APP_SERVICE" || die "Servis restart başarısız"
+
+# ─── 5. Health check ───────────────────────────────────────────
+log "Health check..."
+if wait_for_health 45; then
+    ok "Servis sağlıklı"
+else
+    err "Servis ayağa kalkmadı — ROLLBACK başlatılıyor"
+    bash "$SCRIPT_DIR/rollback.sh" --latest --quiet || die "Rollback başarısız" 2
+    die "Rollback tamamlandı — güncelleme başarısız" 1
+fi
+
+# ─── 6. Smoke test ─────────────────────────────────────────────
+if ! smoke_test; then
+    err "Smoke test başarısız — ROLLBACK başlatılıyor"
+    bash "$SCRIPT_DIR/rollback.sh" --latest --quiet || die "Rollback başarısız" 2
+    die "Rollback tamamlandı — smoke test hatalı" 1
+fi
+
+# ─── 7. Deploy log kaydı ───────────────────────────────────────
+AFTER_HASH=$(git_full_hash)
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) deploy ${AFTER_HASH:0:7} smoke=ok" \
+    >> "$APP_DIR/logs/deploy.log"
+
+# ─── Özet ─────────────────────────────────────────────────────
+echo ""
+echo -e "${YESIL}╔══════════════════════════════════════╗${NC}"
+echo -e "${YESIL}║   Güncelleme Tamamlandı! 🎉          ║${NC}"
+echo -e "${YESIL}╚══════════════════════════════════════╝${NC}"
+echo ""
+echo "  Git hash:   ${AFTER_HASH:0:7} ($(git_branch))"
+echo "  Servis:     $APP_SERVICE (restart)"
+echo "  Health:     https://$DOMAIN/health"
+echo "  Deploy log: $DEPLOY_LOG"
+echo ""
+echo "  Geri almak: sudo bash $SCRIPT_DIR/rollback.sh"
+echo ""
