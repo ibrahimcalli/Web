@@ -32,7 +32,7 @@ def get_lastmod() -> str:
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-@router.get("/sitemap.xml", include_in_schema=False)
+@router.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
 async def sitemap_xml(request: Request):
     """
     Ana sitemap.xml — tüm sayfaların URL'leri.
@@ -86,7 +86,7 @@ async def sitemap_xml(request: Request):
     )
 
 
-@router.get("/sitemap-images.xml", include_in_schema=False)
+@router.api_route("/sitemap-images.xml", methods=["GET", "HEAD"], include_in_schema=False)
 async def sitemap_images_xml(request: Request):
     """
     Resim sitemap — tüm portföy resimlerini listeler.
@@ -122,7 +122,7 @@ async def sitemap_images_xml(request: Request):
     )
 
 
-@router.get("/robots.txt", include_in_schema=False)
+@router.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False)
 async def robots_txt():
     """
     robots.txt — arama motorları için yönlendirme.

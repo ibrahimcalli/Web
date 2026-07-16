@@ -10,7 +10,11 @@ from backend.routes.icerik_router import (
 )
 from backend.routes.content_router import router as content_router
 from backend.routes.sitemap_router import router as sitemap_router
-from backend.routes.pwa_assets import router as pwa_assets_router
+
+# Not: backend/routes/pwa_assets.py ARTIK KULLANILMIYOR
+# PWA dosyaları (manifest.json, sw.js, offline.html, favicon.ico)
+# WhitelistedStaticFiles ile kök seviyeden servis ediliyor —
+# backend/core/static_pwa.py ve backend/app.py mount'a bakınız.
 
 __all__ = [
     "auth_router",
@@ -22,5 +26,4 @@ __all__ = [
     "blog_router",
     "content_router",
     "sitemap_router",
-    "pwa_assets_router",
 ]
