@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FAF7F2">
+<meta name="robots" content="noindex, nofollow">
+<title>Çevrimdışı — Portföy Gayrimenkul</title>
+<style>
+:root {
+  --krem: #FAF7F2;
+  --kiremit: #C45C35;
+  --toprak: #2D2016;
+  --gri: #7A6E65;
+  --kumtasi: #E8DFD0;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--krem);
+  color: var(--toprak);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  line-height: 1.6;
+}
+.container {
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+.icon {
+  font-size: clamp(4rem, 15vw, 6rem);
+  margin-bottom: 1rem;
+}
+h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  margin-bottom: .75rem;
+}
+p {
+  font-size: clamp(.95rem, 3vw, 1.05rem);
+  color: var(--gri);
+  margin-bottom: 1.5rem;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  background: var(--kiremit);
+  color: #fff;
+  padding: .75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  min-height: 44px;
+  margin: .5rem;
+}
+.btn:hover { background: #A34A28; }
+.btn-secondary {
+  background: transparent;
+  color: var(--kiremit);
+  border: 1.5px solid var(--kumtasi);
+}
+.retry-btn { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .icon { animation: pulse 2s ease-in-out infinite; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+</style>
+</head>
+<body>
+<main class="container" role="main">
+  <div class="icon" aria-hidden="true">📡</div>
+  <h1>İnternet Bağlantınız Yok</h1>
+  <p>Şu anda çevrimdışısınız. İnternet bağlantınızı kontrol edin ve tekrar deneyin.</p>
+  <button class="btn" onclick="window.location.reload()">🔄 Tekrar Dene</button>
+  <a href="/" class="btn btn-secondary">Ana Sayfa</a>
+</main>
+<script>
+// Online olunca otomatik yönlendir
+window.addEventListener('online', () => {
+  window.location.href = '/';
+});
+</script>
+</body>
+</html>

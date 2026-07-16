@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MASAÜSTÜ EK STİLLER (1366px ve üzeri için ince ayarlar)
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Not: Temel responsive yapı responsive.css, layout.css ve components.css
+   içerindedir. Bu dosya yalnızca büyük ekranlar için ince ayar sağlar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1366px ve üzeri laptoplarda */
+@media (min-width: 1366px) {
+  /* İçerik container'ları genişlet */
+  .ilan-bolum,
+  .seksiyonlar,
+  .blog-serit,
+  .footer-ic,
+  .detay-kont {
+    max-width: 1280px;
+  }
+  /* Hero biraz daha geniş */
+  .hero { max-width: 1000px; }
+}
+
+/* 1920px tam HD ve üzeri */
+@media (min-width: 1920px) {
+  /* Çok geniş ekranlarda içerik çok geniş yayılmasın */
+  .ilan-bolum,
+  .seksiyonlar,
+  .blog-serit,
+  .footer-ic,
+  .detay-kont {
+    max-width: 1440px;
+  }
+  .hero { max-width: 1100px; }
+  /* Fontlar bir tık büyüsün */
+  body {
+    font-size: clamp(15px, .8vw, 17px);
+  }
+}
+
+/* Hero başlık nowrap'i kaldırdık, masaüstünde eski hale getirmek için */
+@media (min-width: 768px) {
+  .hero-baslik {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Yazdırma desteği — Lighthouse/SEO için */
+@media print {
+  .nav, .mobil-tab, .bildirim-kont, .modal-zemin { display: none !important; }
+  body { background: #fff; color: #000; }
+  .sayfa { display: block !important; page-break-after: always; }
+}
+
+/* Erişilebilirlik: odak göstergesi net olsun */
+:focus-visible {
+  outline: 2px solid var(--kiremit);
+  outline-offset: 2px;
+}
+
+/* Reduce-motion: animasyonları azalt (Lighthouse Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

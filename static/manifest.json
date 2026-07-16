@@ -1,0 +1,99 @@
+{
+  "name": "Portföy Gayrimenkul",
+  "short_name": "Portföy",
+  "description": "Fethiye ve Muğla'da satılık, kiralık gayrimenkul portföyü",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF7F2",
+  "theme_color": "#C45C35",
+  "lang": "tr-TR",
+  "dir": "ltr",
+  "categories": ["business", "shopping", "realEstate"],
+  "icons": [
+    {
+      "src": "/static/img/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/img/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/img/screenshot-mobile.png",
+      "sizes": "375x812",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobil görünüm"
+    },
+    {
+      "src": "/static/img/screenshot-desktop.png",
+      "sizes": "1366x768",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Masaüstü görünüm"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "İlanlar",
+      "short_name": "İlan",
+      "description": "Tüm gayrimenkul ilanları",
+      "url": "/#ilanlar",
+      "icons": [{"src": "/static/img/icon-96x96.png", "sizes": "96x96"}]
+    },
+    {
+      "name": "Haberler",
+      "short_name": "Blog",
+      "description": "Sektörel haberler ve blog yazıları",
+      "url": "/#blog",
+      "icons": [{"src": "/static/img/icon-96x96.png", "sizes": "96x96"}]
+    }
+  ],
+  "prefer_related_applications": false,
+  "id": "/",
+  "scope_extensions": []
+}

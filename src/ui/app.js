@@ -52,6 +52,11 @@ function sayfaGit(sayfa, data = null) {
   if (sayfa === 'admin')        { adminKontrol(); adminSayfa('portfoyler'); }
   if (sayfa === 'detay' && data) detayGoster(data);
   window.scrollTo(0, 0);
+  
+  // SEO update hook (mevcut fonksiyonu bozmaz, sadece meta tags günceller)
+  if (typeof window.seoUpdate === 'function') {
+    window.seoUpdate(sayfa, data);
+  }
 }
 function geriGit() { sayfaGit(gecmisSayfa); }
 

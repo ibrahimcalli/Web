@@ -1,0 +1,34 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CRITICAL CSS — Inline olarak index.html içine yerleştirilir
+   ═══════════════════════════════════════════════════════════════════════════
+
+   LCP (Largest Contentful Paint) iyileştirme amaçlıdır.
+   İlk katman (hero, navbar, body) render edilmesi için gerekli minimum CSS.
+   
+   Bu dosya index.html içine inline olarak eklenmiştir.
+   Asıl stiller stylesheet olarak preload ile yükleniyor.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:#FAF7F2;color:#2D2016;line-height:1.6;-webkit-font-smoothing:antialiased;font-size:clamp(14px,1vw,16px);overflow-x:hidden}
+.nav{position:sticky;top:0;z-index:100;height:56px;background:rgba(250,247,242,.92);backdrop-filter:blur(12px);border-bottom:1px solid #E8DFD0;display:flex;align-items:center;padding:0 clamp(.75rem,4vw,2.5rem);gap:clamp(.5rem,2vw,2rem);flex-wrap:nowrap;overflow:hidden}
+.nav-hamburger{display:flex;flex-direction:column;justify-content:center;gap:4px;width:44px;height:44px;cursor:pointer;background:transparent;border:none;flex-shrink:0}
+.nav-hamburger span{display:block;width:24px;height:2px;background:#2D2016;border-radius:2px;transition:.2s}
+.nav-logo{display:flex;align-items:center;gap:.6rem;cursor:pointer;flex-shrink:0}
+.nav-logo-mark{width:clamp(28px,8vw,34px);height:clamp(28px,8vw,34px);background:#C45C35;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff}
+.nav-links{display:none;align-items:center;gap:.25rem;flex:1;min-width:0}
+.nav-eylemler{display:flex;align-items:center;gap:.5rem;margin-left:auto;flex-shrink:0}
+@media(min-width:768px){.nav{height:64px}.nav-hamburger{display:none}.nav-links{display:flex}}
+.hero{max-width:900px;margin:0 auto;padding:clamp(2rem,6vw,4rem) clamp(1rem,4vw,2.5rem) clamp(1.5rem,4vw,2.5rem)}
+.hero-baslik{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.75rem,6vw,3.2rem);font-weight:700;color:#2D2016;margin-bottom:.75rem;line-height:1.15}
+.hero-baslik em{color:#C45C35;font-style:italic}
+.hero-alt{font-size:clamp(.9rem,2.5vw,1rem);color:#7A6E65;margin-bottom:1.5rem}
+.hero-arama{display:flex;gap:.5rem;background:#fff;border:1.5px solid #E8DFD0;border-radius:12px;padding:.4rem .4rem .4rem .9rem;box-shadow:0 2px 12px rgba(45,32,22,.09);width:100%}
+.hero-arama-input{flex:1;border:none;background:none;font-size:clamp(.85rem,3vw,.95rem);color:#2D2016;outline:none;min-width:0}
+.hero-arama-btn{background:#C45C35;color:#fff;padding:.55rem clamp(.75rem,4vw,1.5rem);border-radius:8px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;flex-shrink:0;min-height:44px}
+.forgot-skip{position:absolute;top:-100px;left:8px;background:#C45C35;color:#fff;padding:.75rem 1.25rem;z-index:9999;border-radius:4px;font-weight:600;transition:top .2s}
+.forgot-skip:focus{top:8px}
+img{display:block;max-width:100%;height:auto;object-fit:cover}
+.skip-to-content{position:absolute;left:-9999px;top:0;background:#C45C35;color:#fff;padding:.75rem 1.25rem;z-index:9999;border-radius:4px;font-weight:600}
+.skip-to-content:focus{left:8px;top:8px}

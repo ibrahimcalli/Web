@@ -43,36 +43,12 @@ app.mount(
 
 
 # ─── SPA Fallback (Frontend için) ─────────────────────────────────────────────
-# Bu liste SPA fallback'ten muaf tutulan dosyalar:
-# - PWA/SEO dosyaları kendi route'ları ile serve edilir (SPA fallback değil)
-SPA_SKIP_PATHS = frozenset({
-    "manifest.json",
-    "sw.js",
-    "offline.html",
-    "sitemap.xml",
-    "sitemap-images.xml",
-    "robots.txt",
-    "browserconfig.xml",
-    "favicon.ico",
-    "apple-touch-icon.png",
-    "apple-touch-icon-precomposed.png",
-    ".well-known",  # security.txt vb.
-})
-
-
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
     """
     SPA fallback - frontend route'ları için index.html döndürür.
-    
-    SPA_SKIP_PATHS listesi SEO/PWA dosyalarını korur — onlar kendi route'ları ile
-    serve edilir.
+    API endpoint'leri önce işlenir, sonra buraya düşer.
     """
-    # İlk segment SPA skip listesinde ise 404 — gerçek route zaten handle etmiş
-    ilk_segment = full_path.split("/")[0] if "/" in full_path else full_path
-    if ilk_segment in SPA_SKIP_PATHS:
-        return JSONResponse({"mesaj": "Not found"}, status_code=404)
-    
     index = BASE_DIR / "static" / "index.html"
     if index.exists():
         return FileResponse(str(index))
@@ -85,4 +61,4 @@ init_db()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

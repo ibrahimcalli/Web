@@ -9,6 +9,8 @@ from backend.routes.icerik_router import (
     blog_router,
 )
 from backend.routes.content_router import router as content_router
+from backend.routes.sitemap_router import router as sitemap_router
+from backend.routes.pwa_assets import router as pwa_assets_router
 
 __all__ = [
     "auth_router",
@@ -19,4 +21,6 @@ __all__ = [
     "banner_router",
     "blog_router",
     "content_router",
+    "sitemap_router",
+    "pwa_assets_router",
 ]

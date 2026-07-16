@@ -16,6 +16,8 @@ from backend.routes import (
     banner_router,
     blog_router,
     content_router,
+    sitemap_router,
+    pwa_assets_router,
 )
 
 
@@ -60,6 +62,14 @@ def create_app() -> FastAPI:
     app.include_router(banner_router, prefix="/api", tags=["Banner"])
     app.include_router(blog_router, prefix="/api", tags=["Blog"])
     app.include_router(content_router, prefix="/api", tags=["İçerik"])
+
+    # ─── Sitemap / robots.txt (production SEO) ────────────────────────────────
+    # Mevcut URL'ler: /sitemap.xml, /sitemap-images.xml, /robots.txt
+    # OpenAPI'de görünmez ama çalışır (SEO için):
+    app.include_router(sitemap_router, tags=["SEO"])
+
+    # ─── PWA Asset'ler (manifest, sw, offline) — SPA fallback'ten ÖNCE ────────
+    app.include_router(pwa_assets_router, tags=["PWA"])
     
     # Health check
     @app.get("/health", tags=["Health"])
