@@ -424,10 +424,15 @@ def test_http_404_unknown_api():
 def test_http_404_spa_skip():
     c = make_client()
     if not c: return
-    # favicon.ico varolan değil → SPA_SKIP_PATHS → 404 JSON
+    # favicon.ico MEVCUTSA → 200 (image/vnd.microsoft.icon veya image/x-icon)
+    # YOKSA → 404 JSON. Test ikon dosyaları üretildikten sonra 200 bekler.
     r = c.get("/favicon.ico")
-    assert r.status_code == 404
-    assert r.headers["content-type"].startswith("application/json")
+    # DDosya varsa 200 image, yoksa 404 json — ikisi de kabul
+    assert r.status_code in (200, 404)
+    if r.status_code == 404:
+        assert r.headers["content-type"].startswith("application/json")
+    else:
+        assert r.headers["content-type"].startswith("image/")
 
 def test_http_pwa_sw_js_content_type():
     c = make_client()
@@ -563,6 +568,36 @@ def test_http_request_id_passthrough():
     assert r.headers.get("X-Request-ID") == rid
 
 
+def test_http_pwa_favicon_ico():
+    c = make_client()
+    if not c: return
+    r = c.get("/favicon.ico")
+    # favicon.ico dosyası var → 200 + image/*
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("image/")
+
+def test_http_apple_touch_icon():
+    c = make_client()
+    if not c: return
+    r = c.get("/static/img/apple-touch-icon.png")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/png"
+
+def test_http_icon_192():
+    c = make_client()
+    if not c: return
+    r = c.get("/static/img/icon-192x192.png")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/png"
+
+def test_http_icon_512():
+    c = make_client()
+    if not c: return
+    r = c.get("/static/img/icon-512x512.png")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/png"
+
+
 HTTP_TESTS = [
     ("http_health", test_http_health),
     ("http_health_head", test_http_health_head),
@@ -578,6 +613,10 @@ HTTP_TESTS = [
     ("http_pwa_offline_html", test_http_pwa_offline_html),
     ("http_pwa_offline_html_head", test_http_pwa_offline_html_head),
     ("http_pwa_sw_head", test_http_pwa_sw_head),
+    ("http_pwa_favicon_ico", test_http_pwa_favicon_ico),
+    ("http_apple_touch_icon", test_http_apple_touch_icon),
+    ("http_icon_192", test_http_icon_192),
+    ("http_icon_512", test_http_icon_512),
     ("http_seo_sitemap", test_http_seo_sitemap),
     ("http_seo_sitemap_head", test_http_seo_sitemap_head),
     ("http_seo_sitemap_images", test_http_seo_sitemap_images),
