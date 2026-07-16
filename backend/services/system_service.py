@@ -73,12 +73,11 @@ def servis_durumu() -> dict:
     """Servis, systemd, port durumu."""
     aktif = _cmd(f"systemctl is-active {SERVIS_ADI}")
     cloudflared = _cmd(f"systemctl is-active {TUNNEL_ADI}")
-    port_check = _cmd(f"ss -ltnp | grep {settings.JWT_EXPIRE_MINUTES}")  # sahte, düzelt:
-    port_check = _cmd(f"ss -ltnp | grep '8000'")
+    port_check = _cmd("ss -ltnp | grep '8000'")
     memory = _cmd("free -h | grep Mem")
     disk = _cmd("df -h / | tail -1")
     uptime = _cmd("uptime -p")
-    
+
     return {
         "servis": {
             "emlak_api": aktif or "inactive",
@@ -196,8 +195,15 @@ def test_calistir() -> dict:
                 cwd=str(settings.BASE_DIR),
             )
             cikti = out.stdout or out.stderr or ""
-            basarili = "TÜM TESTLER BAŞARILI" in cikti.replace("🎉", "").strip() or \
-                       "PASSED" in cikti and "FAILED" not in cikti
+            # Başarı kontrolü — test dosyalarının çıktısı farklı:
+            #   test_api.py: "🎉 Tüm testler başarılı!" + "PASSED: 82" + "FAILED: 0"
+            #   test_backend.py: "✅ ..." + "🎉 Tüm testler başarılı!"
+            cikti_lower = cikti.lower()
+            basarili = (
+                "tüm testler başarılı" in cikti_lower
+                or ("passed" in cikti_lower and "failed: 0" in cikti_lower)
+                or ("geçti" in cikti_lower and "başarısız" not in cikti_lower and "failed" not in cikti_lower)
+            )
             if not basarili:
                 tum_basarili = False
             sonuclar.append({

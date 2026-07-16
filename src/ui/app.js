@@ -904,6 +904,15 @@ function adminSayfa(sayfa) {
   const items = document.querySelectorAll('.sidebar-item');
   if (items[harita[sayfa]]) items[harita[sayfa]].classList.add('aktif');
   const ic = document.getElementById('admin-ic');
+  // Sistem alt sayfaları — admin-sistem.js'e delege et
+  if (sayfa && sayfa.startsWith && sayfa.startsWith('sistem-')) {
+    const alt = sayfa.slice('sistem-'.length);
+    const fn = window.sistemSayfaAc;
+    if (typeof fn === 'function' && fn(alt)) return;
+    // admin-sistem.js henüz yüklenmedi — yükleniyor spinner göster
+    if (ic) ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+    return;
+  }
   if (sayfa === 'portfoyler')  adminPortfoyler();
   else if (sayfa === 'yeni')   { modalAc(); }
   else if (sayfa === 'belge')  adminBelge();

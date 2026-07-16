@@ -225,6 +225,7 @@ function escHtml(s) {
 }
 
 // AdminSayfa dispatcher — adminSayfa('sistem-durum') vs.
+// app.js adminSayfa() fonksiyonu window.sistemSayfaAc'a delegre eder.
 const _sistemSayfalar = {
     'durum': sistemDurumYukle,
     'log': () => sistemLogYukle('app'),
@@ -241,14 +242,17 @@ function sistemSayfaAc(alt) {
     return false;
 }
 
-// Sistem alt sayfalarına yönlendirme: adminSayfa('sistem-durum') vs.
-const _originalAdminSayfa = window.adminSayfa;
-window.adminSayfa = function(sayfa) {
-    if (sayfa && sayfa.startsWith('sistem-')) {
-        const alt = sayfa.replace('sistem-', '');
-        if (sistemSayfaAc(alt)) return;
-    }
-    if (_originalAdminSayfa) _originalAdminSayfa(sayfa);
-};
+// app.js (ES module) adminSayfa() bunu window üzerinden çağırır.
+// Modül yükleme sırası ne olursa olsun, app.js kendi yüklemesini tamamladığında
+// window.sistemSayfaAc tanımlı olsun diye — klasik script olduğu için senkron yüklenir,
+// ardından gelen module (app.js) bunu hazır bulur.
+window.sistemSayfaAc = sistemSayfaAc;
+
+// Bakım çalıştır + AI tanılama indir + log yeniden yükle — onclick handler'ılar için window'a aç
+window.sistemBakimCalistir = sistemBakimCalistir;
+window.sistemAiTanilamaIndir = sistemAiTanilamaIndir;
+window.sistemLogYukle = sistemLogYukle;
+window.sistemTest = sistemTest;
+window.sistemBakim = sistemBakim;
 
 console.log('Admin Sistem modülü yüklendi ✅');
