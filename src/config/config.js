@@ -6,7 +6,7 @@
  * apiBase: sunucu kökü (boş = aynı origin). Domain/IP buraya yazılır; koda sabitlenmez.
  */
 window.APP_CONFIG = {
-  mode: "mock",
+  mode: "server",
   apiBase: "",
   timeout: 10000,
   /** İstemci önbellek süresi (ms). 0 = kapalı */

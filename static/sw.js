@@ -13,7 +13,7 @@
  * - Hiç ziyaret edilmemiş sayfalar için /offline.html gösterilir
  */
 
-const CACHE_VERSION = 'v2.0.1';
+const CACHE_VERSION = 'v2.0.2';
 const STATIC_CACHE = 'static-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'runtime-' + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -31,6 +31,7 @@ const PRECACHE_URLS = [
     '/src/styles/components.css',
     '/src/styles/desktop.css',
     '/src/ui/seo.js',
+    '/src/config/config.js',
     '/static/img/logo.png',
     'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap'
 ];
