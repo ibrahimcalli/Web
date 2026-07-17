@@ -30,6 +30,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import PlainTextResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.app import create_app
 from backend.core.config import BASE_DIR
@@ -50,6 +51,26 @@ app = create_app()
 # ─── Statik dosya mount'ları ──────────────────────────────────────────────
 app.mount("/src", StaticFiles(directory=str(BASE_DIR / "src")), name="src_modules")
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+
+# ─── Kritik JS için Cache-Control: no-store (Cloudflare cache'ini önle) ────
+# sw.js, config.js ve /src/api/* adapter'ları — cache'lenirse config/behavior
+# değişikliği kullanıcıya ulaşmaz. Cloudflare default .js'i 4 saat cache'ler
+# (max-age=14400); bu middleware bu dosyalar için cache'i devre dışı bırakır.
+class NoCacheCriticalJS(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path.lower()
+        if (
+            path == "/sw.js"
+            or path == "/src/config/config.js"
+            or path.startswith("/src/api/")
+        ):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            response.headers["Cloudflare-CDN-Cache-Control"] = "no-store"
+        return response
+
+app.add_middleware(NoCacheCriticalJS)
 
 
 # ─── PWA assets — Whitelist'li StaticFiles ────────────────────────────────
