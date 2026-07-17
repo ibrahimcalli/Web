@@ -1,14 +1,74 @@
 /**
  * Admin Sistem Paneli — Durum, Test, Komutlar, Bakım, AI Tanılama, Kılavuz
+ *
+ * Token'ı window.api.getToken() ile alır (TokenStore.js → localStorage 'emlak_token').
+ * Eski sürüm localStorage.getItem('token') kullanıyordu — token aslında 'emlak_token'
+ * key'inde saklanıyor olduğu için hatalı 401 dönüyordu.
+ *
+ * Sistem fetch yardımcıları:
+ *   sistemGet(path)    → GET, JSON yanıtı parse eder, hata durumunda Error fırlatır
+ *   sistemPost(path)   → POST, Content-Type: application/json (CSRF middleware gerekir)
  */
+function _sistemToken() {
+    // Önce hotel ApiClient (window.api), yoksa localStorage 'emlak_token' fallback
+    if (window.api && typeof window.api.getToken === 'function') {
+        return window.api.getToken();
+    }
+    try { return localStorage.getItem('emlak_token') || ''; } catch { return ''; }
+}
+
+async function sistemGet(path) {
+    const r = await fetch(path, {
+        headers: {
+            'Authorization': 'Bearer ' + _sistemToken(),
+            'Accept': 'application/json',
+        },
+    });
+    return await _sistemResponse(r);
+}
+
+async function sistemPost(path, body) {
+    const r = await fetch(path, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + _sistemToken(),
+            'Content-Type': 'application/json',  // CSRF middleware kuralı
+            'Accept': 'application/json',
+        },
+        body: body == null ? '{}' : JSON.stringify(body),
+    });
+    return await _sistemResponse(r);
+}
+
+async function _sistemResponse(r) {
+    let data = null;
+    try { data = await r.json(); }
+    catch { data = { success: false, message: 'Geçersiz yanıt (JSON değil)', data: null }; }
+    if (!r.ok || !data.success) {
+        const msg = (data && data.message) ||
+            (r.status === 401 ? 'Yetkisiz — tekrar giriş yapın' :
+             r.status === 403 ? 'Yasak — admin yetkisi gerekli' :
+             r.status === 415 ? 'Content-Type desteklenmiyor' :
+             `HTTP ${r.status}`);
+        const err = new Error(msg);
+        err.status = r.status;
+        err.data = data;
+        throw err;
+    }
+    return data;
+}
+
+function sistemHataGoster(kont, msg) {
+    if (!kont) return;
+    kont.innerHTML = '<div class="hata">' + (msg || 'Hata') + '</div>';
+}
+
 async function sistemDurumYukle() {
     const kont = document.getElementById('admin-ic');
     if (!kont) return;
     kont.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
     try {
-        const r = await fetch('/api/sistem/durum', { headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
-        const data = await r.json();
-        if (!data.success) { kont.innerHTML = '<div class="hata">' + (data.message || 'Hata') + '</div>'; return; }
+        const data = await sistemGet('/api/sistem/durum');
         const d = data.data;
         let html = '<div class="sistem-durum"><h2 style="margin-bottom:1rem">📊 Sistem Durumu</h2><div class="durum-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">';
         html += '<div class="durum-kart"><div class="durum-kart-baslik">Servisler</div><table class="tablo"><tbody>';
@@ -23,7 +83,7 @@ async function sistemDurumYukle() {
         html += '</tbody></table></div>';
         html += '</div><div style="margin-top:0.5rem;font-size:0.78rem;color:var(--gri-metin)">Son güncelleme: ' + (d.zaman || '-') + '</div></div>';
         kont.innerHTML = html;
-    } catch (e) { kont.innerHTML = '<div class="hata">Bağlantı hatası: ' + e.message + '</div>'; }
+    } catch (e) { sistemHataGoster(kont, e.message); }
 }
 
 async function sistemLogYukle(tip = 'app') {
@@ -31,13 +91,11 @@ async function sistemLogYukle(tip = 'app') {
     if (!kont) return;
     kont.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
     try {
-        const r = await fetch(`/api/sistem/log/${tip}?satir=200`, { headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
-        const data = await r.json();
-        if (!data.success) { kont.innerHTML = '<div class="hata">' + (data.message || 'Hata') + '</div>'; return; }
+        const data = await sistemGet(`/api/sistem/log/${tip}?satir=200`);
         const icerik = data.data.icerik || '(boş)';
         const secim = ['app', 'error', 'access', 'deploy'].map(t => `<button class="btn btn-sm ${tip === t ? 'btn-kirm' : 'btn-ntr'}" onclick="sistemLogYukle('${t}')">${t}.log</button>`).join(' ');
         kont.innerHTML = `<div style="margin-bottom:1rem"><h2 style="margin-bottom:0.5rem">📋 Log Görüntüle</h2><div style="display:flex;gap:0.4rem;flex-wrap:wrap">${secim}</div></div><pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:6px;font-size:0.78rem;overflow:auto;max-height:70vh;white-space:pre-wrap;word-break:break-all">${escHtml(icerik)}</pre>`;
-    } catch (e) { kont.innerHTML = '<div class="hata">Bağlantı hatası: ' + e.message + '</div>'; }
+    } catch (e) { sistemHataGoster(kont, e.message); }
 }
 
 async function sistemKomutlar() {
@@ -45,9 +103,7 @@ async function sistemKomutlar() {
     if (!kont) return;
     kont.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
     try {
-        const r = await fetch('/api/sistem/komutlar', { headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
-        const data = await r.json();
-        if (!data.success) { kont.innerHTML = '<div class="hata">' + (data.message || 'Hata') + '</div>'; return; }
+        const data = await sistemGet('/api/sistem/komutlar');
         let html = '<h2 style="margin-bottom:1rem">📝 Komutlar</h2><div style="font-size:0.85rem;color:var(--gri-metin);margin-bottom:1rem">Sık kullanılan komutlar — yanındaki 📋 butonu ile panoya kopyalayın.</div>';
         for (const grup of (data.data.gruplar || [])) {
             html += `<div class="komut-grup" style="margin-bottom:1.5rem"><h3 style="font-size:0.95rem;margin-bottom:0.5rem;color:var(--kiremit)">${grup.grup}</h3><div style="display:flex;flex-direction:column;gap:0.4rem">`;
@@ -69,9 +125,7 @@ async function sistemTest() {
     if (!kont) return;
     kont.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Testler çalıştırılıyor…</div><div style="text-align:center;margin-top:1rem;font-size:0.85rem;color:var(--gri-metin)">Bu işlem 30-60 saniye sürebilir.</div>';
     try {
-        const r = await fetch('/api/sistem/test', { method: 'POST', headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
-        const data = await r.json();
-        if (!data.success) { kont.innerHTML = '<div class="hata">' + (data.message || 'Hata') + '</div>'; return; }
+        const data = await sistemPost('/api/sistem/test', {});
         const d = data.data;
         let html = '<h2 style="margin-bottom:0.5rem">🧪 Test Sonuçları</h2>';
         html += `<div style="margin-bottom:1rem;padding:0.5rem 1rem;border-radius:6px;font-weight:600;display:inline-block;background:${d.success ? 'var(--zeytun-a)' : 'var(--kiremit-a)'};color:${d.success ? 'var(--zeytun)' : 'var(--kiremit-k)'}">${d.summary}</div>`;
@@ -85,17 +139,15 @@ async function sistemTest() {
         }
         html += `<div style="margin-top:1rem"><button class="btn btn-ntr btn-sm" onclick="sistemTest()">🔄 Tekrar Çalıştır</button></div>`;
         kont.innerHTML = html;
-    } catch (e) { kont.innerHTML = '<div class="hata">Bağlantı hatası: ' + e.message + '</div>'; }
+    } catch (e) { sistemHataGoster(kont, e.message); }
 }
 
 async function sistemBakim() {
     const kont = document.getElementById('admin-ic');
     if (!kont) return;
-    const token = localStorage.getItem('token') || '';
+    kont.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
     try {
-        const r = await fetch('/api/sistem/bakim', { headers: { Authorization: 'Bearer ' + token } });
-        const data = await r.json();
-        if (!data.success) { kont.innerHTML = '<div class="hata">' + (data.message || 'Hata') + '</div>'; return; }
+        const data = await sistemGet('/api/sistem/bakim');
         let html = '<h2 style="margin-bottom:1rem">🔧 Bakım İşlemleri</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem">';
         for (const isl of (data.data.islemler || [])) {
             html += `<div class="bakim-kart" style="background:var(--krem);border-radius:8px;border:1px solid var(--kumtasi);padding:1rem;display:flex;flex-direction:column;gap:0.5rem">
@@ -109,7 +161,7 @@ async function sistemBakim() {
         }
         html += '</div><div id="bakim-sonuc" style="margin-top:1rem"></div>';
         kont.innerHTML = html;
-    } catch (e) { kont.innerHTML = '<div class="hata">Bağlantı hatası: ' + e.message + '</div>'; }
+    } catch (e) { sistemHataGoster(kont, e.message); }
 }
 
 async function sistemBakimCalistir(islem) {
@@ -117,14 +169,13 @@ async function sistemBakimCalistir(islem) {
     if (!sonucDiv) return;
     sonucDiv.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Çalıştırılıyor…</div>';
     try {
-        const r = await fetch(`/api/sistem/bakim/${islem}`, { method: 'POST', headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
-        const data = await r.json();
-        if (data.success) {
-            sonucDiv.innerHTML = `<div style="padding:0.75rem;border-radius:6px;background:var(--zeytun-a);color:var(--zeytun);font-weight:600">✅ ${data.data.mesaj}</div>`;
+        const data = await sistemPost(`/api/sistem/bakim/${islem}`, {});
+        if (data.success && data.data) {
+            sonucDiv.innerHTML = `<div style="padding:0.75rem;border-radius:6px;background:var(--zeytun-a);color:var(--zeytun);font-weight:600">✅ ${data.data.mesaj || 'Tamamlandı'}</div>`;
         } else {
             sonucDiv.innerHTML = `<div class="hata">${data.message || 'Hata'}</div>`;
         }
-    } catch (e) { sonucDiv.innerHTML = '<div class="hata">Bağlantı hatası: ' + e.message + '</div>'; }
+    } catch (e) { sonucDiv.innerHTML = '<div class="hata">' + e.message + '</div>'; }
 }
 
 async function sistemAiTanilama() {
@@ -132,9 +183,7 @@ async function sistemAiTanilama() {
     if (!kont) return;
     kont.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Tanı bilgileri toplanıyor…</div>';
     try {
-        const r = await fetch('/api/sistem/ai-tanilama', { headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } });
-        const data = await r.json();
-        if (!data.success) { kont.innerHTML = '<div class="hata">' + (data.message || 'Hata') + '</div>'; return; }
+        const data = await sistemGet('/api/sistem/ai-tanilama');
         const jsonStr = JSON.stringify(data.data, null, 2);
         kont.innerHTML = `<h2 style="margin-bottom:0.5rem">🤖 AI Tanılama</h2>
             <div style="font-size:0.82rem;color:var(--gri-metin);margin-bottom:1rem">Tüm sistem bilgisi tek JSON'da. Kopyalayıp AI'ya yapıştırabilirsiniz.</div>
