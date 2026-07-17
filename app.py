@@ -65,6 +65,7 @@ class NoCacheCriticalJS(BaseHTTPMiddleware):
             path == "/sw.js"
             or path == "/src/config/config.js"
             or path.startswith("/src/api/")
+            or path.startswith("/src/ui/")
         ):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
             response.headers["Cloudflare-CDN-Cache-Control"] = "no-store"

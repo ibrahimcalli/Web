@@ -13,7 +13,7 @@
  * - Hiç ziyaret edilmemiş sayfalar için /offline.html gösterilir
  */
 
-const CACHE_VERSION = 'v2.0.3';
+const CACHE_VERSION = 'v2.0.4';
 const STATIC_CACHE = 'static-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'runtime-' + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -73,12 +73,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Kritik JS (config, api adapter) — her zaman network-first,
-    // staleWhileRevalidate değil. Eski config/adapter cache'i sorun çıkardı.
+    // Kritik JS (config, api adapter, UI modülleri) — her zaman network-first,
+    // staleWhileRevalidate değil. Eski config/adapter/UI cache'i sorun çıkardı.
     if (
-        url.pathname.endsWith('/config/config.js') ||
-        url.pathname.startsWith('/src/api/') ||
-        url.pathname.startsWith('/src/config/')
+        url.pathname.endsWith("/config/config.js") ||
+        url.pathname.startsWith("/src/api/") ||
+        url.pathname.startsWith("/src/config/") ||
+        url.pathname.startsWith("/src/ui/")
     ) {
         event.respondWith(networkFirst(request));
         return;

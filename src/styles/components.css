@@ -160,6 +160,10 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   padding: .5rem 0;
   border-right: none;
 }
+/* Toggle butonuna basınca aç — index.html:932 sidebar.classList.toggle('aktif') */
+.admin-sidebar.admin-mobil-panel.aktif {
+  display: block;
+}
 @media (min-width: 1024px) {
   .admin-sidebar.admin-mobil-panel {
     display: block;
