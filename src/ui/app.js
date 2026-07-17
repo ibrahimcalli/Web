@@ -109,7 +109,7 @@ function adminKontrol() {
 async function katYukle() {
   const d = await api.getKategoriler();
   if (!d) return;
-  kategoriler = d.kategoriler; ilanTipleri = d.ilan_tipleri;
+  kategoriler = d.kategoriler || {}; ilanTipleri = d.ilan_tipleri || {};
 
   // Ana kategori bantları
   const bantlar = ['ana-kat-bant', 'ilan-kat-bant'];

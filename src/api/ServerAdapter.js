@@ -105,6 +105,17 @@ export class ServerAdapter {
     if (!response.ok) {
       throw new ApiError(response.status, detailToMessage(body && body.detail));
     }
+
+    // Backend standart yanıtı: { success, message, data }.
+    // UI MockAdapter'la aynı interface'i bekler — bu yüzden sarmalayıcıyı
+    // açıp 'data'yı döndür. success=false ise ApiError fırlat (401/500 vb.
+    // için木兰 kullanacağımız için 'message'ı kullan).
+    if (body && typeof body === "object" && "data" in body) {
+      if (body.success === false) {
+        throw new ApiError(response.status, body.message || "Sunucu hatası");
+      }
+      return body.data;
+    }
     return body;
   }
 
