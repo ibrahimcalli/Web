@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, HTTPException, status
 from fastapi.security import HTTPBearer
+from pydantic import BaseModel
 
 from backend.core.dependencies import get_auth_service, get_current_user, require_auth
 from backend.schemas.kullanici import (
@@ -15,21 +16,27 @@ router = APIRouter()
 security = HTTPBearer(auto_error=False)
 
 
+class LoginRequest(BaseModel):
+    """Giriş isteği gövdesi (JSON)."""
+    email: str
+    sifre: str
+
+
 @router.post("/auth/giris", tags=["Auth"])
 async def giris(
     request: Request,
-    email: str,
-    sifre: str,
+    data: LoginRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """
-    Kullanıcı girişi.
-    
+    Kullanıcı girişi (JSON gövde).
+
     - **email**: Kullanıcı e-posta adresi
     - **sifre**: Kullanıcı şifresi
     """
     try:
-        result = auth_service.login(email, sifre, client.host)
+        ip = request.client.host if request.client else "unknown"
+        result = auth_service.login(data.email, data.sifre, ip)
         return ok(result, "Giriş başarılı")
     except Exception as e:
         return fail(str(e))

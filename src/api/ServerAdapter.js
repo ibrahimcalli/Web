@@ -110,12 +110,9 @@ export class ServerAdapter {
 
   /** @param {string} email @param {string} sifre */
   async login(email, sifre) {
-    const body = new URLSearchParams({ username: email, password: sifre });
     return this._request(R.giris, {
       method: "POST",
-      body,
-      rawBody: true,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: JSON.stringify({ email, sifre }),
     });
   }
 
