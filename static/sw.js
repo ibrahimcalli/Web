@@ -13,7 +13,7 @@
  * - Hiç ziyaret edilmemiş sayfalar için /offline.html gösterilir
  */
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.0.1';
 const STATIC_CACHE = 'static-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'runtime-' + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
@@ -72,7 +72,9 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Statik dosyalar (CSS, JS, fonts): Cache First
+    // Statik dosyalar (CSS, JS, fonts): Stale While Revalidate
+    // — eski cache'den hemen dön ama arka planda güncelle
+    // (cacheFirst'tür(JS değişince SW version artana kadar güncellenmezdi)
     if (
         url.pathname.endsWith('.css') ||
         url.pathname.endsWith('.js') ||
@@ -80,7 +82,7 @@ self.addEventListener('fetch', (event) => {
         url.pathname.endsWith('.woff2') ||
         url.pathname.endsWith('.woff')
     ) {
-        event.respondWith(cacheFirst(request));
+        event.respondWith(staleWhileRevalidate(request));
         return;
     }
 
