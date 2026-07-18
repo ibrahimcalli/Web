@@ -39,6 +39,9 @@ class WidgetService:
         self.widgets.update(wid, data)
         return self.widgets.get_by_id(wid)
 
+    def konum_ile_getir(self, konum: str) -> List[dict]:
+        return self.widgets.get_by_konum(konum, aktif_only=True)
+
     def sil(self, wid: int) -> dict:
         if not self.widgets.exists(wid):
             raise NotFoundError("Widget bulunamadı")

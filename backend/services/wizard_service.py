@@ -74,15 +74,15 @@ class WizardService:
         menus = preset.get("menus", {})
         if menu_conf.get("auto", True):
             for slug, m_data in menus.items():
-                mevcut = self.menu_repo.slug_ile_getir(slug)
+                mevcut = self.menu_repo.get_by_slug(slug)
                 if not mevcut:
-                    mid = self.menu_repo.olustur({
+                    mid = self.menu_repo.create({
                         "slug": slug,
                         "ad": m_data.get("ad", slug),
                         "lokasyon": m_data.get("lokasyon", "header"),
                     })
                     for oge in m_data.get("ogeler", []):
-                        self.menu_item_repo.olustur({
+                        self.menu_item_repo.create({
                             "menu_id": mid,
                             "baslik": oge["baslik"],
                             "hedef_url": oge.get("hedef_url", ""),
@@ -100,7 +100,7 @@ class WizardService:
         if sayfa_conf.get("auto", True):
             for p_data in sayfalar:
                 try:
-                    self.page_repo.olustur({
+                    self.page_repo.create({
                         "baslik": p_data["baslik"],
                         "slug": p_data["slug"],
                         "icerik": p_data.get("icerik", ""),
@@ -117,9 +117,9 @@ class WizardService:
             return {"error": "Önce sektör seçilmeli"}
         for w in preset.get("widgets", []):
             if w["anahtar"] in widget_secim:
-                mevcut = self.widget_repo.anahtar_ile_getir(w["anahtar"])
+                mevcut = self.widget_repo.get_by_anahtar(w["anahtar"])
                 if mevcut:
-                    self.widget_repo.aktif_degistir(mevcut["id"])
+                    self.widget_repo.toggle_active(mevcut["id"])
         self.wizard_repo.kaydet(wizard_id, 7, {"widgets": widget_secim})
         return {"wizard_id": wizard_id, "adim": 7}
 

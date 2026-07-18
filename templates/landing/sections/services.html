@@ -1,0 +1,29 @@
+<section class="services" id="services"
+  style="${data.ayarlar.arka_renk ? 'background-color:' + data.ayarlar.arka_renk : ''}">
+  <div class="container ${data.ayarlar.container_genislik === 'full' ? 'container-fluid' : ''}"
+    style="padding: ${data.ayarlar.padding || '80px 0'}">
+    ${data.ayarlar.baslik_goster ? `<h2 class="bolum-baslik">${data.baslik || 'Hizmetlerimiz'}</h2>` : ''}
+    <div class="services-grid" id="services-grid">
+      <div class="service-kart">
+        <div class="service-ikon">🏠</div>
+        <h3>Satılık İlanlar</h3>
+        <p>Geniş portföyümüzle hayalinizdeki eve kavuşun</p>
+      </div>
+      <div class="service-kart">
+        <div class="service-ikon">🔑</div>
+        <h3>Kiralık İlanlar</h3>
+        <p>Size özel kiralık gayrimenkul seçenekleri</p>
+      </div>
+      <div class="service-kart">
+        <div class="service-ikon">📋</div>
+        <h3>Ekspertiz</h3>
+        <p>Profesyonel gayrimenkul değerleme hizmeti</p>
+      </div>
+      <div class="service-kart">
+        <div class="service-ikon">🤝</div>
+        <h3>Danışmanlık</h3>
+        <p>Uzman ekibimizle her adımda yanınızdayız</p>
+      </div>
+    </div>
+  </div>
+</section>

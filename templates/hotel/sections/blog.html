@@ -1,0 +1,8 @@
+<section class="bolum" id="blog"
+  style="${data.ayarlar.arka_renk ? 'background-color:' + data.ayarlar.arka_renk : ''}">
+  <div class="container ${data.ayarlar.container_genislik === 'full' ? 'container-fluid' : ''}"
+    style="padding: ${data.ayarlar.padding || '80px 0'}">
+    ${data.ayarlar.baslik_goster ? `<h2 class="bolum-baslik">${data.baslik || 'Blog'}</h2>` : ''}
+    <div class="blog-grid" id="blog-grid"></div>
+  </div>
+</section>

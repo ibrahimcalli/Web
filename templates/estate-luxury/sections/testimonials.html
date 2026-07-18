@@ -1,0 +1,19 @@
+<section class="bolum" id="testimonials"
+  style="${data.ayarlar.arka_renk ? 'background-color:' + data.ayarlar.arka_renk : ''}">
+  <div class="container ${data.ayarlar.container_genislik === 'full' ? 'container-fluid' : ''}"
+    style="padding: ${data.ayarlar.padding || '80px 0'}">
+    ${data.ayarlar.baslik_goster ? `<h2 class="bolum-baslik">${data.baslik || 'Müşteri Yorumları'}</h2>` : ''}
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"Profesyonel ve güvenilir hizmet için teşekkürler."</p>
+        <div class="testimonial-author">— Ahmet Yılmaz</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-stars">★★★★★</div>
+        <p class="testimonial-text">"İhtiyacım olan evi kısa sürede bulmama yardımcı oldular."</p>
+        <div class="testimonial-author">— Ayşe Demir</div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -16,10 +16,25 @@ router = APIRouter(tags=["CMS - Widget"])
 @router.get("/widgets")
 async def halka_acik_widgetlar(
     widget_service: WidgetService = Depends(get_widget_service),
+    lokasyon: str = "",
     _user: dict = Depends(get_current_user),
 ):
     try:
+        if lokasyon:
+            return ok(widget_service.konum_ile_getir(lokasyon))
         return ok(widget_service.listele(aktif_only=True))
+    except Exception as e:
+        return fail(str(e))
+
+
+@router.get("/public/widgets/{lokasyon}")
+async def public_widgetlar(
+    lokasyon: str,
+    widget_service: WidgetService = Depends(get_widget_service),
+):
+    """Widget'ları konuma göre getir (public, auth gerekmez)."""
+    try:
+        return ok(widget_service.konum_ile_getir(lokasyon))
     except Exception as e:
         return fail(str(e))
 

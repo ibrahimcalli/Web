@@ -51,7 +51,7 @@ class DemoService:
                 "etiketler": json.dumps(["demo", "blog", slug]),
             }
             try:
-                bid = blog_repo.olustur(data)
+                bid = blog_repo.create(data, yazar_id=None)
                 ids.append(bid)
             except Exception:
                 pass
@@ -72,7 +72,7 @@ class DemoService:
                 "sira": i,
             }
             try:
-                bid = repo.olustur(data)
+                bid = repo.create(data)
                 ids.append(bid)
             except Exception:
                 pass
@@ -85,12 +85,12 @@ class DemoService:
         results = {}
         for kat_adi in kategoriler:
             try:
-                kat_id = kat_repo.olustur({
+                kat_id = kat_repo.create({
                     "slug": self._slug(kat_adi),
                     "ad": kat_adi,
                     "aciklama": f"{kat_adi} kategorisi",
                 })
-                konu_id = konu_repo.olustur({
+                konu_id = konu_repo.create({
                     "category_id": kat_id,
                     "baslik": f"{kat_adi} Hakkında",
                     "slug": self._slug(f"{kat_adi}-hakkinda"),

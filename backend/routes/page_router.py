@@ -23,6 +23,18 @@ async def halka_acik_sayfa(
         return fail(str(e))
 
 
+@router.get("/public/sayfa/{slug}")
+async def public_sayfa(
+    slug: str,
+    page_service: PageService = Depends(get_page_service),
+):
+    """Public sayfa görüntüleme (auth gerekmez)."""
+    try:
+        return ok(page_service.slug_ile_getir(slug))
+    except Exception as e:
+        return fail(str(e))
+
+
 @router.get("/admin/sayfalar")
 async def sayfa_listele(
     durum: str = None,

@@ -110,12 +110,12 @@ async def banner_konumlar():
 async def banner_liste(
     request: Request,
     konum: str = "",
-    aktif: bool = False,
+    sadece_aktif: bool = False,
     banner_service: BannerService = Depends(get_banner_service),
 ):
     """Banner listesi."""
     try:
-        result = banner_service.listele(konum, aktif)
+        result = banner_service.listele(konum, sadece_aktif)
         return ok(result)
     except Exception as e:
         return fail(str(e))

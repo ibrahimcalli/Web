@@ -1,0 +1,25 @@
+<footer class="site-footer" id="footer"
+  style="${data.ayarlar.arka_renk ? 'background-color:' + data.ayarlar.arka_renk : ''}">
+  <div class="container ${data.ayarlar.container_genislik === 'full' ? 'container-fluid' : ''}"
+    style="padding: ${data.ayarlar.padding || '40px 0'}">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>${data.settings?.site_adi || 'Portföy Gayrimenkul'}</h4>
+        <p>${data.settings?.site_slogan || ''}</p>
+      </div>
+      <div class="footer-col">
+        <h4>Hızlı Linkler</h4>
+        <ul id="footer-menu"></ul>
+      </div>
+      <div class="footer-col">
+        <h4>İletişim</h4>
+        <p>📞 ${data.settings?.telefon || ''}</p>
+        <p>✉️ ${data.settings?.email || ''}</p>
+        <p>📍 ${data.settings?.adres || ''}</p>
+      </div>
+    </div>
+    <div class="footer-alt">
+      <p>© ${new Date().getFullYear()} ${data.settings?.site_adi || ''} — Tüm hakları saklıdır.</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,21 @@
+<section class="bolum" id="contact"
+  style="${data.ayarlar.arka_renk ? 'background-color:' + data.ayarlar.arka_renk : ''}">
+  <div class="container ${data.ayarlar.container_genislik === 'full' ? 'container-fluid' : ''}"
+    style="padding: ${data.ayarlar.padding || '80px 0'}">
+    ${data.ayarlar.baslik_goster ? `<h2 class="bolum-baslik">${data.baslik || 'İletişim'}</h2>` : ''}
+    <div class="contact-wrap">
+      <form id="iletisim-form" class="contact-form" onsubmit="return false;">
+        <input type="text" placeholder="Adınız" required>
+        <input type="email" placeholder="E-posta" required>
+        <input type="tel" placeholder="Telefon">
+        <textarea placeholder="Mesajınız" rows="5" required></textarea>
+        <button type="submit" class="btn btn-kirm">Gönder</button>
+      </form>
+      <div class="contact-bilgi">
+        <p><strong>📞 Telefon:</strong> ${data.settings?.telefon || ''}</p>
+        <p><strong>✉️ E-posta:</strong> ${data.settings?.email || ''}</p>
+        <p><strong>📍 Adres:</strong> ${data.settings?.adres || ''}</p>
+      </div>
+    </div>
+  </div>
+</section>

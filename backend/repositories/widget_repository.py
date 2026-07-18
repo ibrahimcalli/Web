@@ -69,3 +69,18 @@ class WidgetRepository(BaseRepository):
         return self._fetchone(
             "SELECT 1 FROM widgets WHERE anahtar=? AND id<>?", (anahtar, exclude_id)
         ) is not None
+
+    def get_by_konum(self, konum: str, aktif_only: bool = True) -> List[dict]:
+        sql = "SELECT * FROM widgets WHERE konum=?"
+        if aktif_only:
+            sql += " AND aktif=1"
+        sql += " ORDER BY sira, id"
+        return rows_to_dicts(self._fetchall(sql, (konum,)))
+
+    def toggle_active(self, wid: int) -> bool:
+        row = self._fetchone("SELECT aktif FROM widgets WHERE id=?", (wid,))
+        if not row:
+            return False
+        yeni = 0 if row["aktif"] else 1
+        self._execute("UPDATE widgets SET aktif=?, guncelleme=datetime('now') WHERE id=?", (yeni, wid))
+        return bool(yeni)
