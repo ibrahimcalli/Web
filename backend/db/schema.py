@@ -189,11 +189,11 @@ CREATE TABLE IF NOT EXISTS forum_topics (
     slug          TEXT UNIQUE,
     icerik        TEXT DEFAULT '',
     kullanici_id  INTEGER,
-    kullanici_ad  TEXT DEFAULT '',                -- misafir yazıyorsa
+    kullanici_ad  TEXT DEFAULT '',
     goruntuleme   INTEGER DEFAULT 0,
-    sabit         INTEGER DEFAULT 0,               -- pin
+    sabit         INTEGER DEFAULT 0,
     kapali        INTEGER DEFAULT 0,
-    durum         TEXT DEFAULT 'yayin',            -- yayin / taslak / moderasyon
+    durum         TEXT DEFAULT 'yayin',
     olusturma     TEXT DEFAULT (datetime('now')),
     guncelleme    TEXT DEFAULT (datetime('now')),
     FOREIGN KEY(category_id) REFERENCES forum_categories(id) ON DELETE CASCADE
@@ -202,12 +202,12 @@ CREATE TABLE IF NOT EXISTS forum_topics (
 CREATE TABLE IF NOT EXISTS forum_posts (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     topic_id      INTEGER NOT NULL,
-    parent_id    INTEGER DEFAULT NULL,             -- alıntı / yanıt
+    parent_id    INTEGER DEFAULT NULL,
     icerik        TEXT NOT NULL,
     kullanici_id  INTEGER,
     kullanici_ad  TEXT DEFAULT '',
     ip            TEXT DEFAULT '',
-    durum         TEXT DEFAULT 'yayin',            -- yayin / moderasyon / silindi
+    durum         TEXT DEFAULT 'yayin',
     olusturma     TEXT DEFAULT (datetime('now')),
     FOREIGN KEY(topic_id)   REFERENCES forum_topics(id) ON DELETE CASCADE,
     FOREIGN KEY(parent_id)  REFERENCES forum_posts(id) ON DELETE CASCADE
@@ -216,6 +216,33 @@ CREATE TABLE IF NOT EXISTS forum_posts (
 CREATE TABLE IF NOT EXISTS forum_settings (
     anahtar   TEXT PRIMARY KEY,
     deger     TEXT
+);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CMS v2.2 — Template Engine
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS templates (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug          TEXT UNIQUE NOT NULL,
+    ad            TEXT NOT NULL,
+    aciklama      TEXT DEFAULT '',
+    klasor        TEXT NOT NULL,
+    aktif         INTEGER DEFAULT 1,
+    varsayilan    INTEGER DEFAULT 0,
+    olusturma     TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS homepage_sections (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    template_id   INTEGER NOT NULL,
+    section_key   TEXT NOT NULL,
+    baslik        TEXT DEFAULT '',
+    aktif         INTEGER DEFAULT 1,
+    sira          INTEGER DEFAULT 0,
+    ayarlar       TEXT DEFAULT '{}',
+    olusturma     TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(template_id) REFERENCES templates(id) ON DELETE CASCADE
 );
 """
 
@@ -276,6 +303,10 @@ def init_db(database: Database | None = None) -> None:
     _seed_widgets(c)
     _seed_theme_settings(c)
     _seed_forum_settings(c)
+
+    # ─── CMS v2.2 — Template Engine seed'ler ──────────────────────────────
+    _seed_templates(c)
+    _seed_homepage_sections(c)
 
     conn.commit()
     conn.close()
@@ -343,3 +374,51 @@ def _seed_forum_settings(c) -> None:
     }
     for k, v in defaults.items():
         c.execute("INSERT OR IGNORE INTO forum_settings VALUES (?,?)", (k, v))
+
+
+def _seed_templates(c) -> None:
+    defaults = [
+        ("estate-modern", "Estate Modern", "Emlak sektörü için modern template", "estate-modern", 1, 1),
+        ("estate-luxury", "Estate Luxury", "Lüks gayrimenkul teması", "estate-luxury", 1, 0),
+        ("travel", "Travel", "Seyahat acentesi teması", "travel", 1, 0),
+        ("hotel", "Hotel", "Otel konaklama teması", "hotel", 1, 0),
+        ("corporate", "Corporate", "Kurumsal şirket teması", "corporate", 1, 0),
+        ("landing", "Landing", "Satış odaklı landing page", "landing", 1, 0),
+        ("minimal", "Minimal", "Sade ve minimal tema", "minimal", 1, 0),
+    ]
+    for slug, ad, aciklama, klasor, aktif, varsayilan in defaults:
+        c.execute(
+            "INSERT OR IGNORE INTO templates (slug,ad,aciklama,klasor,aktif,varsayilan) VALUES (?,?,?,?,?,?)",
+            (slug, ad, aciklama, klasor, aktif, varsayilan),
+        )
+
+
+def _seed_homepage_sections(c) -> None:
+    tid = c.execute("SELECT id FROM templates WHERE varsayilan=1 LIMIT 1").fetchone()
+    if not tid:
+        tid = c.execute("SELECT id FROM templates LIMIT 1").fetchone()
+    if not tid:
+        return
+    tid = tid[0]
+    sections = [
+        ("hero", "Ana Hero", 0, '{"animasyon":"fadeIn","padding":"0","arka_renk":"","container_genislik":"full","baslik_goster":true}'),
+        ("slider", "Slider", 1, '{"animasyon":"slide","padding":"0","arka_renk":"","container_genislik":"full"}'),
+        ("services", "Hizmetler", 2, '{"animasyon":"fadeUp","padding":"80px 0","arka_renk":"#f8f5f0","container_genislik":"boxed"}'),
+        ("portfolio", "Portföy", 3, '{"animasyon":"fadeUp","padding":"80px 0","arka_renk":"","container_genislik":"boxed","baslik_goster":true}'),
+        ("blog", "Blog", 4, '{"animasyon":"fadeUp","padding":"80px 0","arka_renk":"#f8f5f0","container_genislik":"boxed","baslik_goster":true}'),
+        ("gallery", "Galeri", 5, '{"animasyon":"fadeIn","padding":"80px 0","arka_renk":"","container_genislik":"boxed","baslik_goster":true}'),
+        ("testimonials", "Referanslar", 6, '{"animasyon":"fadeUp","padding":"80px 0","arka_renk":"#2d2016","container_genislik":"boxed","baslik_goster":true}'),
+        ("forum", "Forum", 7, '{"animasyon":"fadeUp","padding":"80px 0","arka_renk":"","container_genislik":"boxed","baslik_goster":true}'),
+        ("contact", "İletişim", 8, '{"animasyon":"fadeIn","padding":"80px 0","arka_renk":"#f8f5f0","container_genislik":"boxed","baslik_goster":true}'),
+        ("footer", "Footer", 9, '{"animasyon":"none","padding":"40px 0","arka_renk":"#2d2016","container_genislik":"full"}'),
+    ]
+    for sk, baslik, sira, ayarlar in sections:
+        exists = c.execute(
+            "SELECT 1 FROM homepage_sections WHERE template_id=? AND section_key=?", (tid, sk)
+        ).fetchone()
+        if not exists:
+            c.execute(
+                "INSERT INTO homepage_sections (template_id,section_key,baslik,aktif,sira,ayarlar) "
+                "VALUES (?,?,?,1,?,?)",
+                (tid, sk, baslik, sira, ayarlar),
+            )

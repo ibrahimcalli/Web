@@ -23,6 +23,9 @@ from backend.repositories.forum_repository import (
     ForumCategoryRepository, ForumTopicRepository,
     ForumPostRepository, ForumSettingRepository,
 )
+from backend.repositories.template_repository import (
+    HomepageSectionRepository, TemplateRepository,
+)
 from backend.services.auth_service import AuthService
 from backend.services.kullanici_service import KullaniciService
 from backend.services.portfoy_service import PortfoyService
@@ -32,6 +35,7 @@ from backend.services.page_service import PageService
 from backend.services.widget_service import WidgetService
 from backend.services.theme_service import ThemeService
 from backend.services.forum_service import ForumService
+from backend.services.template_service import HomepageService, TemplateService
 
 security = HTTPBearer(auto_error=False)
 
@@ -176,6 +180,28 @@ def get_forum_service(
     ayarlar: ForumSettingRepository = Depends(get_forum_setting_repository),
 ) -> ForumService:
     return ForumService(kategoriler, konular, yanitlar, ayarlar)
+
+
+def get_template_repository() -> TemplateRepository:
+    return TemplateRepository(db)
+
+
+def get_homepage_section_repository() -> HomepageSectionRepository:
+    return HomepageSectionRepository(db)
+
+
+def get_template_service(
+    templates: TemplateRepository = Depends(get_template_repository),
+    sections: HomepageSectionRepository = Depends(get_homepage_section_repository),
+) -> TemplateService:
+    return TemplateService(templates, sections)
+
+
+def get_homepage_service(
+    templates: TemplateRepository = Depends(get_template_repository),
+    sections: HomepageSectionRepository = Depends(get_homepage_section_repository),
+) -> HomepageService:
+    return HomepageService(templates, sections)
 
 
 # ─── Auth Dependencies ────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ from backend.services.page_service import PageService
 from backend.services.widget_service import WidgetService
 from backend.services.theme_service import ThemeService
 from backend.services.forum_service import ForumService
+from backend.services.template_service import TemplateService, HomepageService
 
 __all__ = [
     "AuthService",
@@ -22,4 +23,6 @@ __all__ = [
     "WidgetService",
     "ThemeService",
     "ForumService",
+    "TemplateService",
+    "HomepageService",
 ]

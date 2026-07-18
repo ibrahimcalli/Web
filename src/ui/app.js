@@ -900,7 +900,7 @@ async function resimSil(url, pid) {
 // ── Admin Sayfaları ───────────────────────────────────────────────────────────
 function adminSayfa(sayfa) {
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('aktif'));
-  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12 };
+  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12, sablonlar:13 };
   const items = document.querySelectorAll('.sidebar-item');
   if (items[harita[sayfa]]) items[harita[sayfa]].classList.add('aktif');
   const ic = document.getElementById('admin-ic');
@@ -924,6 +924,7 @@ function adminSayfa(sayfa) {
   else if (sayfa === 'sayfalar') adminSayfalar();
   else if (sayfa === 'widgetler') adminWidgetler();
   else if (sayfa === 'tema') adminTema();
+  else if (sayfa === 'sablonlar') adminSablonlar();
 }
 
 async function adminPortfoyler() {
@@ -3407,11 +3408,115 @@ window.temaDuzenle = async function(anahtar, deger) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
+// ── Şablonlar ─────────────────────────────────────────────────────────────────
+
+async function adminSablonlar() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const [templates, bolumler] = await Promise.all([
+    api.request('/api/admin/templates'),
+    api.request('/api/template/homepage'),
+  ]);
+  let html = '<div class="admin-baslik">Şablonlar <span style="font-size:.8rem;font-weight:400;color:var(--gri-metin)">— Anasayfa Bölüm Yönetimi</span></div>';
+
+  // Aktif şablon
+  const aktif = templates?.find(t => t.varsayilan);
+  html += `<div style="background:var(--kumtasi-l);padding:1rem;border-radius:12px;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">`;
+  html += `<div><strong>Aktif Şablon:</strong> ${esc(aktif?.ad || '—')} <code style="margin-left:8px;font-size:.8em">${esc(aktif?.klasor || '')}</code></div>`;
+  html += `<div style="display:flex;gap:8px">`;
+  if (templates) templates.forEach(t => {
+    if (!t.varsayilan) {
+      html += `<button class="btn btn-cik" onclick="sablonAktiflestir(${t.id})" style="font-size:.8rem">${esc(t.ad)}</button>`;
+    }
+  });
+  html += `</div></div>`;
+
+  // Bölüm listesi
+  if (bolumler && bolumler.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>#</th><th>Bölüm</th><th>Başlık</th><th>Durum</th><th>Animasyon</th><th>Padding</th><th></th></tr></thead><tbody>';
+    bolumler.forEach((b, i) => {
+      const a = b.ayarlar || {};
+      html += `<tr>
+        <td>${b.sira}</td>
+        <td><code>${esc(b.section_key)}</code></td>
+        <td>${esc(b.baslik || '')}</td>
+        <td>✅</td>
+        <td style="font-size:.8em">${esc(a.animasyon || '—')}</td>
+        <td style="font-size:.8em">${esc(a.padding || '—')}</td>
+        <td><button class="btn btn-cik" onclick="sablonBolumDuzenle(${b.id})">⚙️</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+
+    // Sıralama kontrolleri
+    html += `<div style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap">`;
+    bolumler.forEach((b, i) => {
+      html += `<div style="background:var(--kumtasi);padding:6px 12px;border-radius:8px;font-size:.85rem;display:flex;align-items:center;gap:6px">
+        <span>${i + 1}</span>
+        <code style="font-size:.75em">${esc(b.section_key)}</code>
+        ${i > 0 ? `<button class="btn btn-gri" onclick="sablonBolumTasi(${b.id},${bolumler[i-1].id})" style="padding:2px 8px;font-size:.7rem">↑</button>` : ''}
+        ${i < bolumler.length - 1 ? `<button class="btn btn-gri" onclick="sablonBolumTasi(${b.id},${bolumler[i+1].id})" style="padding:2px 8px;font-size:.7rem">↓</button>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📐</div><h3>Henüz bölüm yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.sablonAktiflestir = async function(id) {
+  if (!confirm('Bu şablonu aktifleştir?')) return;
+  try {
+    await api.request(`/api/admin/templates/${id}`, { method:'PUT', body:JSON.stringify({varsayilan:true}) });
+    bildirim('Şablon değiştirildi','basari');
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumDuzenle = async function(id) {
+  const yeniAd = prompt('Bölüm başlığı:');
+  if (yeniAd === null) return;
+  const animasyon = prompt('Animasyon (fadeIn/fadeUp/slide/none):', 'fadeIn');
+  const padding = prompt('Padding (örn. 80px 0):', '60px 0');
+  const renk = prompt('Arka plan rengi (boş=varsayılan):', '');
+  const genislik = prompt('Container genişliği (boxed/full):', 'boxed');
+  try {
+    await api.request(`/api/admin/bolumler/${id}`, {
+      method:'PUT',
+      body:JSON.stringify({
+        baslik: yeniAd || '',
+        ayarlar: JSON.stringify({
+          animasyon: animasyon || 'fadeIn',
+          padding: padding || '60px 0',
+          arka_renk: renk || '',
+          container_genislik: genislik || 'boxed',
+          baslik_goster: true,
+        }),
+      }),
+    });
+    bildirim('Bölüm güncellendi','basari');
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumTasi = async function(id1, id2) {
+  try {
+    const r = await api.request('/api/admin/bolumler/sirala', {
+      method:'PUT',
+      body:JSON.stringify({items:[{id:id1,sira:0},{id:id2,sira:1}]}),
+    });
+    bildirim('Sıra değiştirildi','basari');
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
 // ── /CMS Admin ────────────────────────────────────────────────────────────────
 window.adminMenuler = adminMenuler;
 window.adminSayfalar = adminSayfalar;
 window.adminWidgetler = adminWidgetler;
 window.adminTema = adminTema;
+window.adminSablonlar = adminSablonlar;
 
 window.kayitYap = kayitYap;
 window.bannerlariYukle = bannerlariYukle;

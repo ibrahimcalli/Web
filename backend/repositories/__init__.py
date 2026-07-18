@@ -15,6 +15,9 @@ from backend.repositories.forum_repository import (
     ForumCategoryRepository, ForumTopicRepository,
     ForumPostRepository, ForumSettingRepository,
 )
+from backend.repositories.template_repository import (
+    TemplateRepository, HomepageSectionRepository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -34,4 +37,6 @@ __all__ = [
     "ForumTopicRepository",
     "ForumPostRepository",
     "ForumSettingRepository",
+    "TemplateRepository",
+    "HomepageSectionRepository",
 ]

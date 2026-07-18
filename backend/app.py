@@ -24,6 +24,7 @@ from backend.routes import (
     widget_router,
     theme_router,
     forum_router,
+    template_router,
 )
 
 
@@ -93,6 +94,8 @@ def create_app() -> FastAPI:
         app.include_router(theme_router, prefix="/api", tags=["CMS - Tema"])
     if settings.CMS_FORUM_ENABLED:
         app.include_router(forum_router, prefix="/api", tags=["CMS - Forum"])
+    if settings.CMS_TEMPLATE_ENABLED:
+        app.include_router(template_router, prefix="/api", tags=["CMS - Template"])
 
     # ─── Sitemap / robots.txt (production SEO) ────────────────────────────────
     # Mevcut URL'ler: /sitemap.xml, /sitemap-images.xml, /robots.txt
