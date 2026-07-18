@@ -927,6 +927,7 @@ function adminSayfa(sayfa) {
   else if (sayfa === 'sablonlar') adminSablonlar();
   else if (sayfa === 'wizard') adminWizard();
   else if (sayfa === 'marketplace') adminMarketplace();
+  else if (sayfa === 'saas') adminSaaS();
 }
 
 async function adminPortfoyler() {
@@ -3803,6 +3804,255 @@ async function adminPluginToggle(id) {
 
 window.adminMarketplace = adminMarketplace;
 window.adminPluginToggle = adminPluginToggle;
+
+// ── SaaS Yönetimi (FAZ 4) ───────────────────────────────────────────────
+async function adminSaaS() {
+  const ic = document.getElementById('admin-ic');
+  let html = `<div class="admin-baslik">☁️ SaaS Yönetimi</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      <button class="btn btn-kirm" onclick="saasTenant()">🏢 Multi-Tenant</button>
+      <button class="btn btn-kirm" onclick="saasBackup()">💾 Yedekleme</button>
+      <button class="btn btn-kirm" onclick="saasUpdate()">🔄 Güncelleme</button>
+      <button class="btn btn-kirm" onclick="saasApi()">🔌 API Marketplace</button>
+    </div>
+    <div id="saas-ic" style="margin-top:1rem">
+      <p style="color:var(--gri-metin)">Bir modül seçin.</p>
+    </div>`;
+  ic.innerHTML = html;
+}
+
+// ── 4.1 — Multi-Tenant ───────────────────────────────────────────────────
+async function saasTenant() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const list = await api.request('/api/admin/saas/tenant');
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🏢 Multi-Tenant Domainler</h3>
+      <button class="btn btn-kirm" onclick="saasTenantEkle()">+ Yeni Domain</button>
+    </div>`;
+    if (!list || !list.length) {
+      html += '<div class="bos-durum"><p>Henüz domain eklenmemiş.</p></div>';
+    } else {
+      html += '<table class="admin-table"><tr><th>Domain</th><th>Firma</th><th>Lisans</th><th></th></tr>';
+      list.forEach(t => {
+        html += `<tr>
+          <td>${esc(t.domain)}</td>
+          <td>${esc(t.firma_adi)}</td>
+          <td>${esc(t.paket || '-')}</td>
+          <td><button class="btn btn-hat btn-sm" onclick="saasTenantSil(${t.id})">🗑</button></td>
+        </tr>`;
+      });
+      html += '</table>';
+    }
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasTenantEkle() {
+  const domain = prompt('Domain (ör: firma.domain.com):');
+  if (!domain) return;
+  const firma = prompt('Firma adı:');
+  if (!firma) return;
+  try {
+    await api.request('/api/admin/saas/tenant', { method: 'POST', body: JSON.stringify({ domain, firma_adi: firma }) });
+    bildirim('Domain eklendi', 'basari');
+    saasTenant();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasTenantSil(id) {
+  if (!confirm('Emin misiniz?')) return;
+  try {
+    await api.request(`/api/admin/saas/tenant/${id}`, { method: 'DELETE' });
+    bildirim('Silindi', 'basari');
+    saasTenant();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+// ── 4.2 — Yedekleme ─────────────────────────────────────────────────────
+async function saasBackup() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const list = await api.request('/api/admin/saas/backup');
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">💾 Yedeklemeler</h3>
+      <button class="btn btn-kirm" onclick="saasBackupOlustur()">+ Yeni Yedek</button>
+    </div>`;
+    if (!list || !list.length) {
+      html += '<div class="bos-durum"><p>Henüz yedek alınmamış.</p></div>';
+    } else {
+      html += '<table class="admin-table"><tr><th>Dosya</th><th>Boyut</th><th>Tür</th><th>Tarih</th><th></th></tr>';
+      list.forEach(b => {
+        const boyut = b.boyut > 1024 ? (b.boyut / 1024).toFixed(1) + ' KB' : b.boyut + ' B';
+        html += `<tr>
+          <td>${esc(b.dosya_adi)}</td>
+          <td>${boyut}</td>
+          <td>${esc(b.tur)}</td>
+          <td>${(b.olusturma || '').slice(0, 19)}</td>
+          <td>
+            <button class="btn btn-ntr btn-sm" onclick="saasBackupRestore(${b.id})">🔄</button>
+            <button class="btn btn-hat btn-sm" onclick="saasBackupSil(${b.id})">🗑</button>
+          </td>
+        </tr>`;
+      });
+      html += '</table>';
+    }
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasBackupOlustur() {
+  try {
+    const r = await api.request('/api/admin/saas/backup', { method: 'POST' });
+    if (r?.success) bildirim('✅ Yedek alındı: ' + r.dosya_adi, 'basari');
+    else bildirim('Hata: ' + (r?.error || '?'), 'hata');
+    saasBackup();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasBackupRestore(id) {
+  if (!confirm('Yedeği geri yüklemek mevcut veritabanını değiştirir. Emin misiniz?')) return;
+  try {
+    const r = await api.request(`/api/admin/saas/backup/${id}/restore`, { method: 'POST' });
+    if (r?.success) bildirim('✅ Yedek geri yüklendi', 'basari');
+    else bildirim('Hata: ' + (r?.error || '?'), 'hata');
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasBackupSil(id) {
+  if (!confirm('Yedek silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/saas/backup/${id}`, { method: 'DELETE' });
+    bildirim('Silindi', 'basari');
+    saasBackup();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+// ── 4.2 — Güncelleme ─────────────────────────────────────────────────────
+async function saasUpdate() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const r = await api.request('/api/admin/saas/update/durum');
+    const v = r?.versiyon || {};
+    const d = r?.durum || {};
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🔄 Güncelleme</h3>
+      <button class="btn btn-kirm" onclick="saasUpdateYap()">Güncelle</button>
+    </div>
+    <div style="background:var(--krem);border-radius:var(--r-sm);padding:1rem;margin-bottom:1rem">
+      <div><strong>Versiyon:</strong> ${esc(v.current_version || '-')}</div>
+      <div><strong>Branch:</strong> ${esc(v.current_branch || '-')}</div>
+      <div><strong>Commit:</strong> <code>${esc(v.current_hash || '-')}</code></div>
+      <div><strong>Durum:</strong> ${d.clean ? '✅ Temiz' : '⚠️ Değişiklik var'}</div>
+    </div>`;
+    if (v.son_commits && v.son_commits.length) {
+      html += '<div style="font-size:.85rem"><strong>Son 5 commit:</strong><ul>';
+      v.son_commits.forEach(c => { html += `<li><code>${esc(c)}</code></li>`; });
+      html += '</ul></div>';
+    }
+    if (d.degisken_dosyalar && d.degisken_dosyalar.length) {
+      html += '<div style="color:var(--kiremit-k);font-size:.85rem;margin-top:.5rem">Değişen dosyalar:</div>';
+      d.degisken_dosyalar.forEach(f => { html += `<div style="font-size:.8rem">${esc(f)}</div>`; });
+    }
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasUpdateYap() {
+  if (!confirm('Güncelleme yapılsın mı? (git pull)')) return;
+  try {
+    const r = await api.request('/api/admin/saas/update', { method: 'POST' });
+    if (r?.success) bildirim('✅ ' + r.message, 'basari');
+    else bildirim('Hata: ' + (r?.message || '?'), 'hata');
+    saasUpdate();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+// ── 4.3 — API Marketplace ───────────────────────────────────────────────
+async function saasApi() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const [entegrasyonlar, saglayicilar] = await Promise.all([
+      api.request('/api/admin/saas/api'),
+      api.request('/api/admin/saas/api/saglayicilar').catch(() => []),
+    ]);
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🔌 API Marketplace</h3>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">`;
+    (saglayicilar || []).forEach(s => {
+      const ent = (entegrasyonlar || []).find(e => e.saglayici === s.key);
+      const aktif = ent?.aktif || false;
+      const apiKey = ent?.api_key || '';
+      html += `<div class="market-kart" style="position:relative">
+        <div style="font-weight:600;font-size:.95rem">${esc(s.ad)}</div>
+        <div style="font-size:.75rem;color:var(--gri-metin);margin:.25rem 0">${esc(s.key)}</div>
+        <div style="font-size:.8rem;margin:.5rem 0">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${aktif ? '#16a34a' : '#9ca3af'};margin-right:.4rem"></span>
+          ${aktif ? 'Aktif' : 'Pasif'}
+          ${apiKey ? '· 🔑 Var' : '· Anahtar Yok'}
+        </div>
+        <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem">
+          <button class="btn btn-ntr btn-sm" onclick="saasApiDuzenle('${s.key}','${esc(s.ad)}')">✏</button>
+          <button class="btn btn-sm" style="background:${aktif ? '#FEF3C7' : '#D1FAE5'}" onclick="saasApiToggle('${s.key}')">${aktif ? 'Pasif' : 'Aktif'}</button>
+          <button class="btn btn-ntr btn-sm" onclick="saasApiTest('${s.key}')">🔍 Test</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasApiDuzenle(saglayici, ad) {
+  try {
+    const mevcut = await api.request(`/api/admin/saas/api/${saglayici}`);
+    const apiKey = prompt(`${ad} API Key girin:`, mevcut?.api_key || '');
+    if (apiKey === null) return;
+    const apiUrl = prompt(`${ad} API URL:`, mevcut?.api_url || '');
+    if (apiUrl === null) return;
+    await api.request(`/api/admin/saas/api/${saglayici}`, {
+      method: 'POST', body: JSON.stringify({ api_key: apiKey, api_url: apiUrl }),
+    });
+    bildirim(`${ad} güncellendi`, 'basari');
+    saasApi();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasApiToggle(saglayici) {
+  try {
+    await api.request(`/api/admin/saas/api/${saglayici}/toggle`);
+    bildirim('Durum değiştirildi', 'basari');
+    saasApi();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasApiTest(saglayici) {
+  try {
+    const r = await api.request(`/api/admin/saas/api/${saglayici}/test`, { method: 'POST' });
+    if (r?.success) bildirim('✅ ' + r.message, 'basari');
+    else bildirim('❌ ' + (r?.message || 'Test başarısız'), 'hata');
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+window.adminSaaS = adminSaaS;
+window.saasTenant = saasTenant;
+window.saasTenantEkle = saasTenantEkle;
+window.saasTenantSil = saasTenantSil;
+window.saasBackup = saasBackup;
+window.saasBackupOlustur = saasBackupOlustur;
+window.saasBackupRestore = saasBackupRestore;
+window.saasBackupSil = saasBackupSil;
+window.saasUpdate = saasUpdate;
+window.saasUpdateYap = saasUpdateYap;
+window.saasApi = saasApi;
+window.saasApiDuzenle = saasApiDuzenle;
+window.saasApiToggle = saasApiToggle;
+window.saasApiTest = saasApiTest;
 
 // ── Wizard CSS (head'e ekle) ──────────────────────────────────────────────
 (function() {

@@ -292,6 +292,28 @@ CREATE TABLE IF NOT EXISTS multi_tenant_domains (
     olusturma     TEXT DEFAULT (datetime('now')),
     FOREIGN KEY(license_id) REFERENCES licenses(id) ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS backups (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    dosya_adi     TEXT NOT NULL,
+    boyut         INTEGER DEFAULT 0,
+    tur           TEXT DEFAULT 'manuel',   -- manuel / otomatik
+    hedef         TEXT DEFAULT 'local',     -- local / googledrive / dropbox / s3
+    durum         TEXT DEFAULT 'tamam',     -- tamam / hata / isleniyor
+    olusturma     TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS api_integrations (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    saglayici     TEXT UNIQUE NOT NULL,     -- openai, gemini, claude, google_maps, whatsapp, sms, mail, muhasebe, e-imza
+    ad            TEXT NOT NULL,
+    api_key       TEXT DEFAULT '',
+    api_url       TEXT DEFAULT '',
+    aktif         INTEGER DEFAULT 0,
+    ayarlar       TEXT DEFAULT '{}',
+    olusturma     TEXT DEFAULT (datetime('now')),
+    guncelleme    TEXT DEFAULT (datetime('now'))
+);
 """
 
 
@@ -356,6 +378,7 @@ def init_db(database: Database | None = None) -> None:
     _seed_templates(c)
     _seed_homepage_sections(c)
     _seed_plugins(c)
+    _seed_api_integrations(c)
 
     conn.commit()
     conn.close()
@@ -440,6 +463,25 @@ def _seed_plugins(c) -> None:
         c.execute(
             "INSERT OR IGNORE INTO plugins (anahtar,ad,aciklama,versiyon,aktif) VALUES (?,?,?,?,0)",
             (anahtar, ad, aciklama, versiyon),
+        )
+
+
+def _seed_api_integrations(c) -> None:
+    saglayicilar = [
+        ("openai", "OpenAI", "https://api.openai.com/v1"),
+        ("gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1"),
+        ("claude", "Anthropic Claude", "https://api.anthropic.com/v1"),
+        ("google_maps", "Google Maps", "https://maps.googleapis.com/maps/api"),
+        ("whatsapp", "WhatsApp Business API", "https://graph.facebook.com/v18.0"),
+        ("sms", "SMS Servisi", ""),
+        ("mail", "E-Posta Servisi", ""),
+        ("muhasebe", "Muhasebe Entegrasyonu", ""),
+        ("e-imza", "E-İmza", ""),
+    ]
+    for saglayici, ad, api_url in saglayicilar:
+        c.execute(
+            "INSERT OR IGNORE INTO api_integrations (saglayici, ad, api_url, aktif) VALUES (?,?,?,0)",
+            (saglayici, ad, api_url),
         )
 
 

@@ -26,6 +26,7 @@ from backend.routes import (
     forum_router,
     template_router,
     wizard_router,
+    saas_router,
 )
 
 
@@ -99,6 +100,11 @@ def create_app() -> FastAPI:
         app.include_router(template_router, prefix="/api", tags=["CMS - Template"])
     if settings.CMS_WIZARD_ENABLED:
         app.include_router(wizard_router, prefix="/api", tags=["CMS - Wizard"])
+    if settings.CMS_MARKETPLACE_ENABLED:
+        app.include_router(saas_router, prefix="/api", tags=["CMS - SaaS"])
+        # Tenant middleware
+        from backend.core.tenant_middleware import TenantMiddleware
+        app.add_middleware(TenantMiddleware)
 
     # ─── Sitemap / robots.txt (production SEO) ────────────────────────────────
     # Mevcut URL'ler: /sitemap.xml, /sitemap-images.xml, /robots.txt

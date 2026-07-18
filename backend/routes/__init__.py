@@ -18,6 +18,7 @@ from backend.routes.theme_router import router as theme_router
 from backend.routes.forum_router import router as forum_router
 from backend.routes.template_router import router as template_router
 from backend.routes.wizard_router import router as wizard_router
+from backend.routes.saas_router import router as saas_router
 
 # Not: backend/routes/pwa_assets.py ARTIK KULLANILMIYOR
 
@@ -39,4 +40,5 @@ __all__ = [
     "forum_router",
     "template_router",
     "wizard_router",
+    "saas_router",
 ]
