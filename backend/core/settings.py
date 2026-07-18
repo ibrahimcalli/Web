@@ -145,6 +145,16 @@ class Settings:
     LOG_LEVEL: str = _env_str("LOG_LEVEL", "INFO")
     LOG_DIR: Path = Path(_env_str("LOG_DIR", str(BASE_DIR / "logs")))
 
+    # ─── CMS v2.1 — Modüler feature flags (aç/kapat) ───────────────────────
+    # Her modül bağımsız açılıp kapatılabilir. Backend modülü kapatılırsa
+    # router kaydı yapılmaz, tablolar yine de oluşturulur (ileriye dönük).
+    CMS_MENU_ENABLED: bool = _env_bool("CMS_MENU_ENABLED", True)
+    CMS_PAGE_ENABLED: bool = _env_bool("CMS_PAGE_ENABLED", True)
+    CMS_WIDGET_ENABLED: bool = _env_bool("CMS_WIDGET_ENABLED", True)
+    CMS_THEME_ENABLED: bool = _env_bool("CMS_THEME_ENABLED", True)
+    CMS_FORUM_ENABLED: bool = _env_bool("CMS_FORUM_ENABLED", False)  # opsiyonel
+    CMS_DASHBOARD_ENABLED: bool = _env_bool("CMS_DASHBOARD_ENABLED", True)
+
     # ─── Computed / Convenience ─────────────────────────────────────────────
     def is_production(self) -> bool:
         return not self.DEBUG
