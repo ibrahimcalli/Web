@@ -1,0 +1,51 @@
+{
+  "sector": "hotel",
+  "label": "Otel / Konaklama",
+  "templates": ["hotel"],
+  "default_template": "hotel",
+  "color_palettes": [
+    {"name": "Klasik Otel", "colors": {"ana": "#8B4513", "ana_koyu": "#6B3410", "arka": "#FFF8F0", "metin": "#2D2016"}},
+    {"name": "Modern Butik", "colors": {"ana": "#2C3E50", "ana_koyu": "#1A252F", "arka": "#F8F9FA", "metin": "#343A40"}},
+    {"name": "Sahil", "colors": {"ana": "#0EA5E9", "ana_koyu": "#0284C7", "arka": "#F0FDFF", "metin": "#1E293B"}}
+  ],
+  "menus": {
+    "ana-menu": {"lokasyon": "header", "ogeler": [
+      {"baslik": "Ana Sayfa", "hedef_url": "/", "sira": 0},
+      {"baslik": "Odalar", "hedef_tip": "dahili", "hedef_url": "/odalar", "sira": 1},
+      {"baslik": "Restaurant", "hedef_tip": "dahili", "hedef_url": "/restaurant", "sira": 2},
+      {"baslik": "Galeri", "hedef_tip": "dahili", "hedef_url": "/galeri", "sira": 3},
+      {"baslik": "Rezervasyon", "hedef_tip": "dahili", "hedef_url": "/rezervasyon", "sira": 4},
+      {"baslik": "İletişim", "hedef_tip": "dahili", "hedef_url": "/iletisim", "sira": 5}
+    ]}
+  },
+  "pages": [
+    {"baslik": "Ana Sayfa", "slug": "/", "durum": "Yayınla"},
+    {"baslik": "Odalar", "slug": "odalar", "durum": "Yayınla"},
+    {"baslik": "Restaurant", "slug": "restaurant", "durum": "Yayınla"},
+    {"baslik": "Galeri", "slug": "galeri", "durum": "Yayınla"},
+    {"baslik": "Rezervasyon", "slug": "rezervasyon", "durum": "Yayınla"},
+    {"baslik": "İletişim", "slug": "iletisim", "durum": "Yayınla"}
+  ],
+  "widgets": [
+    {"anahtar": "whatsapp", "aktif": true},
+    {"anahtar": "google_maps", "aktif": true},
+    {"anahtar": "instagram", "aktif": true},
+    {"anahtar": "telefon", "aktif": true}
+  ],
+  "forum_categories": ["Misafir Yorumları", "Öneriler", "Sık Sorulan Sorular"],
+  "seo": {
+    "site_adi": "Otel Adı",
+    "seo_baslik": "Otel | Konforlu Konaklama",
+    "seo_aciklama": "Lüks odalar, restoran ve özel hizmetlerle unutulmaz bir konaklama deneyimi.",
+    "seo_anahtar_kelimeler": "otel,konaklama,rezervasyon,tatil"
+  },
+  "demo": {
+    "banner": true,
+    "blog": true,
+    "gallery": true,
+    "portfolio": false,
+    "forum": true,
+    "testimonials": true,
+    "services": true
+  }
+}

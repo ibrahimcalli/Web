@@ -1,0 +1,48 @@
+{
+  "sector": "construction",
+  "label": "İnşaat",
+  "templates": ["corporate"],
+  "default_template": "corporate",
+  "color_palettes": [
+    {"name": "Endüstriyel", "colors": {"ana": "#374151", "ana_koyu": "#1F2937", "arka": "#F3F4F6", "metin": "#111827"}},
+    {"name": "Turuncu Güç", "colors": {"ana": "#EA580C", "ana_koyu": "#C2410C", "arka": "#FFF7ED", "metin": "#1C1917"}},
+    {"name": "Mavi Yapı", "colors": {"ana": "#2563EB", "ana_koyu": "#1D4ED8", "arka": "#EFF6FF", "metin": "#1E3A5F"}}
+  ],
+  "menus": {
+    "ana-menu": {"lokasyon": "header", "ogeler": [
+      {"baslik": "Ana Sayfa", "hedef_url": "/", "sira": 0},
+      {"baslik": "Projeler", "hedef_tip": "dahili", "hedef_url": "/projeler", "sira": 1},
+      {"baslik": "Hizmetler", "hedef_tip": "dahili", "hedef_url": "/hizmetler", "sira": 2},
+      {"baslik": "Referanslar", "hedef_tip": "dahili", "hedef_url": "/referanslar", "sira": 3},
+      {"baslik": "İletişim", "hedef_tip": "dahili", "hedef_url": "/iletisim", "sira": 4}
+    ]}
+  },
+  "pages": [
+    {"baslik": "Ana Sayfa", "slug": "/", "durum": "Yayınla"},
+    {"baslik": "Projeler", "slug": "projeler", "durum": "Yayınla"},
+    {"baslik": "Hizmetler", "slug": "hizmetler", "durum": "Yayınla"},
+    {"baslik": "Referanslar", "slug": "referanslar", "durum": "Yayınla"},
+    {"baslik": "İletişim", "slug": "iletisim", "durum": "Yayınla"}
+  ],
+  "widgets": [
+    {"anahtar": "whatsapp", "aktif": true},
+    {"anahtar": "telefon", "aktif": true},
+    {"anahtar": "google_maps", "aktif": true}
+  ],
+  "forum_categories": [],
+  "seo": {
+    "site_adi": "İnşaat Firması",
+    "seo_baslik": "İnşaat | Kaliteli Yapı Çözümleri",
+    "seo_aciklama": "İnşaat, tadilat, proje yönetimi ve gayrimenkul geliştirme hizmetleri.",
+    "seo_anahtar_kelimeler": "inşaat,proje,tadilat,yapı,müteahhit"
+  },
+  "demo": {
+    "banner": true,
+    "blog": true,
+    "gallery": true,
+    "portfolio": true,
+    "forum": false,
+    "testimonials": true,
+    "services": true
+  }
+}

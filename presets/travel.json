@@ -1,0 +1,46 @@
+{
+  "sector": "travel",
+  "label": "Seyahat",
+  "templates": ["travel"],
+  "default_template": "travel",
+  "color_palettes": [
+    {"name": "Okyanus", "colors": {"ana": "#0077B6", "ana_koyu": "#005F8A", "arka": "#F0F8FF", "metin": "#1A1A2E"}},
+    {"name": "Doğa", "colors": {"ana": "#2D6A4F", "ana_koyu": "#1B4332", "arka": "#F5FBF5", "metin": "#2D2016"}},
+    {"name": "Gün Batımı", "colors": {"ana": "#E07A5F", "ana_koyu": "#C25D42", "arka": "#FFF5F0", "metin": "#3D405B"}}
+  ],
+  "menus": {
+    "ana-menu": {"lokasyon": "header", "ogeler": [
+      {"baslik": "Ana Sayfa", "hedef_url": "/", "sira": 0},
+      {"baslik": "Turlar", "hedef_tip": "dahili", "hedef_url": "/turlar", "sira": 1},
+      {"baslik": "Oteller", "hedef_tip": "dahili", "hedef_url": "/oteller", "sira": 2},
+      {"baslik": "Blog", "hedef_tip": "dahili", "hedef_url": "/blog", "sira": 3},
+      {"baslik": "İletişim", "hedef_tip": "dahili", "hedef_url": "/iletisim", "sira": 4}
+    ]}
+  },
+  "pages": [
+    {"baslik": "Ana Sayfa", "slug": "/", "icerik": "<p>Hoş geldiniz</p>", "durum": "Yayınla"},
+    {"baslik": "Turlar", "slug": "turlar", "icerik": "<h2>Turlarımız</h2>", "durum": "Yayınla"},
+    {"baslik": "İletişim", "slug": "iletisim", "icerik": "<h2>İletişim</h2>", "durum": "Yayınla"}
+  ],
+  "widgets": [
+    {"anahtar": "whatsapp", "aktif": true},
+    {"anahtar": "instagram", "aktif": true},
+    {"anahtar": "telefon", "aktif": true}
+  ],
+  "forum_categories": ["Tur Paylaşımı", "Seyahat İpuçları", "Vize", "Konaklama"],
+  "seo": {
+    "site_adi": "Seyahat Rehberi",
+    "seo_baslik": "Seyahat | Unutulmaz Tatil Deneyimleri",
+    "seo_aciklama": "Özel turlar, otel rezervasyonları ve seyahat danışmanlığı.",
+    "seo_anahtar_kelimeler": "seyahat,tur,otel,tatil,gezi"
+  },
+  "demo": {
+    "banner": true,
+    "blog": true,
+    "gallery": true,
+    "portfolio": false,
+    "forum": false,
+    "testimonials": true,
+    "services": true
+  }
+}

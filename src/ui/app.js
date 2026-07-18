@@ -900,7 +900,7 @@ async function resimSil(url, pid) {
 // ── Admin Sayfaları ───────────────────────────────────────────────────────────
 function adminSayfa(sayfa) {
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('aktif'));
-  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12, sablonlar:13 };
+  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12, sablonlar:13, wizard:14 };
   const items = document.querySelectorAll('.sidebar-item');
   if (items[harita[sayfa]]) items[harita[sayfa]].classList.add('aktif');
   const ic = document.getElementById('admin-ic');
@@ -925,6 +925,8 @@ function adminSayfa(sayfa) {
   else if (sayfa === 'widgetler') adminWidgetler();
   else if (sayfa === 'tema') adminTema();
   else if (sayfa === 'sablonlar') adminSablonlar();
+  else if (sayfa === 'wizard') adminWizard();
+  else if (sayfa === 'marketplace') adminMarketplace();
 }
 
 async function adminPortfoyler() {
@@ -3510,6 +3512,329 @@ window.sablonBolumTasi = async function(id1, id2) {
     adminSablonlar();
   } catch(e) { bildirim(e.message,'hata'); }
 };
+
+// ── /CMS Admin ────────────────────────────────────────────────────────────────
+// ── Site Sihirbazı (FAZ 3) ─────────────────────────────────────────────────
+let wizardState = { wizard_id: null, adim: 1, veri: {} };
+
+async function adminWizard() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Site Oluşturma Sihirbazı</div>
+    <div class="wizard-step"><div class="wizard-secili">Adım 1/10</div>
+    <div class="wizard-adimlar"><span class="wizard-adim aktif">1</span><span class="wizard-adim">2</span><span class="wizard-adim">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
+    <div style="background:var(--krem);border-radius:var(--r-sm);padding:1.5rem;max-width:500px">
+    <label>Firma Adı <input id="wf-ad" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="Firma Adı"></label>
+    <label>E-Posta <input id="wf-email" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="info@firma.com"></label>
+    <label>Telefon <input id="wf-tel" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="+90 555 000 00 00"></label>
+    <button class="btn btn-kirm" onclick="wizardAdim1()">Devam →</button></div>`;
+}
+
+async function wizardAdim1() {
+  const ad = document.getElementById('wf-ad')?.value?.trim();
+  const email = document.getElementById('wf-email')?.value?.trim();
+  const tel = document.getElementById('wf-tel')?.value?.trim();
+  if (!ad) { bildirim('Firma adı gerekli', 'hata'); return; }
+
+  try {
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST' });
+    if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
+    wizardState.wizard_id = r.wizard_id;
+    wizardState.adim = 1;
+    wizardState.veri = { firma_adi: ad, firma_email: email, firma_tel: tel };
+    await api.request(`/api/admin/wizard/${r.wizard_id}/adim/1`, {
+      method: 'POST', body: JSON.stringify(wizardState.veri),
+    });
+    // Step 2: Sektör seç
+    const sektorler = await api.request('/api/wizard/sektorler');
+    const ic = document.getElementById('admin-ic');
+    let html = `<div class="admin-baslik">✨ Adım 2/10 — Sektör Seçin</div>
+      <div class="wizard-step"><div class="wizard-secili">${esc(ad)}</div>
+      <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim aktif">2</span><span class="wizard-adim">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
+      <div class="wizard-grid">`;
+    (sektorler || []).forEach(s => {
+      html += `<div class="wizard-kart" onclick="wizardAdim2('${s.sector}')">
+        <div class="wizard-ikon">${sektorIkon(s.sector)}</div>
+        <div class="wizard-label">${esc(s.label)}</div>
+        <div class="wizard-acik">${s.templates.length} template</div>
+      </div>`;
+    });
+    html += '</div>';
+    ic.innerHTML = html;
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+function sektorIkon(sector) {
+  const ikonlar = { estate:'🏠', travel:'✈️', hotel:'🏨', restaurant:'🍽️', corporate:'🏢', clinic:'🏥', landing:'🚀', construction:'🏗️' };
+  return ikonlar[sector] || '📦';
+}
+
+async function wizardBaslat(sector) {
+  try {
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST' });
+    if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
+    wizardState.wizard_id = r.wizard_id;
+    wizardState.adim = 1;
+    wizardState.veri = {};
+    await api.request(`/api/admin/wizard/${r.wizard_id}/adim/1`, {
+      method: 'POST',
+      body: JSON.stringify({ sector }),
+    });
+    await wizardAdim2(sector);
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function wizardAdim2(sector) {
+  if (!wizardState.wizard_id) return;
+  wizardState.veri.sector = sector;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/adim/2`, {
+    method: 'POST', body: JSON.stringify({ sector }),
+  });
+  const ic = document.getElementById('admin-ic');
+  const detay = await api.request(`/api/wizard/sektor/${sector}`);
+  let tip = '';
+  const isim = { estate:'Emlak', travel:'Seyahat', hotel:'Otel', restaurant:'Restaurant', corporate:'Kurumsal', clinic:'Klinik', landing:'Landing', construction:'İnşaat' };
+  tip = isim[sector] || sector;
+
+  const templates = detay?.templates || [];
+  const tplLabels = { 'estate-modern':'Estate Modern', 'estate-luxury':'Estate Luxury', 'travel':'Travel', 'hotel':'Hotel', 'corporate':'Corporate', 'landing':'Landing', 'minimal':'Minimal' };
+  let html = `<div class="admin-baslik">✨ Adım 3/10 — Template Seçin</div>
+    <div class="wizard-step"><div class="wizard-secili">${tip}</div>
+    <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim">2</span><span class="wizard-adim aktif">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
+    <div class="wizard-grid">`;
+  templates.forEach(t => {
+    const label = tplLabels[t] || t;
+    html += `<div class="wizard-kart" onclick="wizardAdim3('${t}')">
+      <div class="wizard-label">${esc(label)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  ic.innerHTML = html;
+}
+
+async function wizardAdim3(template) {
+  if (!wizardState.wizard_id) return;
+  wizardState.veri.template = template;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/adim/3`, {
+    method: 'POST', body: JSON.stringify({ template }),
+  });
+  const ic = document.getElementById('admin-ic');
+  const sector = wizardState.veri.sector || 'corporate';
+  const palettes = await api.request(`/api/wizard/sektor/${sector}/palettes`);
+  let html = `<div class="admin-baslik">✨ Adım 4/10 — Renk Paleti</div>
+    <div class="wizard-step"><div class="wizard-secili">${esc(template)}</div>
+    <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim">2</span><span class="wizard-adim">3</span><span class="wizard-adim aktif">4</span><span>…</span><span class="wizard-adim">10</span></div></div>
+    <div class="wizard-palettes">`;
+  (palettes || []).forEach(p => {
+    const c = p.colors || {};
+    const escJson = esc(JSON.stringify(p));
+    html += `<div class="wizard-palet-kart" onclick="wizardAdim4('${escJson}')">
+      <div class="wizard-palet-renkler">
+        <span style="background:${c.ana || '#ccc'}"></span>
+        <span style="background:${c.arka || '#fff'}"></span>
+        <span style="background:${c.metin || '#333'}"></span>
+      </div>
+      <div class="wizard-palet-ad">${esc(p.name)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  ic.innerHTML = html;
+}
+
+async function wizardAdim4(paletteArg) {
+  if (!wizardState.wizard_id) return;
+  let palette;
+  try { palette = typeof paletteArg === 'string' ? JSON.parse(paletteArg) : paletteArg; }
+  catch { palette = {}; }
+  wizardState.veri.renk_paleti = palette;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/renk`, {
+    method: 'POST', body: JSON.stringify({ palette }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 5/10 — Menüler</div>
+    <p>Menüler otomatik oluşturulsun mu?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim5(true)">Evet, Oluştur</button>
+    <button class="btn btn-cik" onclick="wizardAdim5(false)">Sonra Ben Eklerim</button>`;
+}
+
+async function wizardAdim5(auto) {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/menuler`, {
+    method: 'POST', body: JSON.stringify({ auto }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 6/10 — Sayfalar</div>
+    <p>Sayfalar otomatik oluşturulsun mu?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim6(true)">Evet, Oluştur</button>
+    <button class="btn btn-cik" onclick="wizardAdim6(false)">Sonra Ben Eklerim</button>`;
+}
+
+async function wizardAdim6(auto) {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/sayfalar`, {
+    method: 'POST', body: JSON.stringify({ auto }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 7/10 — Widget'lar</div>
+    <p>Hangi widget'lar aktif olsun?</p>
+    <label><input type="checkbox" id="ww-wh" checked> WhatsApp</label><br>
+    <label><input type="checkbox" id="ww-gm" checked> Google Maps</label><br>
+    <label><input type="checkbox" id="ww-tel" checked> Telefon</label><br>
+    <label><input type="checkbox" id="ww-ig"> Instagram</label><br>
+    <label><input type="checkbox" id="ww-cb"> Çerez Bildirimi</label><br>
+    <button class="btn btn-kirm" onclick="wizardAdim7()" style="margin-top:1rem">Devam</button>`;
+}
+
+async function wizardAdim7() {
+  if (!wizardState.wizard_id) return;
+  const list = [];
+  ['ww-wh','ww-gm','ww-tel','ww-ig','ww-cb'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.checked) list.push(id.replace('ww-', ''));
+  });
+  const map = { wh:'whatsapp', gm:'google_maps', tel:'telefon', ig:'instagram', cb:'cookie_banner' };
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/widgetlar`, {
+    method: 'POST',
+    body: JSON.stringify({ widget_list: list.map(k => map[k] || k) }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 8/10 — Forum</div>
+    <p>Forum kullanmak istiyor musunuz?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim8(true)">Evet</button>
+    <button class="btn btn-cik" onclick="wizardAdim8(false)">Hayır</button>`;
+}
+
+async function wizardAdim8(aktif) {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/forum`, {
+    method: 'POST', body: JSON.stringify({ aktif }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 9/10 — SEO</div>
+    <p>SEO ayarları otomatik oluşturulsun mu?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim9()">Evet, Oluştur</button>`;
+}
+
+async function wizardAdim9() {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/seo`, {
+    method: 'POST', body: JSON.stringify({ seo: {} }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 10/10 — Demo İçerik</div>
+    <p>Hangi demo içerikler oluşturulsun?</p>
+    <label><input type="checkbox" id="dm-banner" checked> Banner</label><br>
+    <label><input type="checkbox" id="dm-blog" checked> Blog Yazıları</label><br>
+    <label><input type="checkbox" id="dm-galeri" checked> Galeri</label><br>
+    <label><input type="checkbox" id="dm-portfoy" checked> Portföy</label><br>
+    <label><input type="checkbox" id="dm-forum"> Forum</label><br>
+    <label><input type="checkbox" id="dm-referans" checked> Referanslar</label><br>
+    <button class="btn btn-kirm" onclick="wizardAdim10()" style="margin-top:1rem">Devam</button>`;
+}
+
+async function wizardAdim10() {
+  if (!wizardState.wizard_id) return;
+  const demo = {};
+  ['banner','blog','gallery','portfolio','forum','testimonials','services'].forEach(k => {
+    const el = document.getElementById('dm-' + (k === 'testimonials' ? 'referans' : k === 'portfolio' ? 'portfoy' : k === 'gallery' ? 'galeri' : k));
+    if (el) demo[k] = el.checked;
+  });
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/demo`, {
+    method: 'POST', body: JSON.stringify({ demo }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Tüm Adımlar Tamamlandı</div>
+    <p style="margin:1rem 0">Siteyi oluşturmak için butona tıklayın.</p>
+    <button class="btn btn-kirm" onclick="wizardSon()" style="font-size:1.2rem;padding:1rem 2rem">🚀 Siteyi Oluştur</button>`;
+}
+
+async function wizardSon() {
+  if (!wizardState.wizard_id) return;
+  try {
+    const r = await api.request(`/api/admin/wizard/${wizardState.wizard_id}/olustur`, { method: 'POST' });
+    if (r?.success) {
+      bildirim('✅ Site başarıyla oluşturuldu!', 'basari');
+      adminSayfa('sablonlar');
+    } else {
+      bildirim('Hata: ' + (r?.message || 'Bilinmeyen hata'), 'hata');
+    }
+  } catch (e) {
+    bildirim(e.message, 'hata');
+  }
+}
+
+window.adminWizard = adminWizard;
+window.wizardAdim2 = wizardAdim2;
+window.wizardAdim3 = wizardAdim3;
+window.wizardAdim4 = wizardAdim4;
+window.wizardAdim5 = wizardAdim5;
+window.wizardAdim6 = wizardAdim6;
+window.wizardAdim7 = wizardAdim7;
+window.wizardAdim8 = wizardAdim8;
+window.wizardAdim9 = wizardAdim9;
+window.wizardAdim10 = wizardAdim10;
+window.wizardSon = wizardSon;
+window.sektorIkon = sektorIkon;
+
+// ── Marketplace (FAZ 4) ────────────────────────────────────────────────────
+async function adminMarketplace() {
+  const ic = document.getElementById('admin-ic');
+  let html = '<div class="admin-baslik">🏪 Marketplace</div><div class="market-grid">';
+
+  const pluginler = await api.request('/api/admin/plugins').catch(() => []);
+  if (pluginler && pluginler.length) {
+    pluginler.forEach(p => {
+      html += `<div class="market-kart">
+        <div class="market-baslik">${esc(p.ad)}</div>
+        <div class="market-acik">${esc(p.aciklama || '')}</div>
+        <div class="market-vers">v${esc(p.versiyon || '1.0.0')}</div>
+        <button class="btn btn-${p.aktif ? 'kirm' : 'cik'}" onclick="adminPluginToggle(${p.id})" style="margin-top:.5rem;font-size:.8rem">${p.aktif ? 'Devre Dışı Bırak' : 'Aktif Et'}</button>
+      </div>`;
+    });
+  }
+  html += '</div>';
+  ic.innerHTML = html;
+}
+
+async function adminPluginToggle(id) {
+  await api.request(`/api/admin/plugins/${id}/toggle`);
+  bildirim('Plugin durumu değiştirildi', 'basari');
+  adminMarketplace();
+}
+
+window.adminMarketplace = adminMarketplace;
+window.adminPluginToggle = adminPluginToggle;
+
+// ── Wizard CSS (head'e ekle) ──────────────────────────────────────────────
+(function() {
+  if (document.getElementById('wizard-css')) return;
+  const s = document.createElement('style');
+  s.id = 'wizard-css';
+  s.textContent = `
+.wizard-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-top:1.5rem; }
+.wizard-kart { background:var(--krem); border-radius:var(--r-sm); padding:1.5rem; cursor:pointer; transition:.2s; text-align:center; }
+.wizard-kart:hover { transform:translateY(-3px); box-shadow:var(--golge); }
+.wizard-ikon { font-size:2.5rem; margin-bottom:.5rem; }
+.wizard-label { font-weight:600; font-size:.95rem; }
+.wizard-acik { color:var(--gri-metin); font-size:.8rem; }
+.wizard-step { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+.wizard-secili { background:var(--kiremit); color:#fff; padding:.3rem 1rem; border-radius:999px; font-size:.85rem; }
+.wizard-adimlar { display:flex; gap:.5rem; align-items:center; font-size:.85rem; }
+.wizard-adim { width:28px; height:28px; border-radius:50%; background:var(--gri-acik); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:600; }
+.wizard-adim.aktif { background:var(--kiremit); color:#fff; }
+.wizard-palettes { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; margin-top:1rem; }
+.wizard-palet-kart { background:var(--krem); border-radius:var(--r-sm); padding:1rem; cursor:pointer; text-align:center; transition:.2s; }
+.wizard-palet-kart:hover { transform:translateY(-2px); box-shadow:var(--golge); }
+.wizard-palet-renkler { display:flex; gap:6px; justify-content:center; margin-bottom:.5rem; }
+.wizard-palet-renkler span { width:32px; height:32px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+.wizard-palet-ad { font-size:.85rem; font-weight:600; }
+.market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-top:1rem; }
+.market-kart { background:var(--krem); border-radius:var(--r-sm); padding:1.2rem; }
+.market-baslik { font-weight:600; font-size:.95rem; }
+.market-acik { color:var(--gri-metin); font-size:.8rem; margin:.3rem 0; }
+.market-vers { font-size:.75rem; color:var(--gri-metin); }
+`;
+  document.head.appendChild(s);
+})();
 
 // ── /CMS Admin ────────────────────────────────────────────────────────────────
 window.adminMenuler = adminMenuler;

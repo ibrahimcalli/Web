@@ -244,6 +244,54 @@ CREATE TABLE IF NOT EXISTS homepage_sections (
     olusturma     TEXT DEFAULT (datetime('now')),
     FOREIGN KEY(template_id) REFERENCES templates(id) ON DELETE CASCADE
 );
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CMS v2.3 — Site Wizard (FAZ 3)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS wizard_states (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    adim          INTEGER DEFAULT 1,
+    tamamlandi    INTEGER DEFAULT 0,
+    veri          TEXT DEFAULT '{}',    -- tüm adım verileri JSON
+    olusturma     TEXT DEFAULT (datetime('now')),
+    guncelleme    TEXT DEFAULT (datetime('now'))
+);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CMS v2.4 — Marketplace + SaaS (FAZ 4)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS licenses (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    firma_adi     TEXT NOT NULL,
+    domain        TEXT UNIQUE NOT NULL,
+    paket         TEXT DEFAULT 'free',  -- free/starter/professional/enterprise
+    baslangic     TEXT DEFAULT (datetime('now')),
+    bitis         TEXT,
+    aktif         INTEGER DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS plugins (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    anahtar       TEXT UNIQUE NOT NULL,
+    ad            TEXT NOT NULL,
+    aciklama      TEXT DEFAULT '',
+    versiyon      TEXT DEFAULT '1.0.0',
+    aktif         INTEGER DEFAULT 0,
+    ayarlar       TEXT DEFAULT '{}',
+    olusturma     TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS multi_tenant_domains (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    domain        TEXT UNIQUE NOT NULL,
+    firma_adi     TEXT NOT NULL,
+    license_id    INTEGER,
+    aktif         INTEGER DEFAULT 1,
+    olusturma     TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(license_id) REFERENCES licenses(id) ON DELETE SET NULL
+);
 """
 
 
@@ -307,6 +355,7 @@ def init_db(database: Database | None = None) -> None:
     # ─── CMS v2.2 — Template Engine seed'ler ──────────────────────────────
     _seed_templates(c)
     _seed_homepage_sections(c)
+    _seed_plugins(c)
 
     conn.commit()
     conn.close()
@@ -374,6 +423,24 @@ def _seed_forum_settings(c) -> None:
     }
     for k, v in defaults.items():
         c.execute("INSERT OR IGNORE INTO forum_settings VALUES (?,?)", (k, v))
+
+
+def _seed_plugins(c) -> None:
+    defaults = [
+        ("forum", "Forum Sistemi", "Kullanıcı forum modülü", "1.0.0"),
+        ("booking", "Rezervasyon", "Online rezervasyon modülü", "1.0.0"),
+        ("crm", "CRM", "Müşteri takip sistemi", "1.0.0"),
+        ("payment", "Ödeme", "Online ödeme modülü", "1.0.0"),
+        ("livechat", "Canlı Sohbet", "Gerçek zamanlı canlı destek", "1.0.0"),
+        ("analytics", "Analytics", "Ziyaretçi istatistikleri", "1.0.0"),
+        ("whatsapp_api", "WhatsApp API", "WhatsApp mesajlaşma entegrasyonu", "1.0.0"),
+        ("email_marketing", "E-Posta Pazarlama", "Toplu e-posta gönderimi", "1.0.0"),
+    ]
+    for anahtar, ad, aciklama, versiyon in defaults:
+        c.execute(
+            "INSERT OR IGNORE INTO plugins (anahtar,ad,aciklama,versiyon,aktif) VALUES (?,?,?,?,0)",
+            (anahtar, ad, aciklama, versiyon),
+        )
 
 
 def _seed_templates(c) -> None:

@@ -155,6 +155,9 @@ class Settings:
     CMS_FORUM_ENABLED: bool = _env_bool("CMS_FORUM_ENABLED", False)  # opsiyonel
     CMS_DASHBOARD_ENABLED: bool = _env_bool("CMS_DASHBOARD_ENABLED", True)
     CMS_TEMPLATE_ENABLED: bool = _env_bool("CMS_TEMPLATE_ENABLED", True)
+    CMS_WIZARD_ENABLED: bool = _env_bool("CMS_WIZARD_ENABLED", True)
+    CMS_MARKETPLACE_ENABLED: bool = _env_bool("CMS_MARKETPLACE_ENABLED", True)
+    CMS_MULTI_TENANT_ENABLED: bool = _env_bool("CMS_MULTI_TENANT_ENABLED", False)
 
     # ─── Computed / Convenience ─────────────────────────────────────────────
     def is_production(self) -> bool:

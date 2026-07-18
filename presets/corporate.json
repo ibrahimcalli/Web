@@ -1,0 +1,52 @@
+{
+  "sector": "corporate",
+  "label": "Kurumsal",
+  "templates": ["corporate"],
+  "default_template": "corporate",
+  "color_palettes": [
+    {"name": "Kurumsal Mavi", "colors": {"ana": "#1E3A5F", "ana_koyu": "#142940", "arka": "#F5F7FA", "metin": "#2C3E50"}},
+    {"name": "Premium Lacivert", "colors": {"ana": "#0F172A", "ana_koyu": "#020617", "arka": "#FAFAFA", "metin": "#1E293B"}},
+    {"name": "Dinamik Turkuaz", "colors": {"ana": "#0D9488", "ana_koyu": "#0F766E", "arka": "#F0FDFA", "metin": "#1E293B"}}
+  ],
+  "menus": {
+    "ana-menu": {"lokasyon": "header", "ogeler": [
+      {"baslik": "Ana Sayfa", "hedef_url": "/", "sira": 0},
+      {"baslik": "Kurumsal", "hedef_tip": "dahili", "hedef_url": "/kurumsal", "sira": 1},
+      {"baslik": "Hizmetler", "hedef_tip": "dahili", "hedef_url": "/hizmetler", "sira": 2},
+      {"baslik": "Referanslar", "hedef_tip": "dahili", "hedef_url": "/referanslar", "sira": 3},
+      {"baslik": "Blog", "hedef_tip": "dahili", "hedef_url": "/blog", "sira": 4},
+      {"baslik": "İletişim", "hedef_tip": "dahili", "hedef_url": "/iletisim", "sira": 5}
+    ]}
+  },
+  "pages": [
+    {"baslik": "Ana Sayfa", "slug": "/", "durum": "Yayınla"},
+    {"baslik": "Kurumsal", "slug": "kurumsal", "durum": "Yayınla"},
+    {"baslik": "Hizmetler", "slug": "hizmetler", "durum": "Yayınla"},
+    {"baslik": "Referanslar", "slug": "referanslar", "durum": "Yayınla"},
+    {"baslik": "Blog", "slug": "blog", "durum": "Yayınla"},
+    {"baslik": "İletişim", "slug": "iletisim", "durum": "Yayınla"}
+  ],
+  "widgets": [
+    {"anahtar": "whatsapp", "aktif": true},
+    {"anahtar": "google_maps", "aktif": true},
+    {"anahtar": "telefon", "aktif": true},
+    {"anahtar": "linkedin", "aktif": true},
+    {"anahtar": "cookie_banner", "aktif": true}
+  ],
+  "forum_categories": [],
+  "seo": {
+    "site_adi": "Şirket Adı",
+    "seo_baslik": "Kurumsal | Profesyonel Çözümler",
+    "seo_aciklama": "Kurumsal hizmetler, danışmanlık ve profesyonel çözümler.",
+    "seo_anahtar_kelimeler": "kurumsal,danışmanlık,hizmet,profesyonel"
+  },
+  "demo": {
+    "banner": true,
+    "blog": true,
+    "gallery": true,
+    "portfolio": true,
+    "forum": false,
+    "testimonials": true,
+    "services": true
+  }
+}

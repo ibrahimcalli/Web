@@ -1,0 +1,41 @@
+{
+  "sector": "landing",
+  "label": "Landing Page",
+  "templates": ["landing"],
+  "default_template": "landing",
+  "color_palettes": [
+    {"name": "Modern Gradient", "colors": {"ana": "#6366F1", "ana_koyu": "#4F46E5", "arka": "#F8FAFC", "metin": "#0F172A"}},
+    {"name": "Sıcak Dönüşüm", "colors": {"ana": "#F59E0B", "ana_koyu": "#D97706", "arka": "#FFFBEB", "metin": "#1C1917"}},
+    {"name": "Dark Premium", "colors": {"ana": "#8B5CF6", "ana_koyu": "#7C3AED", "arka": "#0F172A", "metin": "#F8FAFC"}}
+  ],
+  "menus": {
+    "ana-menu": {"lokasyon": "header", "ogeler": [
+      {"baslik": "Özellikler", "hedef_tip": "dahili", "hedef_url": "#ozellikler", "sira": 0},
+      {"baslik": "Fiyatlar", "hedef_tip": "dahili", "hedef_url": "#fiyatlar", "sira": 1},
+      {"baslik": "İletişim", "hedef_tip": "dahili", "hedef_url": "#iletisim", "sira": 2}
+    ]}
+  },
+  "pages": [
+    {"baslik": "Ana Sayfa", "slug": "/", "icerik": "<p>Landing page</p>", "durum": "Yayınla"}
+  ],
+  "widgets": [
+    {"anahtar": "whatsapp", "aktif": true},
+    {"anahtar": "telefon", "aktif": true}
+  ],
+  "forum_categories": [],
+  "seo": {
+    "site_adi": "Ürün Adı",
+    "seo_baslik": "Ürün Adı | Dönüşüm Odaklı Landing",
+    "seo_aciklama": "Ürününüzü tanıtın, dönüşümleri artırın.",
+    "seo_anahtar_kelimeler": ""
+  },
+  "demo": {
+    "banner": true,
+    "blog": false,
+    "gallery": false,
+    "portfolio": false,
+    "forum": false,
+    "testimonials": true,
+    "services": true
+  }
+}

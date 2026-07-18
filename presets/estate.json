@@ -1,0 +1,57 @@
+{
+  "sector": "estate",
+  "label": "Emlak",
+  "templates": ["estate-modern", "estate-luxury"],
+  "default_template": "estate-modern",
+  "color_palettes": [
+    {"name": "Klasik Emlak", "colors": {"ana": "#C45C35", "ana_koyu": "#A34A28", "arka": "#FAF7F2", "metin": "#2D2016"}},
+    {"name": "Modern Siyah", "colors": {"ana": "#1A1A2E", "ana_koyu": "#16213E", "arka": "#F5F5F5", "metin": "#333333"}},
+    {"name": "Premium Altın", "colors": {"ana": "#B8860B", "ana_koyu": "#8B6914", "arka": "#FFF8F0", "metin": "#1C1C1C"}}
+  ],
+  "menus": {
+    "ana-menu": {"lokasyon": "header", "ogeler": [
+      {"baslik": "Ana Sayfa", "hedef_url": "/", "sira": 0},
+      {"baslik": "Portföy", "hedef_tip": "dahili", "hedef_url": "/portfoy", "sira": 1},
+      {"baslik": "Hizmetler", "hedef_tip": "dahili", "hedef_url": "/hizmetler", "sira": 2},
+      {"baslik": "Blog", "hedef_tip": "dahili", "hedef_url": "/blog", "sira": 3},
+      {"baslik": "İletişim", "hedef_tip": "dahili", "hedef_url": "/iletisim", "sira": 4}
+    ]},
+    "footer-menu": {"lokasyon": "footer", "ogeler": [
+      {"baslik": "Kurumsal", "hedef_url": "/kurumsal", "sira": 0},
+      {"baslik": "Gizlilik", "hedef_url": "/gizlilik", "sira": 1},
+      {"baslik": "KVKK", "hedef_url": "/kvkk", "sira": 2}
+    ]}
+  },
+  "pages": [
+    {"baslik": "Ana Sayfa", "slug": "/", "icerik": "<p>Hoş geldiniz</p>", "durum": "Yayınla"},
+    {"baslik": "Hizmetler", "slug": "hizmetler", "icerik": "<h2>Hizmetlerimiz</h2><p>Profesyonel gayrimenkul hizmetleri.</p>", "durum": "Yayınla"},
+    {"baslik": "İletişim", "slug": "iletisim", "icerik": "<h2>İletişim</h2><p>Bizimle iletişime geçin.</p>", "durum": "Yayınla"},
+    {"baslik": "Kurumsal", "slug": "kurumsal", "icerik": "<h2>Kurumsal</h2>", "durum": "Yayınla"},
+    {"baslik": "Gizlilik", "slug": "gizlilik", "icerik": "<h2>Gizlilik Politikası</h2>", "durum": "Yayınla"},
+    {"baslik": "KVKK", "slug": "kvkk", "icerik": "<h2>KVKK Aydınlatma Metni</h2>", "durum": "Yayınla"}
+  ],
+  "widgets": [
+    {"anahtar": "whatsapp", "aktif": true},
+    {"anahtar": "google_maps", "aktif": false},
+    {"anahtar": "telefon", "aktif": true},
+    {"anahtar": "arama", "aktif": true},
+    {"anahtar": "cookie_banner", "aktif": true}
+  ],
+  "forum_categories": ["Satılık", "Kiralık", "Emlak Danışmanlığı", "Bölge Rehberi"],
+  "seo": {
+    "site_adi": "Emlak Portföy",
+    "site_slogan": "Güvenilir Gayrimenkul Danışmanı",
+    "seo_baslik": "Emlak | Profesyonel Gayrimenkul Hizmetleri",
+    "seo_aciklama": "Gayrimenkul danışmanlığı, satış, kiralama ve değerleme hizmetleri.",
+    "seo_anahtar_kelimeler": "emlak,gayrimenkul,satılık,kiralık,konut"
+  },
+  "demo": {
+    "banner": true,
+    "blog": true,
+    "gallery": true,
+    "portfolio": true,
+    "forum": false,
+    "testimonials": true,
+    "services": true
+  }
+}
