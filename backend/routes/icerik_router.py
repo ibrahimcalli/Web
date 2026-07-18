@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Request, UploadFile, File
 from pathlib import Path
 
 from backend.core.config import BASE_DIR
+from backend.domain.banners import BANNER_BOYUTLAR, BANNER_KONUMLAR
 from backend.core.dependencies import (
     get_istek_service, get_ayar_service, get_banner_service, get_blog_service,
     get_current_user, require_auth, require_admin
@@ -97,6 +98,12 @@ async def ayar_set(
 
 # ─── Banner Router ────────────────────────────────────────────────────────────
 banner_router = APIRouter()
+
+
+@banner_router.get("/bannerlar/konumlar")
+async def banner_konumlar():
+    """Banner konum ve boyut listesi (public)."""
+    return ok({"konumlar": BANNER_KONUMLAR, "boyutlar": BANNER_BOYUTLAR})
 
 
 @banner_router.get("/bannerlar")
