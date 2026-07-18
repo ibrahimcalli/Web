@@ -900,16 +900,14 @@ async function resimSil(url, pid) {
 // ── Admin Sayfaları ───────────────────────────────────────────────────────────
 function adminSayfa(sayfa) {
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('aktif'));
-  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8 };
+  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12 };
   const items = document.querySelectorAll('.sidebar-item');
   if (items[harita[sayfa]]) items[harita[sayfa]].classList.add('aktif');
   const ic = document.getElementById('admin-ic');
-  // Sistem alt sayfaları — admin-sistem.js'e delege et
   if (sayfa && sayfa.startsWith && sayfa.startsWith('sistem-')) {
     const alt = sayfa.slice('sistem-'.length);
     const fn = window.sistemSayfaAc;
     if (typeof fn === 'function' && fn(alt)) return;
-    // admin-sistem.js henüz yüklenmedi — yükleniyor spinner göster
     if (ic) ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
     return;
   }
@@ -921,8 +919,11 @@ function adminSayfa(sayfa) {
   else if (sayfa === 'istekler') adminIstekler();
   else if (sayfa === 'kullanicilar') adminKullanicilar();
   else if (sayfa === 'ayarlar') adminAyarlar();
-  else if (sayfa === 'bannerlar') adminBannerlar();
   else if (sayfa === 'hesabim') adminHesabim();
+  else if (sayfa === 'menuler') adminMenuler();
+  else if (sayfa === 'sayfalar') adminSayfalar();
+  else if (sayfa === 'widgetler') adminWidgetler();
+  else if (sayfa === 'tema') adminTema();
 }
 
 async function adminPortfoyler() {
@@ -3146,6 +3147,272 @@ window.blogResimModalAc = blogResimModalAc;
 window.blogResimSecildi = blogResimSecildi;
 window.blogResimIcerigeEkle = blogResimIcerigeEkle;
 window.kayitModalAc = kayitModalAc;
+// ── CMS Admin Sayfaları ──────────────────────────────────────────────────────
+const esc = s => String(s||'').replace(/[&<>"']/g, c=>`&#${c.charCodeAt(0)};`);
+
+async function adminMenuler() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const [menuler, slugListe] = await Promise.all([
+    api.request('/api/admin/menuler'),
+    api.request('/api/menu/ana-menu').catch(()=>[]),
+  ]);
+  let html = '<div class="admin-baslik">Menüler</div>';
+  html += '<div style="margin-bottom:1rem">';
+  html += '<input id="ymn-slug" placeholder="slug (ana-menu)" style="width:130px;margin-right:5px">';
+  html += '<input id="ymn-ad" placeholder="Menü adı" style="width:150px;margin-right:5px">';
+  html += '<select id="ymn-lok"><option value="header">Header</option><option value="footer">Footer</option><option value="sidebar">Sidebar</option></select>';
+  html += `<button class="btn btn-kirm" onclick="menuOlustur()">+ Ekle</button></div>`;
+  if (menuler && menuler.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Slug</th><th>Ad</th><th>Lokasyon</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    menuler.forEach(m => {
+      html += `<tr>
+        <td><strong>${esc(m.slug)}</strong></td>
+        <td>${esc(m.ad)}</td>
+        <td>${esc(m.lokasyon)}</td>
+        <td>${m.aktif ? '✅' : '❌'}</td>
+        <td><button class="btn btn-cik" onclick="menuDuzenle(${m.id})">✏️</button>
+            <button class="btn btn-kirm" onclick="menuSil(${m.id})">🗑️</button>
+            <button class="btn btn-gri" onclick="adminMenuOgelr(${m.id},'${esc(m.slug)}')">📋 Öğeler</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📋</div><h3>Henüz menü yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.menuOlustur = async function() {
+  const slug = document.getElementById('ymn-slug')?.value?.trim();
+  if (!slug) return bildirim('Slug gerekli','hata');
+  const ad = document.getElementById('ymn-ad')?.value?.trim() || slug;
+  const lok = document.getElementById('ymn-lok')?.value || 'header';
+  try {
+    await api.request('/api/admin/menuler', { method:'POST', body:JSON.stringify({slug,ad,lokasyon:lok}) });
+    bildirim('Menü oluşturuldu','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message || 'Hata','hata'); }
+};
+
+window.menuSil = async function(id) {
+  if (!confirm('Menü silinsin mi? (İçindeki tüm öğeler de silinir)')) return;
+  try {
+    await api.request(`/api/admin/menuler/${id}`, { method:'DELETE' });
+    bildirim('Menü silindi','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuDuzenle = async function(id) {
+  const ad = prompt('Yeni menü adı:');
+  if (!ad) return;
+  try {
+    await api.request(`/api/admin/menuler/${id}`, { method:'PUT', body:JSON.stringify({ad}) });
+    bildirim('Güncellendi','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+let _aktifMenu = 0;
+
+async function adminMenuOgelr(menuId, menuSlug) {
+  _aktifMenu = menuId;
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const ogeler = await api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]);
+  let html = `<div class="admin-baslik">📋 ${esc(menuSlug)} — Öğeler <button class="btn btn-gri" onclick="adminMenuler()" style="margin-left:10px">← Menüler</button></div>`;
+  html += '<div style="margin-bottom:1rem;display:flex;gap:5px;flex-wrap:wrap">';
+  html += '<input id="ymo-baslik" placeholder="Başlık" style="width:140px">';
+  html += '<input id="ymo-url" placeholder="URL (/iletisim)" style="width:180px">';
+  html += `<button class="btn btn-kirm" onclick="menuOgeEkle(${menuId})">+ Ekle</button></div>`;
+  if (ogeler && ogeler.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>#</th><th>Başlık</th><th>URL</th><th>Parent</th><th>Sıra</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    ogeler.forEach((o,i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td>${o.ikon || ''} ${esc(o.baslik)}</td>
+        <td style="font-size:.8em;color:var(--gri-metin)">${esc(o.hedef_url||o.hedef_tip)}</td>
+        <td>${o.parent_id || '—'}</td>
+        <td>${o.sira}</td>
+        <td>${o.aktif ? '✅' : '❌'}</td>
+        <td><button class="btn btn-cik" onclick="menuOgeDuzenle(${o.id},'${esc(o.baslik)}')">✏️</button>
+            <button class="btn btn-kirm" onclick="menuOgeSil(${menuId},${o.id})">🗑️</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz öğe yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.menuOgeEkle = async function(menuId) {
+  const baslik = document.getElementById('ymo-baslik')?.value?.trim();
+  if (!baslik) return bildirim('Başlık gerekli','hata');
+  const url = document.getElementById('ymo-url')?.value?.trim() || '/';
+  try {
+    await api.request(`/api/admin/menuler/${menuId}/ogeler`, {
+      method:'POST',
+      body:JSON.stringify({menu_id:menuId, baslik, hedef_tip:'dahili', hedef_url:url, sira:0, aktif:true})
+    });
+    bildirim('Öğe eklendi','basari');
+    adminMenuOgelr(menuId, '');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeSil = async function(menuId, itemId) {
+  if (!confirm('Öğe silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'DELETE' });
+    bildirim('Öğe silindi','basari');
+    adminMenuOgelr(menuId, '');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeDuzenle = async function(itemId, eskiBaslik) {
+  const yeni = prompt('Yeni başlık:', eskiBaslik);
+  if (!yeni) return;
+  try {
+    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'PUT', body:JSON.stringify({baslik:yeni}) });
+    bildirim('Güncellendi','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Sayfalar ─────────────────────────────────────────────────────────────────
+
+async function adminSayfalar() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const sayfalar = await api.request('/api/admin/sayfalar').catch(()=>[]);
+  let html = '<div class="admin-baslik">Sayfalar</div>';
+  html += '<div style="margin-bottom:1rem;display:flex;gap:5px;flex-wrap:wrap">';
+  html += '<input id="ysf-baslik" placeholder="Sayfa başlığı" style="width:160px">';
+  html += '<input id="ysf-slug" placeholder="slug" style="width:120px">';
+  html += '<select id="ysf-durum"><option value="Taslak">Taslak</option><option value="Yayınla">Yayınla</option></select>';
+  html += `<button class="btn btn-kirm" onclick="sayfaOlustur()">+ Ekle</button></div>`;
+  if (sayfalar && sayfalar.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Başlık</th><th>Slug</th><th>Durum</th><th>Şablon</th><th>Güncelleme</th><th></th></tr></thead><tbody>';
+    sayfalar.forEach(s => {
+      html += `<tr>
+        <td><strong>${esc(s.baslik)}</strong></td>
+        <td>${esc(s.slug)}</td>
+        <td>${s.durum === 'Yayınla' ? '✅ Yayınla' : '📝 Taslak'}</td>
+        <td>${esc(s.sablon)}</td>
+        <td style="font-size:.8em">${(s.guncelleme||'').slice(0,10)}</td>
+        <td><button class="btn btn-cik" onclick="sayfaDuzenle(${s.id})">✏️</button>
+            <button class="btn btn-kirm" onclick="sayfaSil(${s.id})">🗑️</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz sayfa yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.sayfaOlustur = async function() {
+  const baslik = document.getElementById('ysf-baslik')?.value?.trim();
+  const slug = document.getElementById('ysf-slug')?.value?.trim();
+  const durum = document.getElementById('ysf-durum')?.value || 'Taslak';
+  if (!baslik || !slug) return bildirim('Başlık ve slug gerekli','hata');
+  try {
+    await api.request('/api/admin/sayfalar', { method:'POST', body:JSON.stringify({baslik,slug,durum}) });
+    bildirim('Sayfa oluşturuldu','basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sayfaSil = async function(id) {
+  if (!confirm('Sayfa silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/sayfalar/${id}`, { method:'DELETE' });
+    bildirim('Sayfa silindi','basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sayfaDuzenle = async function(id) {
+  const yeni = prompt('Yeni başlık:');
+  if (!yeni) return;
+  try {
+    await api.request(`/api/admin/sayfalar/${id}`, { method:'PUT', body:JSON.stringify({baslik:yeni}) });
+    bildirim('Güncellendi','basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Widget'lar ───────────────────────────────────────────────────────────────
+
+async function adminWidgetler() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const widgetlar = await api.request('/api/admin/widgets').catch(()=>[]);
+  let html = '<div class="admin-baslik">Widget\'lar</div>';
+  if (widgetlar && widgetlar.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Ad</th><th>Tip</th><th>Konum</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    widgetlar.forEach(w => {
+      html += `<tr>
+        <td><code>${esc(w.anahtar)}</code></td>
+        <td>${esc(w.ad)}</td>
+        <td>${esc(w.tip)}</td>
+        <td>${esc(w.konum)}</td>
+        <td>${w.aktif ? '✅' : '❌'}</td>
+        <td><button class="btn ${w.aktif ? 'btn-cik' : 'btn-yes'}" onclick="widgetToggle(${w.id},${w.aktif ? 0 : 1})">${w.aktif ? 'Devre Dışı' : 'Aktifleştir'}</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">🧩</div><h3>Henüz widget yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.widgetToggle = async function(id, aktif) {
+  try {
+    await api.request(`/api/admin/widgets/${id}`, { method:'PUT', body:JSON.stringify({aktif:!!aktif}) });
+    bildirim(`Widget ${aktif ? 'aktifleştirildi' : 'devre dışı bırakıldı'}`,'basari');
+    adminWidgetler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Tema ─────────────────────────────────────────────────────────────────────
+
+async function adminTema() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const tema = await api.request('/api/admin/tema').catch(()=>({}));
+  let html = '<div class="admin-baslik">Tema Ayarları</div>';
+  html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Değer</th><th></th></tr></thead><tbody>';
+  for (const [k,v] of Object.entries(tema)) {
+    const isRenk = k.startsWith('renk_');
+    html += `<tr>
+      <td><code>${esc(k)}</code></td>
+      <td>${isRenk ? `<span style="display:inline-block;width:20px;height:20px;background:${esc(v)};border-radius:4px;vertical-align:middle;margin-right:6px;border:1px solid #ddd"></span>` : ''}${esc(v)}</td>
+      <td><button class="btn btn-cik" onclick="temaDuzenle('${esc(k)}','${esc(v)}')">✏️</button></td>
+    </tr>`;
+  }
+  html += '</tbody></table></div>';
+  ic.innerHTML = html;
+}
+
+window.temaDuzenle = async function(anahtar, deger) {
+  const yeni = prompt(`${anahtar} için yeni değer:`, deger);
+  if (yeni === null) return;
+  try {
+    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger:yeni}) });
+    bildirim('Tema ayarı güncellendi','basari');
+    adminTema();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── /CMS Admin ────────────────────────────────────────────────────────────────
+window.adminMenuler = adminMenuler;
+window.adminSayfalar = adminSayfalar;
+window.adminWidgetler = adminWidgetler;
+window.adminTema = adminTema;
+
 window.kayitYap = kayitYap;
 window.bannerlariYukle = bannerlariYukle;
 window.sliderGit = sliderGit;

@@ -309,6 +309,15 @@ export class ApiClient {
     return this._wrap(() => this.adapter.getFiyatAnaliziGenel());
   }
 
+  /**
+   * Generic request — CMS ve diğer özel endpoint'ler için.
+   * @param {string} path  Örn. "/api/admin/menuler"
+   * @param {RequestInit} [opts]
+   */
+  async request(path, opts = {}) {
+    return this._wrap(() => this.adapter._request(path, opts));
+  }
+
   /** Önbelleği elle temizler. */
   clearCache() {
     this.cache.clear();
