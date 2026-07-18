@@ -1,0 +1,23 @@
+{
+  "slug": "estate-luxury",
+  "ad": "Estate Luxury",
+  "aciklama": "Lüks gayrimenkul teması — altın detaylar, koyu renkler",
+  "versiyon": "1.0",
+  "sections": [
+    {"key": "hero", "etiket": "Hero", "varsayilan_aktif": true},
+    {"key": "slider", "etiket": "Slider", "varsayilan_aktif": true},
+    {"key": "services", "etiket": "Hizmetler", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "Portföy", "varsayilan_aktif": true},
+    {"key": "testimonials", "etiket": "Referanslar", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "İletişim", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["header", "footer", "floating"],
+  "renkler": {
+    "birincil": "#C9A84C",
+    "birincil_koyu": "#A68B2E",
+    "arka_plan": "#1A1512",
+    "metin": "#F5F0EB",
+    "metin_acik": "#A09890"
+  }
+}

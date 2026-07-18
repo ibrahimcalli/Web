@@ -1,0 +1,10 @@
+<section class="hero" id="hero"
+  style="${data.ayarlar.arka_renk ? 'background-color:' + data.ayarlar.arka_renk : ''}">
+  <div class="hero-overlay"></div>
+  <div class="hero-ic container ${data.ayarlar.container_genislik === 'full' ? 'container-fluid' : ''}"
+    style="padding: ${data.ayarlar.padding || '80px 0'}">
+    <h1 class="hero-baslik">${data.baslik || 'Hoş Geldiniz'}</h1>
+    <p class="hero-alt">${data.ayarlar.alt_baslik || 'Size en iyi hizmeti sunmak için buradayız'}</p>
+    <a href="/iletisim" class="btn btn-hero">İletişime Geç</a>
+  </div>
+</section>

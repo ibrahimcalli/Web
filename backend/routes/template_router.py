@@ -3,11 +3,15 @@ from __future__ import annotations
 
 from typing import Optional
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from backend.core.dependencies import (
     get_current_user, get_homepage_service, get_template_service, require_admin,
 )
+from backend.core.settings import BASE_DIR
 from backend.schemas.response import fail, ok
 from backend.schemas.template import (
     HomepageSectionReorder, HomepageSectionUpdate, TemplateCreate, TemplateUpdate,
@@ -15,6 +19,8 @@ from backend.schemas.template import (
 from backend.services.template_service import HomepageService, TemplateService
 
 router = APIRouter(tags=["CMS - Template"])
+
+TEMPLATES_DIR = BASE_DIR / "templates"
 
 
 # ─── Public ─────────────────────────────────────────────────────────────────
@@ -28,6 +34,35 @@ async def aktif_homepage(
         return ok(hp.aktif_homepage(template_slug=template))
     except Exception as e:
         return fail(str(e))
+
+
+@router.get("/template/section/{template_slug}/{section_key}")
+async def section_partial(
+    template_slug: str,
+    section_key: str,
+):
+    """HTML partial yükle — template engine frontend renderer için."""
+    partial_path = TEMPLATES_DIR / template_slug / "sections" / f"{section_key}.html"
+    if not partial_path.exists() or not partial_path.is_file():
+        return JSONResponse(
+            {"success": False, "message": "Bölüm partial bulunamadı"},
+            status_code=404,
+        )
+    return HTMLResponse(partial_path.read_text(encoding="utf-8"))
+
+
+@router.get("/template/config/{template_slug}")
+async def template_config(template_slug: str):
+    """Template JSON config dosyasını döndür."""
+    config_path = TEMPLATES_DIR / template_slug / "template.json"
+    if not config_path.exists():
+        return JSONResponse(
+            {"success": False, "message": "Template config bulunamadı"},
+            status_code=404,
+        )
+    import json
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+    return JSONResponse(data)
 
 
 # ─── Admin — Templates ──────────────────────────────────────────────────────

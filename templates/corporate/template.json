@@ -1,0 +1,23 @@
+{
+  "slug": "corporate",
+  "ad": "Corporate",
+  "aciklama": "Kurumsal şirket ve danışmanlık teması",
+  "versiyon": "1.0",
+  "sections": [
+    {"key": "hero", "etiket": "Hero", "varsayilan_aktif": true},
+    {"key": "services", "etiket": "Hizmetler", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "Projeler", "varsayilan_aktif": true},
+    {"key": "testimonials", "etiket": "Referanslar", "varsayilan_aktif": true},
+    {"key": "blog", "etiket": "Blog", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "İletişim", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["header", "sidebar", "footer"],
+  "renkler": {
+    "birincil": "#2C3E50",
+    "birincil_koyu": "#1A252F",
+    "arka_plan": "#FFFFFF",
+    "metin": "#2C3E50",
+    "metin_acik": "#95A5A6"
+  }
+}

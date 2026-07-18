@@ -1,0 +1,22 @@
+{
+  "slug": "landing",
+  "ad": "Landing",
+  "aciklama": "Satış odaklı landing page — dönüşüm odaklı",
+  "versiyon": "1.0",
+  "sections": [
+    {"key": "hero", "etiket": "Hero", "varsayilan_aktif": true},
+    {"key": "services", "etiket": "Özellikler", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "Çalışmalar", "varsayilan_aktif": true},
+    {"key": "testimonials", "etiket": "Müşteri Yorumları", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "İletişim / Form", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["floating", "popup"],
+  "renkler": {
+    "birincil": "#6C63FF",
+    "birincil_koyu": "#4A42D4",
+    "arka_plan": "#FFFFFF",
+    "metin": "#2D3436",
+    "metin_acik": "#636E72"
+  }
+}

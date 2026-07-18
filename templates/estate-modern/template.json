@@ -1,0 +1,27 @@
+{
+  "slug": "estate-modern",
+  "ad": "Estate Modern",
+  "aciklama": "Emlak sektörü için modern ve şık template",
+  "versiyon": "1.0",
+  "yazar": "Portföy Gayrimenkul",
+  "sections": [
+    {"key": "hero", "etiket": "Ana Hero", "varsayilan_aktif": true},
+    {"key": "slider", "etiket": "Slider", "varsayilan_aktif": true},
+    {"key": "services", "etiket": "Hizmetler", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "Portföy", "varsayilan_aktif": true},
+    {"key": "blog", "etiket": "Blog", "varsayilan_aktif": true},
+    {"key": "gallery", "etiket": "Galeri", "varsayilan_aktif": true},
+    {"key": "testimonials", "etiket": "Referanslar", "varsayilan_aktif": true},
+    {"key": "forum", "etiket": "Forum", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "İletişim", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["header", "sidebar", "footer", "floating", "popup", "modal"],
+  "renkler": {
+    "birincil": "#C45C35",
+    "birincil_koyu": "#A34A28",
+    "arka_plan": "#FAF7F2",
+    "metin": "#2D2016",
+    "metin_acik": "#8B7D72"
+  }
+}

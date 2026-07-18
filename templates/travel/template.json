@@ -1,0 +1,24 @@
+{
+  "slug": "travel",
+  "ad": "Travel",
+  "aciklama": "Seyahat acentesi ve turizm teması",
+  "versiyon": "1.0",
+  "sections": [
+    {"key": "hero", "etiket": "Hero", "varsayilan_aktif": true},
+    {"key": "slider", "etiket": "Slider", "varsayilan_aktif": true},
+    {"key": "services", "etiket": "Turlar", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "Destinasyonlar", "varsayilan_aktif": true},
+    {"key": "testimonials", "etiket": "Yorumlar", "varsayilan_aktif": true},
+    {"key": "blog", "etiket": "Seyahat Blogu", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "İletişim", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["header", "sidebar", "footer", "floating"],
+  "renkler": {
+    "birincil": "#2E86AB",
+    "birincil_koyu": "#1A6B8A",
+    "arka_plan": "#F8F9FA",
+    "metin": "#212529",
+    "metin_acik": "#6C757D"
+  }
+}

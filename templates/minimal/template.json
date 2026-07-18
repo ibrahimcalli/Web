@@ -1,0 +1,20 @@
+{
+  "slug": "minimal",
+  "ad": "Minimal",
+  "aciklama": "Sade, hızlı ve minimal içerik teması",
+  "versiyon": "1.0",
+  "sections": [
+    {"key": "hero", "etiket": "Hero", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "İçerik", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "İletişim", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["footer", "floating"],
+  "renkler": {
+    "birincil": "#000000",
+    "birincil_koyu": "#333333",
+    "arka_plan": "#FFFFFF",
+    "metin": "#111111",
+    "metin_acik": "#888888"
+  }
+}

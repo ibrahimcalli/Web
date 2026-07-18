@@ -1,0 +1,24 @@
+{
+  "slug": "hotel",
+  "ad": "Hotel",
+  "aciklama": "Otel ve konaklama işletmeleri teması",
+  "versiyon": "1.0",
+  "sections": [
+    {"key": "hero", "etiket": "Hero", "varsayilan_aktif": true},
+    {"key": "slider", "etiket": "Otel Galerisi", "varsayilan_aktif": true},
+    {"key": "services", "etiket": "Hizmetler", "varsayilan_aktif": true},
+    {"key": "portfolio", "etiket": "Odalar", "varsayilan_aktif": true},
+    {"key": "testimonials", "etiket": "Misafir Yorumları", "varsayilan_aktif": true},
+    {"key": "blog", "etiket": "Blog", "varsayilan_aktif": true},
+    {"key": "contact", "etiket": "Rezervasyon", "varsayilan_aktif": true},
+    {"key": "footer", "etiket": "Footer", "varsayilan_aktif": true}
+  ],
+  "widget_konumlari": ["header", "footer", "floating", "popup"],
+  "renkler": {
+    "birincil": "#1B4965",
+    "birincil_koyu": "#0D2C40",
+    "arka_plan": "#F0F4F8",
+    "metin": "#1A1A2E",
+    "metin_acik": "#7B8D9E"
+  }
+}
