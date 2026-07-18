@@ -8,6 +8,13 @@ from backend.repositories.misc_repository import (
 from backend.repositories.menu_repository import (
     MenuRepository, MenuItemRepository,
 )
+from backend.repositories.page_repository import PageRepository
+from backend.repositories.widget_repository import WidgetRepository
+from backend.repositories.theme_repository import ThemeRepository
+from backend.repositories.forum_repository import (
+    ForumCategoryRepository, ForumTopicRepository,
+    ForumPostRepository, ForumSettingRepository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -20,4 +27,11 @@ __all__ = [
     "BlogRepository",
     "MenuRepository",
     "MenuItemRepository",
+    "PageRepository",
+    "WidgetRepository",
+    "ThemeRepository",
+    "ForumCategoryRepository",
+    "ForumTopicRepository",
+    "ForumPostRepository",
+    "ForumSettingRepository",
 ]

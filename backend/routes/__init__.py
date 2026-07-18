@@ -12,6 +12,10 @@ from backend.routes.content_router import router as content_router
 from backend.routes.sitemap_router import router as sitemap_router
 from backend.routes.system_router import router as system_router
 from backend.routes.menu_router import router as menu_router
+from backend.routes.page_router import router as page_router
+from backend.routes.widget_router import router as widget_router
+from backend.routes.theme_router import router as theme_router
+from backend.routes.forum_router import router as forum_router
 
 # Not: backend/routes/pwa_assets.py ARTIK KULLANILMIYOR
 
@@ -27,4 +31,8 @@ __all__ = [
     "sitemap_router",
     "system_router",
     "menu_router",
+    "page_router",
+    "widget_router",
+    "theme_router",
+    "forum_router",
 ]

@@ -20,6 +20,10 @@ from backend.routes import (
     sitemap_router,
     system_router,
     menu_router,
+    page_router,
+    widget_router,
+    theme_router,
+    forum_router,
 )
 
 
@@ -81,6 +85,14 @@ def create_app() -> FastAPI:
     from backend.core.settings import settings
     if settings.CMS_MENU_ENABLED:
         app.include_router(menu_router, prefix="/api", tags=["CMS - Menü"])
+    if settings.CMS_PAGE_ENABLED:
+        app.include_router(page_router, prefix="/api", tags=["CMS - Sayfa"])
+    if settings.CMS_WIDGET_ENABLED:
+        app.include_router(widget_router, prefix="/api", tags=["CMS - Widget"])
+    if settings.CMS_THEME_ENABLED:
+        app.include_router(theme_router, prefix="/api", tags=["CMS - Tema"])
+    if settings.CMS_FORUM_ENABLED:
+        app.include_router(forum_router, prefix="/api", tags=["CMS - Forum"])
 
     # ─── Sitemap / robots.txt (production SEO) ────────────────────────────────
     # Mevcut URL'ler: /sitemap.xml, /sitemap-images.xml, /robots.txt

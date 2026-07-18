@@ -16,11 +16,22 @@ from backend.repositories.menu_repository import (
 from backend.repositories.misc_repository import (
     IstekRepository, AyarRepository, BannerRepository, BlogRepository
 )
+from backend.repositories.page_repository import PageRepository
+from backend.repositories.widget_repository import WidgetRepository
+from backend.repositories.theme_repository import ThemeRepository
+from backend.repositories.forum_repository import (
+    ForumCategoryRepository, ForumTopicRepository,
+    ForumPostRepository, ForumSettingRepository,
+)
 from backend.services.auth_service import AuthService
 from backend.services.kullanici_service import KullaniciService
 from backend.services.portfoy_service import PortfoyService
 from backend.services.icerik_service import IstekService, AyarService, BannerService, BlogService
 from backend.services.menu_service import MenuService
+from backend.services.page_service import PageService
+from backend.services.widget_service import WidgetService
+from backend.services.theme_service import ThemeService
+from backend.services.forum_service import ForumService
 
 security = HTTPBearer(auto_error=False)
 
@@ -110,6 +121,61 @@ def get_menu_service(
     ogeler: MenuItemRepository = Depends(get_menu_item_repository),
 ) -> MenuService:
     return MenuService(menuler, ogeler)
+
+
+def get_page_repository() -> PageRepository:
+    return PageRepository(db)
+
+
+def get_page_service(
+    pages: PageRepository = Depends(get_page_repository),
+) -> PageService:
+    return PageService(pages)
+
+
+def get_widget_repository() -> WidgetRepository:
+    return WidgetRepository(db)
+
+
+def get_widget_service(
+    widgets: WidgetRepository = Depends(get_widget_repository),
+) -> WidgetService:
+    return WidgetService(widgets)
+
+
+def get_theme_repository() -> ThemeRepository:
+    return ThemeRepository(db)
+
+
+def get_theme_service(
+    theme: ThemeRepository = Depends(get_theme_repository),
+) -> ThemeService:
+    return ThemeService(theme)
+
+
+def get_forum_category_repository() -> ForumCategoryRepository:
+    return ForumCategoryRepository(db)
+
+
+def get_forum_topic_repository() -> ForumTopicRepository:
+    return ForumTopicRepository(db)
+
+
+def get_forum_post_repository() -> ForumPostRepository:
+    return ForumPostRepository(db)
+
+
+def get_forum_setting_repository() -> ForumSettingRepository:
+    return ForumSettingRepository(db)
+
+
+def get_forum_service(
+    kategoriler: ForumCategoryRepository = Depends(get_forum_category_repository),
+    konular: ForumTopicRepository = Depends(get_forum_topic_repository),
+    yanitlar: ForumPostRepository = Depends(get_forum_post_repository),
+    ayarlar: ForumSettingRepository = Depends(get_forum_setting_repository),
+) -> ForumService:
+    return ForumService(kategoriler, konular, yanitlar, ayarlar)
 
 
 # ─── Auth Dependencies ────────────────────────────────────────────────────────
