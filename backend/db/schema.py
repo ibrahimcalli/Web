@@ -503,13 +503,9 @@ def _seed_templates(c) -> None:
 
 
 def _seed_homepage_sections(c) -> None:
-    tid = c.execute("SELECT id FROM templates WHERE varsayilan=1 LIMIT 1").fetchone()
-    if not tid:
-        tid = c.execute("SELECT id FROM templates LIMIT 1").fetchone()
-    if not tid:
-        return
-    tid = tid[0]
-    sections = [
+    import json as _json
+    import os
+    sections_base = [
         ("hero", "Ana Hero", 0, '{"animasyon":"fadeIn","padding":"0","arka_renk":"","container_genislik":"full","baslik_goster":true}'),
         ("slider", "Slider", 1, '{"animasyon":"slide","padding":"0","arka_renk":"","container_genislik":"full"}'),
         ("services", "Hizmetler", 2, '{"animasyon":"fadeUp","padding":"80px 0","arka_renk":"#f8f5f0","container_genislik":"boxed"}'),
@@ -521,13 +517,32 @@ def _seed_homepage_sections(c) -> None:
         ("contact", "İletişim", 8, '{"animasyon":"fadeIn","padding":"80px 0","arka_renk":"#f8f5f0","container_genislik":"boxed","baslik_goster":true}'),
         ("footer", "Footer", 9, '{"animasyon":"none","padding":"40px 0","arka_renk":"#2d2016","container_genislik":"full"}'),
     ]
-    for sk, baslik, sira, ayarlar in sections:
-        exists = c.execute(
-            "SELECT 1 FROM homepage_sections WHERE template_id=? AND section_key=?", (tid, sk)
-        ).fetchone()
-        if not exists:
-            c.execute(
-                "INSERT INTO homepage_sections (template_id,section_key,baslik,aktif,sira,ayarlar) "
-                "VALUES (?,?,?,1,?,?)",
-                (tid, sk, baslik, sira, ayarlar),
-            )
+    section_map = {k: (b, s, a) for k, b, s, a in sections_base}
+    templates_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates")
+    rows = c.execute("SELECT id, slug FROM templates").fetchall()
+    for tid, slug in rows:
+        config_path = os.path.join(templates_dir, slug, "template.json")
+        if os.path.exists(config_path):
+            try:
+                config = _json.loads(open(config_path, encoding="utf-8").read())
+                template_sections = config.get("sections", [])
+            except Exception:
+                template_sections = []
+        else:
+            template_sections = []
+        for i, sec in enumerate(template_sections):
+            key = sec["key"] if isinstance(sec, dict) else sec
+            label = sec.get("etiket", key) if isinstance(sec, dict) else key
+            default_config = section_map.get(key, (label, i, "{}"))
+            baslik = label
+            sira = i
+            ayarlar = default_config[2] if len(default_config) > 2 else "{}"
+            exists = c.execute(
+                "SELECT 1 FROM homepage_sections WHERE template_id=? AND section_key=?", (tid, key)
+            ).fetchone()
+            if not exists:
+                c.execute(
+                    "INSERT INTO homepage_sections (template_id,section_key,baslik,aktif,sira,ayarlar) "
+                    "VALUES (?,?,?,1,?,?)",
+                    (tid, key, baslik, sira, ayarlar),
+                )
