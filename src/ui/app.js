@@ -3764,6 +3764,8 @@ async function wizardSon() {
 }
 
 window.adminWizard = adminWizard;
+window.wizardBaslat = wizardBaslat;
+window.wizardAdim1 = wizardAdim1;
 window.wizardAdim2 = wizardAdim2;
 window.wizardAdim3 = wizardAdim3;
 window.wizardAdim4 = wizardAdim4;
