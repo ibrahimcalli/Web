@@ -10,6 +10,9 @@ from backend.core.security import decode_token
 from backend.db.database import db
 from backend.repositories.portfoy_repository import PortfoyRepository
 from backend.repositories.kullanici_repository import KullaniciRepository
+from backend.repositories.menu_repository import (
+    MenuRepository, MenuItemRepository,
+)
 from backend.repositories.misc_repository import (
     IstekRepository, AyarRepository, BannerRepository, BlogRepository
 )
@@ -17,6 +20,7 @@ from backend.services.auth_service import AuthService
 from backend.services.kullanici_service import KullaniciService
 from backend.services.portfoy_service import PortfoyService
 from backend.services.icerik_service import IstekService, AyarService, BannerService, BlogService
+from backend.services.menu_service import MenuService
 
 security = HTTPBearer(auto_error=False)
 
@@ -91,6 +95,21 @@ def get_blog_service(
     bloglar: BlogRepository = Depends(get_blog_repository),
 ) -> BlogService:
     return BlogService(bloglar)
+
+
+def get_menu_repository() -> MenuRepository:
+    return MenuRepository(db)
+
+
+def get_menu_item_repository() -> MenuItemRepository:
+    return MenuItemRepository(db)
+
+
+def get_menu_service(
+    menuler: MenuRepository = Depends(get_menu_repository),
+    ogeler: MenuItemRepository = Depends(get_menu_item_repository),
+) -> MenuService:
+    return MenuService(menuler, ogeler)
 
 
 # ─── Auth Dependencies ────────────────────────────────────────────────────────

@@ -139,12 +139,15 @@ class CsrfProtectMiddleware(BaseHTTPMiddleware):
         method = request.method
         if method in self.SAFE_METHODS:
             return await call_next(request)
-        
+
         path = request.url.path
-        # Yalnızca API path'leri korunur
         if not path.startswith("/api/"):
             return await call_next(request)
-        
+
+        # DELETE body'siz istekler için Content-Type kontrolü gerekmez
+        if method == "DELETE":
+            return await call_next(request)
+
         ct = (request.headers.get("Content-Type") or "").split(";")[0].strip().lower()
         # application/json → güvenli (cross-site form basit istek olamaz)
         if ct == "application/json":

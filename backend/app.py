@@ -19,6 +19,7 @@ from backend.routes import (
     content_router,
     sitemap_router,
     system_router,
+    menu_router,
 )
 
 
@@ -75,6 +76,11 @@ def create_app() -> FastAPI:
     app.include_router(banner_router, prefix="/api", tags=["Banner"])
     app.include_router(blog_router, prefix="/api", tags=["Blog"])
     app.include_router(content_router, prefix="/api", tags=["İçerik"])
+
+    # ─── CMS v2.1 — Modüler menü yönetimi (aç/kapat) ──────────────────────
+    from backend.core.settings import settings
+    if settings.CMS_MENU_ENABLED:
+        app.include_router(menu_router, prefix="/api", tags=["CMS - Menü"])
 
     # ─── Sitemap / robots.txt (production SEO) ────────────────────────────────
     # Mevcut URL'ler: /sitemap.xml, /sitemap-images.xml, /robots.txt
