@@ -3429,17 +3429,17 @@ window.widgetToggle = async function(id, aktif) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
-// ── Tema Paletleri (renk şemaları) ────────────────────────────────────────────
+// ── Tema — taslak (önizleme + toplu kaydet) ──────────────────────────────────
 
 const TEMA_PALETLERI = [
-  { id:'',          ad:'Kiremit',      renkler:['#C45C35','#A34A28','#FAF7F2','#2D2016'] },
-  { id:'green',     ad:'Zeytun Yeşil',  renkler:['#2D7D46','#1F5C33','#F0F7F2','#1A2E1A'] },
-  { id:'navy',      ad:'Lacivert',      renkler:['#1A3C6B','#12295A','#EDF2F7','#0F1A2E'] },
-  { id:'purple',    ad:'Mor',           renkler:['#6D28D9','#5B21B6','#F5F0FF','#1A0F2E'] },
-  { id:'rose',      ad:'Gül',          renkler:['#D9466F','#BE3455','#FFF0F3','#2D1A20'] },
-  { id:'gold',      ad:'Altın',        renkler:['#D4943A','#B87A2E','#FFFAF0','#2D2616'] },
-  { id:'teal',      ad:'Okyanus',      renkler:['#0E7C7B','#0B5E5D','#F0FCFC','#0F1A1A'] },
-  { id:'charcoal',  ad:'Kömür',        renkler:['#4A4A4A','#2D2D2D','#F5F5F5','#141414'] },
+  { id:'',          ad:'Kiremit',     renkler:['#C45C35','#A34A28','#FAF7F2','#2D2016'] },
+  { id:'green',     ad:'Zeytun Yeşil',renkler:['#2D7D46','#1F5C33','#F0F7F2','#1A2E1A'] },
+  { id:'navy',      ad:'Lacivert',    renkler:['#1A3C6B','#12295A','#EDF2F7','#0F1A2E'] },
+  { id:'purple',    ad:'Mor',         renkler:['#6D28D9','#5B21B6','#F5F0FF','#1A0F2E'] },
+  { id:'rose',      ad:'Gül',        renkler:['#D9466F','#BE3455','#FFF0F3','#2D1A20'] },
+  { id:'gold',      ad:'Altın',      renkler:['#D4943A','#B87A2E','#FFFAF0','#2D2616'] },
+  { id:'teal',      ad:'Okyanus',    renkler:['#0E7C7B','#0B5E5D','#F0FCFC','#0F1A1A'] },
+  { id:'charcoal',  ad:'Kömür',      renkler:['#4A4A4A','#2D2D2D','#F5F5F5','#141414'] },
 ];
 
 const FONT_LIST = [
@@ -3454,180 +3454,218 @@ const FONT_LIST = [
 ];
 
 const STIL_SECENEKLERI = {
-  header_stil:   { ad:'Header', secim:{ sticky:'Yapışkan', fixed:'Sabit', default:'Varsayılan', minimal:'Minimal' }, aciklama:'Üst navigasyon çubuğu stili' },
-  footer_stil:   { ad:'Footer', secim:{ default:'Varsayılan', minimal:'Minimal', compact:'Kompakt' }, aciklama:'Alt bilgi alanı stili' },
-  kart_stil:     { ad:'Kart',   secim:{ default:'Varsayılan', shadow:'Gölgeli', bordered:'Kenarlıklı', modern:'Modern', minimal:'Minimal' }, aciklama:'İlan/blog kartları görünümü' },
-  button_stil:   { ad:'Buton',  secim:{ default:'Varsayılan', rounded:'Yuvarlak', pill:'Hap', outline:'Outline', gradient:'Gradyan' }, aciklama:'Buton görünümü' },
-  animasyon:     { ad:'Animasyon', secim:{ minimize:'Minimal', fade:'Soluk', slide:'Kaydır', zoom:'Büyüt', none:'Yok' }, aciklama:'Sayfa geçiş animasyonu' },
+  header_stil: { ad:'Header', secim:{ sticky:'Yapışkan', fixed:'Sabit', default:'Varsayılan', minimal:'Minimal' }, aciklama:'Üst navigasyon çubuğu stili' },
+  footer_stil: { ad:'Footer', secim:{ default:'Varsayılan', minimal:'Minimal', compact:'Kompakt' }, aciklama:'Alt bilgi alanı stili' },
+  kart_stil:   { ad:'Kart',   secim:{ default:'Varsayılan', shadow:'Gölgeli', bordered:'Kenarlıklı', modern:'Modern', minimal:'Minimal' }, aciklama:'İlan/blog kartları görünümü' },
+  button_stil: { ad:'Buton',  secim:{ default:'Varsayılan', rounded:'Yuvarlak', pill:'Hap', outline:'Outline', gradient:'Gradyan' }, aciklama:'Buton görünümü' },
+  animasyon:   { ad:'Animasyon', secim:{ minimize:'Minimal', fade:'Soluk', slide:'Kaydır', zoom:'Büyüt', none:'Yok' }, aciklama:'Sayfa geçiş animasyonu' },
 };
 
-function temaPaletGorsel(palet, seciliId) {
-  const secili = seciliId === palet.id;
-  return `<div class="tema-palet-kart${secili?' aktif':''}" onclick="temaPaletSec('${esc(palet.id)}')">
-    <div class="tema-palet-renkler">${palet.renkler.map(r => `<span style="background:${r}"></span>`).join('')}</div>
-    <div class="tema-palet-ad">${esc(palet.ad)}</div>
-    ${secili ? '<div class="tema-palet-check">✓</div>' : ''}
-  </div>`;
-}
+let temaDraft = {};       // önizleme taslağı
+let temaSaved = {};       // son kaydedilen
 
-function temaRenkInput(etiket, anahtar, deger) {
-  return `<div class="tema-renk-satir">
-    <label>${esc(etiket)}</label>
-    <div class="tema-renk-girdi-grup">
-      <input type="color" class="tema-renk-picker" value="${esc(deger)}" data-key="${esc(anahtar)}" onchange="temaRenkDegisti(this)">
-      <input type="text" class="tema-renk-text" value="${esc(deger)}" data-key="${esc(anahtar)}" oninput="temaRenkYaziDegisti(this)" onchange="temaRenkKaydet('${esc(anahtar)}',this.value)">
-    </div>
-  </div>`;
-}
-
-function stilKart(anahtar, secenek, mevcut) {
-  return `<div class="tema-stil-grup">
-    <div class="tema-stil-label">${esc(secenek.ad)}</div>
-    <div class="tema-stil-aciklama">${esc(secenek.aciklama)}</div>
-    <div class="tema-stil-secenekler">${Object.entries(secenek.secim).map(([k,v]) =>
-      `<div class="tema-stil-chip${mevcut===k?' aktif':''}" onclick="temaStilSec('${esc(anahtar)}','${esc(k)}')">${esc(v)}</div>`
-    ).join('')}</div>
-  </div>`;
-}
-
-// ── Global tema yardımcıları ────────────────────────────────────────────────
-
-window.temaPaletSec = async function(id) {
-  const palet = TEMA_PALETLERI.find(p => p.id === id);
-  if (!palet) return;
-  const renkMap = { renk_ana: palet.renkler[0], renk_ana_koy: palet.renkler[1], renk_arka: palet.renkler[2], renk_metin: palet.renkler[3] };
-  for (const [k,v] of Object.entries(renkMap)) {
-    await api.request(`/api/admin/tema/${k}`, { method:'PUT', body:JSON.stringify({anahtar:k,deger:v}) });
+function temaOnizleUygula() {
+  if (!temaDraft || !Object.keys(temaDraft).length) return;
+  const r = document.documentElement;
+  if (temaDraft.renk_ana) r.style.setProperty('--kiremit', temaDraft.renk_ana);
+  if (temaDraft.renk_ana_koy) r.style.setProperty('--kiremit-k', temaDraft.renk_ana_koy);
+  if (temaDraft.renk_arka) r.style.setProperty('--krem', temaDraft.renk_arka);
+  if (temaDraft.renk_metin) r.style.setProperty('--toprak', temaDraft.renk_metin);
+  if (temaDraft.renk_ana) r.style.setProperty('--kiremit-a', lightenHex(temaDraft.renk_ana, 72));
+  if (temaDraft.font_baslik) r.style.setProperty('--font-baslik', temaDraft.font_baslik);
+  if (temaDraft.font_govde) r.style.setProperty('--font-govde', temaDraft.font_govde);
+  if (temaDraft.border_radius) {
+    const br = parseInt(temaDraft.border_radius) || 12;
+    r.style.setProperty('--r', br + 'px');
+    r.style.setProperty('--r-sm', Math.max(4, Math.round(br * 0.66)) + 'px');
   }
-  document.body.setAttribute('data-tema', id);
-  window.siteAyarlariUygula && siteAyarlariUygula();
-  bildirim(`${palet.ad} paleti uygulandı`, 'basari');
-  adminTema();
-};
-
-window.temaRenkDegisti = function(el) {
-  const val = el.value;
-  const text = el.parentElement.querySelector('.tema-renk-text');
-  if (text) text.value = val;
-  temaRenkKaydet(el.dataset.key, val);
-};
-
-window.temaRenkYaziDegisti = function(el) {
-  const picker = el.parentElement.querySelector('.tema-renk-picker');
-  if (picker && /^#[0-9a-f]{6}$/i.test(el.value)) picker.value = el.value;
-};
-
-window.temaRenkKaydet = async function(anahtar, deger) {
-  try {
-    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger}) });
-    window.siteAyarlariUygula && siteAyarlariUygula();
-  } catch(e) { bildirim(e.message, 'hata'); }
-};
-
-window.temaStilSec = async function(anahtar, deger) {
-  try {
-    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger}) });
-    bildirim('Stil güncellendi', 'basari');
-    adminTema();
-  } catch(e) { bildirim(e.message, 'hata'); }
-};
+  if (temaDraft.dark_mode === '1') document.body.classList.add('dark-mode');
+  else if (temaDraft.dark_mode === '0') document.body.classList.remove('dark-mode');
+}
 
 function fontYukle(fontAdi) {
   if (!fontAdi) return;
   const isim = fontAdi.replace(/ /g, '+');
-  const zaten = document.querySelector(`link[href*="${isim}"]`);
-  if (zaten) return;
+  if (document.querySelector(`link[href*="${isim}"]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = `https://fonts.googleapis.com/css2?family=${isim}:wght@400;500;600;700&display=swap`;
   document.head.appendChild(link);
 }
 
-window.temaFontSec = async function(el) {
-  const anahtar = el.dataset.key;
-  const deger = el.value;
-  fontYukle(deger);
+// ── Önizleme (sadece CSS değişir, backend'e yazılmaz) ─────────────────────
+
+window.temaPaletSec = function(id) {
+  const palet = TEMA_PALETLERI.find(p => p.id === id);
+  if (!palet) return;
+  temaDraft.renk_ana = palet.renkler[0];
+  temaDraft.renk_ana_koy = palet.renkler[1];
+  temaDraft.renk_arka = palet.renkler[2];
+  temaDraft.renk_metin = palet.renkler[3];
+  document.body.setAttribute('data-tema', id);
+  temaOnizleUygula();
+  document.querySelectorAll('.tema-palet-kart').forEach(k => k.classList.toggle('aktif', k.dataset.palet === id));
+};
+
+window.temaRenkDegisti = function(el) {
+  temaDraft[el.dataset.key] = el.value;
+  const txt = el.parentElement.querySelector('.tema-renk-text');
+  if (txt) txt.value = el.value;
+  temaOnizleUygula();
+};
+
+window.temaRenkYaziDegisti = function(el) {
+  const picker = el.parentElement.querySelector('.tema-renk-picker');
+  if (picker && /^#[0-9a-f]{6}$/i.test(el.value)) picker.value = el.value;
+  temaDraft[el.dataset.key] = el.value;
+  temaOnizleUygula();
+};
+
+window.temaStilSec = function(anahtar, deger) {
+  temaDraft[anahtar] = deger;
+  document.querySelectorAll(`[data-stil-grup="${anahtar}"] .tema-stil-chip`).forEach(c => c.classList.toggle('aktif', c.dataset.stil === deger));
+  temaOnizleUygula();
+};
+
+window.temaFontSec = function(el) {
+  temaDraft[el.dataset.key] = el.value;
+  fontYukle(el.value);
+  temaOnizleUygula();
+  // font preview güncelle
+  const ornek = el.closest('.tema-font-kolon').querySelector('.tema-font-ornek');
+  if (ornek) ornek.style.fontFamily = `'${el.value}', ${el.dataset.key === 'font_baslik' ? 'serif' : 'sans-serif'}`;
+};
+
+window.temaBorderRadius = function(el) {
+  temaDraft.border_radius = el.value;
+  document.getElementById('br-value').textContent = el.value + 'px';
+  temaOnizleUygula();
+};
+
+window.temaDarkToggle = function(el) {
+  temaDraft.dark_mode = el.checked ? '1' : '0';
+  temaOnizleUygula();
+};
+
+// ── Kaydet / Sıfırla ───────────────────────────────────────────────────────
+
+window.temaKaydet = async function() {
+  const degisen = Object.keys(temaDraft);
+  if (!degisen.length) { bildirim('Değişiklik yok', 'bilgi'); return; }
   try {
-    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger}) });
-    siteAyarlariUygula();
-    bildirim('Font güncellendi', 'basari');
-  } catch(e) { bildirim(e.message, 'hata'); }
+    for (const k of degisen) {
+      await api.request(`/api/admin/tema/${k}`, { method:'PUT', body:JSON.stringify({anahtar:k,deger:temaDraft[k]}) });
+    }
+    Object.assign(temaSaved, temaDraft);
+    temaDraft = {};
+    bildirim('Tema kaydedildi ✅', 'basari');
+  } catch(e) { bildirim('Kaydedilirken hata: ' + e.message, 'hata'); }
 };
 
-window.temaBorderRadius = async function(el) {
-  const v = el.value;
-  document.getElementById('br-value').textContent = v + 'px';
-  await api.request('/api/admin/tema/border_radius', { method:'PUT', body:JSON.stringify({anahtar:'border_radius',deger:v}) });
-  document.documentElement.style.setProperty('--r', v + 'px');
-  document.documentElement.style.setProperty('--r-sm', Math.max(4, Math.round(v * 0.66)) + 'px');
+window.temaSifirla = async function() {
+  temaDraft = {};
+  await api.request('/api/tema').then(t => { temaSaved = t || {}; }).catch(()=>{});
+  adminTema();
+  bildirim('Değişiklikler geri alındı', 'bilgi');
 };
 
-window.temaDarkToggle = async function(el) {
-  const v = el.checked ? '1' : '0';
-  await api.request('/api/admin/tema/dark_mode', { method:'PUT', body:JSON.stringify({anahtar:'dark_mode',deger:v}) });
-  document.body.classList.toggle('dark-mode', el.checked);
-};
-
-// ── Admin Tema Sayfası ──────────────────────────────────────────────────────
+// ── Admin Sayfası ──────────────────────────────────────────────────────────
 
 async function adminTema() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
-  const tema = await api.request('/api/admin/tema').catch(()=>({}));
+  temaSaved = await api.request('/api/admin/tema').catch(()=>({}));
+  temaDraft = {};
 
-  const mevcutPalet = tema.renk_ana ? TEMA_PALETLERI.find(p =>
-    p.renkler[0].toLowerCase() === tema.renk_ana.toLowerCase() &&
-    p.renkler[2].toLowerCase() === (tema.renk_arka||'').toLowerCase()
-  ) : TEMA_PALETLERI[0];
-  const paletId = mevcutPalet ? mevcutPalet.id : '';
+  const t = temaSaved;
+  const paletId = t.renk_ana ? (TEMA_PALETLERI.find(p =>
+    p.renkler[0].toLowerCase() === (t.renk_ana||'').toLowerCase() &&
+    p.renkler[2].toLowerCase() === (t.renk_arka||'').toLowerCase()
+  ) || TEMA_PALETLERI[0]).id : '';
 
   let html = '<div class="admin-baslik">🎨 Tema Yöneticisi</div>';
   html += '<div class="tema-editor">';
 
-  // ── 1) Renk Paletleri ────────────────────────────────────────────────────
-  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Renk Paletleri</div><div class="tema-bolum-aciklama">Hazır renk şemalarından birini seçin veya aşağıdan özelleştirin</div>';
+  // ── 1) Renk Paletleri ──────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Renk Paletleri</div><div class="tema-bolum-aciklama">Hazır şemalardan birini seçin, önizleyin, sonra kaydedin</div>';
   html += '<div class="tema-palet-grid">';
-  for (const p of TEMA_PALETLERI) html += temaPaletGorsel(p, paletId);
+  for (const p of TEMA_PALETLERI) {
+    const a = paletId === p.id;
+    html += `<div class="tema-palet-kart${a?' aktif':''}" data-palet="${esc(p.id)}" onclick="temaPaletSec('${esc(p.id)}')">
+      <div class="tema-palet-renkler">${p.renkler.map(r => `<span style="background:${r}"></span>`).join('')}</div>
+      <div class="tema-palet-ad">${esc(p.ad)}</div>
+      ${a ? '<div class="tema-palet-check">✓</div>' : ''}
+    </div>`;
+  }
   html += '</div></div>';
 
-  // ── 2) Özel Renkler ─────────────────────────────────────────────────────
-  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Özel Renkler</div><div class="tema-bolum-aciklama">Renk kutucuğuna tıklayarak veya hex kodu yazarak ince ayar yapın</div>';
-  html += temaRenkInput('Ana Renk', 'renk_ana', tema.renk_ana || '#C45C35');
-  html += temaRenkInput('Ana Renk (Koyu)', 'renk_ana_koy', tema.renk_ana_koy || '#A34A28');
-  html += temaRenkInput('Arka Plan', 'renk_arka', tema.renk_arka || '#FAF7F2');
-  html += temaRenkInput('Metin Rengi', 'renk_metin', tema.renk_metin || '#2D2016');
-  html += '</div>';
-
-  // ── 3) Fontlar ──────────────────────────────────────────────────────────
-  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Fontlar</div><div class="tema-bolum-aciklama">Başlık ve gövde metni fontlarını seçin</div>';
-  html += '<div class="tema-font-grid">';
-  html += '<div class="tema-font-kolon"><label>Başlık Fontu</label><select class="tema-select" data-key="font_baslik" onchange="temaFontSec(this)">';
-  for (const f of FONT_LIST) html += `<option value="${esc(f.baslik)}"${tema.font_baslik===f.baslik||(!tema.font_baslik&&f.baslik==='Playfair Display')?' selected':''}>${esc(f.baslik)}</option>`;
-  html += `</select><div class="tema-font-ornek" style="font-family:'${esc(tema.font_baslik||'Playfair Display')}',serif">Aa Başlık Örneği</div></div>`;
-  html += '<div class="tema-font-kolon"><label>Gövde Fontu</label><select class="tema-select" data-key="font_govde" onchange="temaFontSec(this)">';
-  for (const f of FONT_LIST) html += `<option value="${esc(f.govde)}"${tema.font_govde===f.govde||(!tema.font_govde&&f.govde==='Inter')?' selected':''}>${esc(f.govde)}</option>`;
-  html += `</select><div class="tema-font-ornek" style="font-family:'${esc(tema.font_govde||'Inter')}',sans-serif">Aa Gövde metni örneği — lorem ipsum dolor sit amet.</div></div>`;
-  html += '</div></div>';
-
-  // ── 4) Stiller ──────────────────────────────────────────────────────────
-  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Stiller</div><div class="tema-bolum-aciklama">Bileşen görünümlerini özelleştirin</div>';
-  for (const [k, v] of Object.entries(STIL_SECENEKLERI)) {
-    html += stilKart(k, v, tema[k] || Object.keys(v.secim)[0]);
+  // ── 2) Özel Renkler ────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Özel Renkler</div><div class="tema-bolum-aciklama">İnce ayar için renk seçici veya hex kodu</div>';
+  const renkAlanlari = [
+    ['renk_ana','Ana Renk','#C45C35'], ['renk_ana_koy','Ana Renk (Koyu)','#A34A28'],
+    ['renk_arka','Arka Plan','#FAF7F2'], ['renk_metin','Metin Rengi','#2D2016']
+  ];
+  for (const [key, etiket, def] of renkAlanlari) {
+    const v = t[key] || def;
+    html += `<div class="tema-renk-satir">
+      <label>${esc(etiket)}</label>
+      <div class="tema-renk-girdi-grup">
+        <input type="color" class="tema-renk-picker" value="${esc(v)}" data-key="${esc(key)}" onchange="temaRenkDegisti(this)">
+        <input type="text" class="tema-renk-text" value="${esc(v)}" data-key="${esc(key)}" oninput="temaRenkYaziDegisti(this)">
+      </div>
+    </div>`;
   }
   html += '</div>';
 
-  // ── 5) Köşe Yuvarlaklığı ────────────────────────────────────────────────
-  const br = parseInt(tema.border_radius || '12');
+  // ── 3) Fontlar ─────────────────────────────────────────────────────────
+  const fb = t.font_baslik || 'Playfair Display';
+  const fg = t.font_govde || 'Inter';
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Fontlar</div><div class="tema-bolum-aciklama">Başlık ve gövde font çiftini seçin</div>';
+  html += '<div class="tema-font-grid">';
+  html += '<div class="tema-font-kolon"><label>Başlık</label><select class="tema-select" data-key="font_baslik" onchange="temaFontSec(this)">';
+  for (const f of FONT_LIST) html += `<option value="${esc(f.baslik)}"${fb===f.baslik?' selected':''}>${esc(f.baslik)}</option>`;
+  html += `</select><div class="tema-font-ornek" style="font-family:'${esc(fb)}',serif">Aa Başlık Örneği</div></div>`;
+  html += '<div class="tema-font-kolon"><label>Gövde</label><select class="tema-select" data-key="font_govde" onchange="temaFontSec(this)">';
+  for (const f of FONT_LIST) html += `<option value="${esc(f.govde)}"${fg===f.govde?' selected':''}>${esc(f.govde)}</option>`;
+  html += `</select><div class="tema-font-ornek" style="font-family:'${esc(fg)}',sans-serif">Aa Gövde metni örneği — lorem ipsum dolor sit amet.</div></div>`;
+  html += '</div></div>';
+
+  // ── 4) Stiller ─────────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Stiller</div><div class="tema-bolum-aciklama">Bileşen görünümlerini seçin</div>';
+  for (const [k, sec] of Object.entries(STIL_SECENEKLERI)) {
+    const m = t[k] || Object.keys(sec.secim)[0];
+    html += `<div class="tema-stil-grup" data-stil-grup="${esc(k)}">
+      <div class="tema-stil-label">${esc(sec.ad)}</div>
+      <div class="tema-stil-aciklama">${esc(sec.aciklama)}</div>
+      <div class="tema-stil-secenekler">`;
+    for (const [sk, sv] of Object.entries(sec.secim)) {
+      html += `<div class="tema-stil-chip${m===sk?' aktif':''}" data-stil="${esc(sk)}" onclick="temaStilSec('${esc(k)}','${esc(sk)}')">${esc(sv)}</div>`;
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+
+  // ── 5) Köşe Yuvarlaklığı ──────────────────────────────────────────────
+  const br = parseInt(t.border_radius || '12');
   html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Köşe Yuvarlaklığı</div>';
   html += '<div class="tema-slider-satir"><input type="range" min="0" max="24" value="' + br + '" class="tema-slider" oninput="temaBorderRadius(this)"><span id="br-value">' + br + 'px</span></div></div>';
 
-  // ── 6) Koyu Mod ─────────────────────────────────────────────────────────
-  const dm = tema.dark_mode === '1';
+  // ── 6) Koyu Mod ───────────────────────────────────────────────────────
   html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Koyu Mod</div>';
-  html += '<label class="tema-toggle"><input type="checkbox"' + (dm?' checked':'') + ' onchange="temaDarkToggle(this)"><span class="tema-toggle-slider"></span> Koyu Modu Etkinleştir</label></div>';
+  html += '<label class="tema-toggle"><input type="checkbox"' + (t.dark_mode==='1'?' checked':'') + ' onchange="temaDarkToggle(this)"><span class="tema-toggle-slider"></span> Koyu Modu Etkinleştir</label></div>';
+
+  // ── 7) Kaydet / Sıfırla butonları ─────────────────────────────────────
+  html += '<div class="tema-aksiyon-bar">';
+  html += '<button class="btn btn-kirm btn-lg tema-btn-kaydet" onclick="temaKaydet()">💾 Tema Kaydet</button>';
+  html += '<button class="btn btn-ntr btn-lg" onclick="temaSifirla()">↺ Sıfırla</button>';
+  html += '</div>';
 
   html += '</div>'; // .tema-editor
   ic.innerHTML = html;
+
+  // taslak başlangıç değerlerini saved ile doldur
+  Object.assign(temaDraft, t);
+  temaDraft.dark_mode = t.dark_mode || '0';
 }
 
 // ── Şablonlar ─────────────────────────────────────────────────────────────────

@@ -1473,6 +1473,19 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   left: 23px;
 }
 
+/* Aksiyon bar (Kaydet / Sıfırla) */
+.tema-aksiyon-bar {
+  display: flex;
+  gap: .75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: .5rem 0 1rem;
+}
+
+.tema-btn-kaydet {
+  min-width: 200px;
+}
+
 @media (max-width: 480px) {
   .tema-palet-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -1482,5 +1495,12 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   }
   .tema-renk-satir label {
     min-width: 80px;
+  }
+  .tema-aksiyon-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tema-btn-kaydet {
+    min-width: unset;
   }
 }
