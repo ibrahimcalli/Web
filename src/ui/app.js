@@ -3571,7 +3571,7 @@ function sektorIkon(sector) {
 
 async function wizardBaslat(sector) {
   try {
-    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST', body: '{}' });
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST', body: '{}' }, { silent: true });
     if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
     wizardState.wizard_id = r.wizard_id;
     wizardState.adim = 1;
@@ -3751,7 +3751,7 @@ async function wizardAdim10() {
 async function wizardSon() {
   if (!wizardState.wizard_id) return;
   try {
-    const r = await api.request(`/api/admin/wizard/${wizardState.wizard_id}/olustur`, { method: 'POST' });
+    const r = await api.request(`/api/admin/wizard/${wizardState.wizard_id}/olustur`, { method: 'POST', body: '{}' }, { silent: true });
     if (r?.success) {
       bildirim('✅ Site başarıyla oluşturuldu!', 'basari');
       adminSayfa('sablonlar');
