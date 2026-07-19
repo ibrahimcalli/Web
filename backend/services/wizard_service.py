@@ -170,6 +170,9 @@ class WizardService:
         if palette.get("colors"):
             for k, v in palette["colors"].items():
                 self.ayar_repo.set(f"renk_{k}" if not k.startswith("renk_") else k, v)
+            # Compatibility: schema seed uses renk_ana_koy, wizard uses ana_koyu
+            if "ana_koyu" in palette["colors"]:
+                self.ayar_repo.set("renk_ana_koy", palette["colors"]["ana_koyu"])
 
         # Template aktifleştir
         template_slug = veri.get("template", preset.get("default_template", "corporate"))

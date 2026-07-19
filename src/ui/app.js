@@ -1515,6 +1515,14 @@ async function ayarlariKaydet() {
 }
 
 // ── Site Ayarlarını Uygula ────────────────────────────────────────────────────
+function lightenHex(hex, percent = 70) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  const m = c => Math.round(c + (255 - c) * percent / 100);
+  return `#${m(r).toString(16).padStart(2,'0')}${m(g).toString(16).padStart(2,'0')}${m(b).toString(16).padStart(2,'0')}`;
+}
+
 async function siteAyarlariUygula() {
   const ay = await api.getAyarlar(); if (!ay) return;
   const setEl = (id, val) => { const e = document.getElementById(id); if (e && val) e.textContent = val; };
@@ -1527,6 +1535,15 @@ async function siteAyarlariUygula() {
   setEl('footer-adres', ay.adres);
   if (ay.site_adi) document.title = ay.site_adi + ' — Fethiye';
   if (ay.renk_tema) document.body.setAttribute('data-tema', ay.renk_tema);
+
+  // Wizard'dan gelen özel renkleri CSS değişkenlerine uygula
+  const root = document.documentElement;
+  if (ay.renk_ana) root.style.setProperty('--kiremit', ay.renk_ana);
+  if (ay.renk_ana_koy) root.style.setProperty('--kiremit-k', ay.renk_ana_koy);
+  else if (ay.renk_ana_koyu) root.style.setProperty('--kiremit-k', ay.renk_ana_koyu);
+  if (ay.renk_arka) root.style.setProperty('--krem', ay.renk_arka);
+  if (ay.renk_metin) root.style.setProperty('--toprak', ay.renk_metin);
+  if (ay.renk_ana) root.style.setProperty('--kiremit-a', lightenHex(ay.renk_ana, 72));
 
   // İletişim
   const fTel = document.getElementById('footer-tel');
@@ -3754,6 +3771,8 @@ async function wizardSon() {
     const r = await api.request(`/api/admin/wizard/${wizardState.wizard_id}/olustur`, { method: 'POST', body: '{}' }, { silent: true });
     if (r?.success) {
       bildirim('✅ Site başarıyla oluşturuldu!', 'basari');
+      api.clearCache();
+      setTimeout(() => location.reload(), 1500);
       adminSayfa('sablonlar');
     } else {
       bildirim('Hata: ' + (r?.message || 'Bilinmeyen hata'), 'hata');
