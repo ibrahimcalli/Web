@@ -518,10 +518,50 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
    10. TEMA, BİLDİRİM, FOOTER, MOBİL TAB, MISC
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Tema desteği */
-[data-tema="green"]  { --kiremit: #2D7D46; --kiremit-k: #1F5C33; --kiremit-a: #DCFCE7; }
-[data-tema="navy"]   { --kiremit: #1A3C6B; --kiremit-k: #12295A; --kiremit-a: #DBEAFE; }
-[data-tema="purple"] { --kiremit: #6D28D9; --kiremit-k: #5B21B6; --kiremit-a: #EDE9FE; }
+/* Tema desteği — 2025-2026 trend renkler dahil */
+[data-tema="green"]    { --kiremit:#2D7D46; --kiremit-k:#1F5C33; --kiremit-a:#DCFCE7; }
+[data-tema="navy"]     { --kiremit:#1A3C6B; --kiremit-k:#12295A; --kiremit-a:#DBEAFE; }
+[data-tema="purple"]   { --kiremit:#6D28D9; --kiremit-k:#5B21B6; --kiremit-a:#EDE9FE; }
+[data-tema="rose"]     { --kiremit:#E11D48; --kiremit-k:#9F1239; --kiremit-a:#FFE4E6; }
+[data-tema="gold"]     { --kiremit:#B8860B; --kiremit-k:#92400E; --kiremit-a:#FEF3C7; }
+[data-tema="teal"]     { --kiremit:#0D9488; --kiremit-k:#115E59; --kiremit-a:#CCFBF1; }
+[data-tema="charcoal"] { --kiremit:#1F2937; --kiremit-k:#111827; --kiremit-a:#E5E7EB; --krem:#FAFAFA; --toprak:#1F2937; }
+[data-tema="okyanus"]  { --kiremit:#0EA5E9; --kiremit-k:#0369A1; --kiremit-a:#E0F2FE; }
+[data-tema="mor"]      { --kiremit:#9333EA; --kiremit-k:#6B21A8; --kiremit-a:#F3E8FF; }
+[data-tema="altın"]   { --kiremit:#D97706; --kiremit-k:#92400E; --kiremit-a:#FEF3C7; }
+[data-tema="gül"]      { --kiremit:#EC4899; --kiremit-k:#BE185D; --kiremit-a:#FCE7F3; }
+[data-tema="kömür"]   { --kiremit:#374151; --kiremit-k:#1F2937; --kiremit-a:#F3F4F6; --krem:#FAFAFA; }
+[data-tema="kiremit"] { --kiremit:#C45C35; --kiremit-k:#A34A28; --kiremit-a:#FFE4D6; }
+
+/* Header stilleri */
+body.header-sticky .nav { position:sticky; top:0; z-index:100; }
+body.header-fixed .nav { position:fixed; top:0; left:0; right:0; z-index:100; }
+body.header-fixed .sayfa { padding-top:var(--nav-h, 65px); }
+body.header-minimal .nav { box-shadow:none; background:transparent; border-bottom:1px solid var(--kumtasi); }
+body.header-default .nav { box-shadow:0 2px 8px rgba(45,32,22,.06); }
+
+/* Footer stilleri */
+body.footer-minimal .footer { padding:1.5rem 0; }
+body.footer-centered .footer { text-align:center; }
+body.footer-centered .footer-grid { grid-template-columns:1fr; }
+body.footer-classic .footer { border-top:4px solid var(--kiremit); }
+
+/* Kart stilleri */
+body.kart-shadow .kart, body.kart-shadow .blog-kart { box-shadow:0 8px 24px rgba(0,0,0,.08); border:none; }
+body.kart-border .kart { border:2px solid var(--kumtasi); box-shadow:none; }
+body.kart-glass .kart, body.kart-glass .blog-kart { background:rgba(255,255,255,.7); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.3); }
+
+/* Button stilleri */
+body.button-rounded .btn { border-radius:999px; }
+body.button-square .btn { border-radius:0; }
+body.button-pill .btn { border-radius:var(--r); padding:.55rem 1.5rem; }
+
+/* Animasyon stilleri */
+body.animasyon-none * { animation:none !important; transition:none !important; }
+body.animasyon-fade .kart { animation:fade-in .4s ease; }
+body.animasyon-slide .kart { animation:slide-in .4s ease; }
+@keyframes fade-in { from { opacity:0; } to { opacity:1; } }
+@keyframes slide-in { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 
 /* Bildirimler — mobilde inci şekilde konumlanır */
 .bildirim-kont {

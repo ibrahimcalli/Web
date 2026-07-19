@@ -56,3 +56,30 @@ async def tema_sil(
         return ok(theme_service.delete(anahtar))
     except Exception as e:
         return fail(str(e))
+
+
+# Bilinen tema anahtarları (whitelist) — dışından eklenen spam anahtarlar temizlenir
+TEMA_WHITELIST = {
+    "template","renk_ana","renk_ana_koy","renk_arka","renk_metin","dark_mode",
+    "font_baslik","font_govde","border_radius","shadow_kart",
+    "header_stil","footer_stil","kart_stil","button_stil","animasyon",
+    "logo_url","favicon_url",
+}
+
+
+@router.post("/admin/tema/cleanup")
+async def tema_cleanup(
+    theme_service: ThemeService = Depends(get_theme_service),
+    _=Depends(require_admin),
+):
+    """Whitelist dışındaki anahtarları theme_settings tablosundan siler."""
+    try:
+        all_keys = theme_service.get_all()
+        silinen = []
+        for k in list(all_keys.keys()):
+            if k not in TEMA_WHITELIST:
+                theme_service.delete(k)
+                silinen.append(k)
+        return ok({"silinen": silinen, "adet": len(silinen)})
+    except Exception as e:
+        return fail(str(e))

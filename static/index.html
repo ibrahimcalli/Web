@@ -161,7 +161,7 @@ img{max-width:100%;height:auto}
 <div class="bildirim-kont" id="bil-kont"></div>
 
 <!-- Banner: tum_sayfalar_ust (navbar altı) -->
-<div id="banner-tum_sayfalar_ust" class="banner-bos"></div>
+<div id="banner-tum_sayfalar_ust"></div>
 
 <!-- ════════════════ ANASAYFA ════════════════ -->
 <div class="sayfa aktif" id="sayfa-anasayfa">
@@ -169,7 +169,7 @@ img{max-width:100%;height:auto}
   <!-- Hero -->
   <div style="border-bottom: 1px solid var(--kumtasi);">
     <div class="hero">
-      <div class="hero-ust">Fethiye · Muğla · Türkiye</div>
+      <div class="hero-ust" id="hero-ust">Fethiye · Muğla · Türkiye</div>
       <h1 class="hero-baslik t-display" id="hero-baslik-metin">
         <em>Ege'nin</em> en güzel mülklerini keşfedin
       </h1>
@@ -195,11 +195,8 @@ img{max-width:100%;height:auto}
     </div>
   </div>
 
-  <!-- Banner alanı — anasayfa -->
-  <div id="banner-anasayfa-ust"></div>
-
   <!-- Banner: anasayfa_ust -->
-  <div id="banner-anasayfa_ust" class="banner-bos"></div>
+  <div id="banner-anasayfa-ust"></div>
 
   <!-- Kategori bant -->
   <div class="kat-bant">
@@ -210,7 +207,7 @@ img{max-width:100%;height:auto}
 
   <!-- Öne çıkan ilanlar -->
   <!-- Banner: anasayfa_hero_alti -->
-  <div id="banner-anasayfa_hero_alti" class="banner-bos"></div>
+  <div id="banner-anasayfa_hero_alti"></div>
 
   <div class="seksiyonlar" style="margin-top:1.5rem">
     <div class="bant-baslik">
@@ -234,7 +231,7 @@ img{max-width:100%;height:auto}
   </div>
 
   <!-- Banner: tum_sayfalar_alt -->
-  <div id="banner-tum_sayfalar_alt" class="banner-bos"></div>
+  <div id="banner-tum_sayfalar_alt"></div>
 
   <!-- Karşılaştırma bandı -->
   <div class="kars-bant" id="kars-bant">
@@ -272,6 +269,10 @@ img{max-width:100%;height:auto}
         <p id="footer-web" style="display:none"><a href="https://portfoygayrimenkul.com.tr" target="_blank" style="color:rgba(255,255,255,.6)">🌐 portfoygayrimenkul.com.tr</a></p>
       </div>
       <div class="footer-grup">
+        <h4>Menü</h4>
+        <div id="footer-menu"></div>
+      </div>
+      <div class="footer-grup">
         <h4>Kategoriler</h4>
         <div id="footer-katlar"></div>
       </div>
@@ -305,7 +306,7 @@ img{max-width:100%;height:auto}
   </div>
 
   <!-- Banner: ilanlar_ust -->
-  <div id="banner-ilanlar_ust" class="banner-bos"></div>
+  <div id="banner-ilanlar_ust"></div>
 
   <div class="ilan-bolum">
     <div class="bolum-ust">
@@ -403,6 +404,14 @@ img{max-width:100%;height:auto}
   <div style="max-width:860px; margin:0 auto; padding:2rem clamp(1rem,4vw,2.5rem)">
     <div class="detay-geri" onclick="sayfaGit('blog')">← Haberlere Dön</div>
     <div id="blog-detay-ic"></div>
+  </div>
+</div>
+
+<!-- ════════════════ SAYFA (CMS Pages) ════════════════ -->
+<div class="sayfa" id="sayfa-sayfa">
+  <div style="max-width:860px; margin:0 auto; padding:2rem clamp(1rem,4vw,2.5rem)">
+    <div class="detay-geri" onclick="sayfaGit('anasayfa')">← Ana Sayfa</div>
+    <article id="sayfa-icerik-ic"><div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div></article>
   </div>
 </div>
 
@@ -882,7 +891,9 @@ img{max-width:100%;height:auto}
   </div>
 </div>
 
-<script type="module" src="/src/ui/app.js?v=84c8353"></script>
+<script type="module" src="/src/ui/app.js?v=blogfix24"></script>
+<script type="module" src="/src/ui/menu-renderer.js?v=m1"></script>
+<script type="module" src="/src/ui/widget-renderer.js?v=w1"></script>
 
 <!-- Production Runtime — SEO, PWA, Image Optimizer (mevcut JS'i etkilemez) -->
 <script src="/src/ui/seo.js"></script>

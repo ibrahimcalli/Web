@@ -45,10 +45,12 @@ function sayfaGit(sayfa, data = null) {
   if (nb) nb.classList.add('aktif');
   const tb = document.getElementById('tab-' + (sayfa === 'anasayfa' ? 'ana' : sayfa === 'ilanlar' ? 'ilan' : sayfa === 'admin' ? 'admin' : ''));
   if (tb) tb.classList.add('aktif');
-  if (sayfa === 'anasayfa')     { anaSayfaYukle(); }
-  if (sayfa === 'ilanlar')      { ilanYukle(); }
+  const adminSayfada = document.getElementById('sayfa-admin')?.classList.contains('aktif');
+  if (sayfa === 'anasayfa')     { anaSayfaYukle(); bannerlariYukle('anasayfa_ust'); bannerlariYukle('anasayfa_hero_alti'); bannerlariYukle('tum_sayfalar_ust'); bannerlariYukle('tum_sayfalar_alt'); }
+  if (sayfa === 'ilanlar')      { ilanYukle(); bannerlariYukle('ilanlar_ust'); }
   if (sayfa === 'blog')         { blogListeYukle(); }
   if (sayfa === 'blog-detay' && data) blogDetayGoster(data);
+  if (sayfa === 'sayfa' && data && data.slug) sayfaGoster(data.slug);
   if (sayfa === 'admin')        { adminKontrol(); adminSayfa('portfoyler'); }
   if (sayfa === 'detay' && data) detayGoster(data);
   window.scrollTo(0, 0);
@@ -898,7 +900,10 @@ async function resimSil(url, pid) {
 }
 
 // ── Admin Sayfaları ───────────────────────────────────────────────────────────
+let _aktifAdminSayfa = '';
+
 function adminSayfa(sayfa) {
+  _aktifAdminSayfa = sayfa;
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('aktif'));
   const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12, sablonlar:13, wizard:14 };
   const items = document.querySelectorAll('.sidebar-item');
@@ -1104,7 +1109,7 @@ async function adminIstekler() {
         <td style="font-size:.8rem; max-width:180px; color:var(--gri-metin)">${(i.mesaj||'').substring(0,60)}${(i.mesaj||'').length>60?'…':''}</td>
         <td style="font-size:.75rem; color:var(--gri-metin); white-space:nowrap">${(i.olusturma||'').substring(0,10)}</td>
         <td><select class="form-girdi" style="padding:.25rem .5rem;font-size:.78rem;width:auto" onchange="istekDurum(${i.id},this.value)">
-          ${['Yeni','Görüldü','Kapatıldı'].map(s=>`<option${s===i.durum?' selected':''}>${s}</option>`).join('')}
+          ${['Yeni','İşleniyor','Tamamlandı','Reddedildi'].map(s=>`<option value="${s}"${s===i.durum?' selected':''}>${s}</option>`).join('')}
         </select></td>
       </tr>`;
     });
@@ -1114,7 +1119,11 @@ async function adminIstekler() {
 }
 
 async function istekDurum(id, durum) {
-  await api.update('istekler', id, {}, { action: 'durum', query: { durum } });
+  try {
+    const r = await api.update('istekler', id, {}, { action: 'durum', query: { durum } });
+    if (r) { bildirim('Durum güncellendi: ' + durum, 'basari'); adminIstekler(); }
+    else bildirim('Durum güncellenemedi', 'hata');
+  } catch (e) { bildirim('Hata: ' + e.message, 'hata'); }
 }
 
 // ── Kullanıcılar ──────────────────────────────────────────────────────────────
@@ -1309,6 +1318,93 @@ async function adminAyarlar() {
         <button class="btn btn-ntr btn-sm" onclick="aiAyarlariKaydet()">💾 AI Ayarlarını Kaydet</button>
       </div>
 
+      <!-- Hero Bölümü -->
+      <div style="background:var(--beyaz); border:1px solid var(--kumtasi); border-radius:var(--r); padding:1.25rem;">
+        <div style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gri-metin); margin-bottom:1rem;">🏠 Hero Bölümü (Ana Sayfa Üst)</div>
+        <p style="font-size:.78rem;color:var(--gri-metin);margin-bottom:1rem">
+          Arama kutusu her zaman görünür. Hero pasif yapıldığında sadece başlık ve metinler gizlenir.
+        </p>
+
+        <div class="form-grup" style="margin-bottom:.5rem">
+          <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.875rem;margin-bottom:.75rem">
+            <input type="checkbox" id="ay-hero_aktif" ${ayarlar.hero_aktif !== '0' ? 'checked' : ''}>
+            Hero başlık/metin aktif (yayında)
+          </label>
+        </div>
+
+        <!-- Üst Etiket -->
+        <div style="background:var(--krem);border-radius:var(--r-sm);padding:.75rem;margin-bottom:.75rem">
+          <div style="font-size:.72rem;font-weight:600;color:var(--gri-metin);margin-bottom:.35rem">Üst Etiket</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input class="form-girdi" id="ay-hero_ust" value="${ayarlar.hero_ust||''}" placeholder="Fethiye · Muğla · Türkiye" style="flex:2;min-width:140px">
+            <input type="number" id="ay-hero_ust_boyut" value="${ayarlar.hero_ust_boyut||''}" placeholder="px" style="width:60px;padding:.45rem;border:1.5px solid var(--kumtasi);border-radius:var(--r-sm);font-size:.82rem">
+            <input type="color" id="ay-hero_ust_renk" value="${ayarlar.hero_ust_renk||'#000000'}" style="width:36px;height:34px;border-radius:var(--r-sm);border:1.5px solid var(--kumtasi);cursor:pointer;padding:2px">
+          </div>
+        </div>
+
+        <!-- Başlık -->
+        <div style="background:var(--krem);border-radius:var(--r-sm);padding:.75rem;margin-bottom:.75rem">
+          <div style="font-size:.72rem;font-weight:600;color:var(--gri-metin);margin-bottom:.35rem">Başlık</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            <input class="form-girdi" id="ay-hero_baslik" value="${ayarlar.hero_baslik||''}" placeholder="Ege'nin en güzel mülklerini keşfedin" style="flex:2;min-width:140px">
+            <input type="number" id="ay-hero_baslik_boyut" value="${ayarlar.hero_baslik_boyut||''}" placeholder="px" style="width:60px;padding:.45rem;border:1.5px solid var(--kumtasi);border-radius:var(--r-sm);font-size:.82rem">
+            <input type="color" id="ay-hero_baslik_renk" value="${ayarlar.hero_baslik_renk||'#000000'}" style="width:36px;height:34px;border-radius:var(--r-sm);border:1.5px solid var(--kumtasi);cursor:pointer;padding:2px">
+          </div>
+        </div>
+
+        <!-- Alt Metin -->
+        <div style="background:var(--krem);border-radius:var(--r-sm);padding:.75rem;margin-bottom:.75rem">
+          <div style="font-size:.72rem;font-weight:600;color:var(--gri-metin);margin-bottom:.35rem">Alt Metin</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:start">
+            <textarea class="form-girdi" id="ay-hero_alt" rows="2" placeholder="Fethiye ve çevresinde..." style="flex:2;min-width:140px">${ayarlar.hero_alt||''}</textarea>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">
+              <input type="number" id="ay-hero_alt_boyut" value="${ayarlar.hero_alt_boyut||''}" placeholder="px" style="width:60px;padding:.45rem;border:1.5px solid var(--kumtasi);border-radius:var(--r-sm);font-size:.82rem">
+              <input type="color" id="ay-hero_alt_renk" value="${ayarlar.hero_alt_renk||'#000000'}" style="width:36px;height:34px;border-radius:var(--r-sm);border:1.5px solid var(--kumtasi);cursor:pointer;padding:2px">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grup" style="margin-bottom:0">
+          <label class="form-etiket">Arka Plan Rengi <span style="font-size:.72rem;color:var(--gri-metin);font-weight:400">(opsiyonel)</span></label>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <input type="color" id="ay-hero_arkaplan" value="${ayarlar.hero_arkaplan||'#ffffff'}"
+              style="width:44px;height:38px;border-radius:var(--r-sm);border:1.5px solid var(--kumtasi);cursor:pointer;padding:2px"
+              oninput="document.getElementById('ay-hero_arkaplan-txt').value=this.value">
+            <input class="form-girdi" id="ay-hero_arkaplan-txt" value="${ayarlar.hero_arkaplan||''}"
+              oninput="document.getElementById('ay-hero_arkaplan').value=this.value"
+              style="flex:1;font-family:monospace;font-size:.85rem" placeholder="#ffffff veya boş">
+          </div>
+        </div>
+
+        <div class="form-grup" style="margin-bottom:0;margin-top:.75rem">
+          <label class="form-etiket" style="margin-bottom:.5rem">Hero Fontu <span style="font-size:.72rem;color:var(--gri-metin);font-weight:400">(tüm hero metinleri)</span></label>
+          <input type="hidden" id="ay-hero_font" value="${esc(ayarlar.hero_font||'Playfair Display')}">
+          <div id="ay-hero-font-grd" style="display:flex;flex-wrap:wrap;gap:.35rem">
+            ${(() => { const sf = ayarlar.hero_font || 'Playfair Display';
+              return HERO_FONTS.map(f => `<div onclick="heroFontSec(this)" data-font="${esc(f)}" style="
+                cursor:pointer;padding:.35rem .55rem;border-radius:var(--r-sm);
+                border:2px solid ${f===sf?'var(--kiremit)':'var(--kumtasi)'};
+                background:${f===sf?'rgba(196,92,53,.08)':'transparent'};
+                text-align:center;font-family:'${esc(f)}',serif;font-size:.78rem;
+                line-height:1.3;transition:.15s;flex:0 0 auto;
+                max-width:calc(50% - .35rem)">${esc(f)}
+                <div style="font-size:.58rem;opacity:.45;margin-top:1px">Aa Örnek Metin</div>
+              </div>`).join('');
+            })()}
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;margin-top:.5rem;flex-wrap:wrap">
+            <label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem">
+              <input type="checkbox" id="ay-hero_font_italic" ${ayarlar.hero_font_italic === '1' ? 'checked' : ''}>
+              <em>İtalik</em> (eğik yazı)
+            </label>
+            <label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.82rem">
+              <input type="checkbox" id="ay-hero_font_bold" ${ayarlar.hero_font_bold === '1' ? 'checked' : ''}>
+              <strong>Kalın</strong> (bold)
+            </label>
+          </div>
+        </div>
+      </div>
+
       <!-- Genel Piyasa Özeti -->
       <div style="background:var(--beyaz); border:1px solid var(--kumtasi); border-radius:var(--r); padding:1.25rem;">
         <div style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gri-metin); margin-bottom:1rem;">📊 Kategori Bazlı m² Fiyat Özeti</div>
@@ -1322,11 +1418,13 @@ async function adminAyarlar() {
   // Logo önizlemeyi doldur
   if (ayarlar.logo_url) setTimeout(() => logoOnizlemeGuncelle(ayarlar.logo_url), 50);
   seciliTema = ayarlar.renk_tema || '';
-  // Genel fiyat analizini yükle
+  // Genel fiyat analizini yükle (404 sessiz)
   adminFiyatAnaliziGenel().then(html => {
     const kont = document.getElementById('genel-fiyat-analiz');
     if (kont) kont.innerHTML = html;
-  });
+  }).catch(() => {});
+  // Font önizlemesi için fontları önceden yükle
+  HERO_FONTS.forEach(f => fontYukle(f));
 }
 
 let seciliTema = '';
@@ -1506,8 +1604,15 @@ async function sifreDegistir() {
 
 async function ayarlariKaydet() {
   const ayarlar = {};
-  ['site_adi','site_slogan','telefon','email','adres','sosyal_wa','sosyal_ig','sosyal_fb','web_sitesi'].forEach(k => {
+  ['site_adi','site_slogan','telefon','email','adres','sosyal_wa','sosyal_ig','sosyal_fb','web_sitesi',
+   'hero_baslik','hero_alt','hero_ust','hero_arkaplan','hero_font',
+   'hero_baslik_boyut','hero_alt_boyut','hero_ust_boyut',
+   'hero_baslik_renk','hero_alt_renk','hero_ust_renk'].forEach(k => {
     const el = document.getElementById('ay-' + k); if (el) ayarlar[k] = el.value;
+  });
+  ['hero_aktif', 'hero_font_italic', 'hero_font_bold'].forEach(k => {
+    const el = document.getElementById('ay-' + k);
+    if (el) ayarlar[k] = el.checked ? '1' : '0';
   });
   if (seciliTema !== undefined && seciliTema !== null) ayarlar['renk_tema'] = seciliTema;
   const d = await api.update('ayarlar', null, { ayarlar });
@@ -1522,6 +1627,17 @@ function lightenHex(hex, percent = 70) {
   const m = c => Math.round(c + (255 - c) * percent / 100);
   return `#${m(r).toString(16).padStart(2,'0')}${m(g).toString(16).padStart(2,'0')}${m(b).toString(16).padStart(2,'0')}`;
 }
+
+window.heroFontSec = function(el) {
+  const font = el.dataset.font;
+  document.getElementById('ay-hero_font').value = font;
+  document.querySelectorAll('#ay-hero-font-grd > div').forEach(d => {
+    d.style.borderColor = 'var(--kumtasi)';
+    d.style.background = 'transparent';
+  });
+  el.style.borderColor = 'var(--kiremit)';
+  el.style.background = 'rgba(196,92,53,.08)';
+};
 
 async function siteAyarlariUygula() {
   const ay = await api.getAyarlar(); if (!ay) return;
@@ -1547,6 +1663,16 @@ async function siteAyarlariUygula() {
 
   // Tema ayarlarından font ve stil uygula
   const tm = await api.request('/api/tema').catch(()=>({}));
+  // Tema renkleri — tema tablosu öncelikli, ayarlar fallback
+  const tmRenk_ana = tm.renk_ana || ay.renk_ana;
+  const tmRenk_ana_koy = tm.renk_ana_koy || ay.renk_ana_koy || ay.renk_ana_koyu;
+  const tmRenk_arka = tm.renk_arka || ay.renk_arka;
+  const tmRenk_metin = tm.renk_metin || ay.renk_metin;
+  if (tmRenk_ana) root.style.setProperty('--kiremit', tmRenk_ana);
+  if (tmRenk_ana_koy) root.style.setProperty('--kiremit-k', tmRenk_ana_koy);
+  if (tmRenk_arka) root.style.setProperty('--krem', tmRenk_arka);
+  if (tmRenk_metin) root.style.setProperty('--toprak', tmRenk_metin);
+  if (tmRenk_ana) root.style.setProperty('--kiremit-a', lightenHex(tmRenk_ana, 72));
   if (tm.font_baslik) { root.style.setProperty('--font-baslik', tm.font_baslik); fontYukle(tm.font_baslik); }
   if (tm.font_govde) { root.style.setProperty('--font-govde', tm.font_govde); fontYukle(tm.font_govde); }
   if (tm.border_radius) {
@@ -1556,6 +1682,22 @@ async function siteAyarlariUygula() {
   }
   if (tm.dark_mode === '1') document.body.classList.add('dark-mode');
   else document.body.classList.remove('dark-mode');
+  if (tm.shadow_kart) root.style.setProperty('--dept-shadow', tm.shadow_kart);
+
+  // Stil seçeneklerini uygula (body üzerine class olarak)
+  const bodyStilSiniflari = ['header-sticky','header-fixed','header-default','header-minimal',
+    'footer-default','footer-minimal','footer-centered','footer-classic',
+    'kart-default','kart-shadow','kart-border','kart-glass',
+    'button-default','button-rounded','button-square','button-pill',
+    'animasyon-minimize','animasyon-none','animasyon-fade','animasyon-slide'];
+  bodyStilSiniflari.forEach(s => document.body.classList.remove(s));
+  if (tm.header_stil)  document.body.classList.add('header-' + tm.header_stil);
+  if (tm.footer_stil) document.body.classList.add('footer-' + tm.footer_stil);
+  if (tm.kart_stil)    document.body.classList.add('kart-' + tm.kart_stil);
+  if (tm.button_stil)  document.body.classList.add('button-' + tm.button_stil);
+  if (tm.animasyon)    document.body.classList.add('animasyon-' + tm.animasyon);
+
+  // Logo & iletişim & tema data-attr aşağıda uygulanıyor (tekrardan kaçın)
 
   // İletişim
   const fTel = document.getElementById('footer-tel');
@@ -1567,15 +1709,19 @@ async function siteAyarlariUygula() {
   const footerLogo = document.getElementById('footer-logo');
   const navLogoImg  = document.getElementById('nav-logo-img');
   const navLogoEmoji= document.getElementById('nav-logo-emoji');
-  if (ay.logo_url) {
-    if (footerLogo) { footerLogo.src = ay.logo_url; footerLogo.style.display = 'block'; }
-    if (navLogoImg) { navLogoImg.src = ay.logo_url; navLogoImg.style.display = 'block'; }
+  const logoUrl = ay.logo_url || tm.logo_url || '';
+  if (logoUrl) {
+    if (footerLogo) { footerLogo.src = logoUrl; footerLogo.style.display = 'block'; }
+    if (navLogoImg) { navLogoImg.src = logoUrl; navLogoImg.style.display = 'block'; }
     if (navLogoEmoji) navLogoEmoji.style.display = 'none';
   } else {
     if (footerLogo) footerLogo.style.display = 'none';
     if (navLogoImg) navLogoImg.style.display = 'none';
     if (navLogoEmoji) navLogoEmoji.style.display = '';
   }
+
+  // Theme palet data attribute
+  document.body.setAttribute('data-tema', (ay.renk_tema || tm.template || ''));
 
   // WhatsApp sabit butonu
   const waBtn = document.getElementById('wa-btn');
@@ -1636,6 +1782,55 @@ async function siteAyarlariUygula() {
         </a>` : ''}`;
     }
   });
+
+  // ── Hero Bölümü ──────────────────────────────────────────────────────────
+  const heroUst = document.getElementById('hero-ust');
+  const heroBaslik = document.getElementById('hero-baslik-metin');
+  const heroAlt = document.getElementById('hero-alt-metin');
+  if (ay.hero_aktif === '0') {
+    if (heroUst) heroUst.style.display = 'none';
+    if (heroBaslik) heroBaslik.style.display = 'none';
+    if (heroAlt) heroAlt.style.display = 'none';
+  } else {
+    if (heroUst) { heroUst.style.display = ay.hero_ust ? '' : 'none'; heroUst.textContent = ay.hero_ust || ''; }
+    if (heroBaslik) { heroBaslik.style.display = ay.hero_baslik ? '' : 'none'; heroBaslik.textContent = ay.hero_baslik || ''; }
+    if (heroAlt) { heroAlt.style.display = ay.hero_alt ? '' : 'none'; heroAlt.textContent = ay.hero_alt || ''; }
+  }
+  // Arama her zaman görünür
+  const heroArama = document.querySelector('.hero-arama');
+  if (heroArama) heroArama.style.display = '';
+  // Arka plan rengi
+  const heroKont = document.querySelector('.hero')?.parentElement;
+  if (heroKont) {
+    if (ay.hero_arkaplan) heroKont.style.background = ay.hero_arkaplan;
+    else heroKont.style.background = '';
+  }
+  // Hero font
+  if (ay.hero_font) {
+    fontYukle(ay.hero_font);
+    const hf = `'${ay.hero_font}', serif`;
+    if (heroUst) heroUst.style.fontFamily = hf;
+    if (heroBaslik) heroBaslik.style.fontFamily = hf;
+    if (heroAlt) heroAlt.style.fontFamily = hf;
+  }
+  // Hero italic
+  const heroItalic = ay.hero_font_italic === '1' ? 'italic' : '';
+  if (heroUst) heroUst.style.fontStyle = heroItalic;
+  if (heroBaslik) heroBaslik.style.fontStyle = heroItalic;
+  if (heroAlt) heroAlt.style.fontStyle = heroItalic;
+  // Hero bold
+  const heroBold = ay.hero_font_bold === '1' ? '700' : '';
+  if (heroUst) heroUst.style.fontWeight = heroBold;
+  if (heroBaslik) heroBaslik.style.fontWeight = heroBold;
+  if (heroAlt) heroAlt.style.fontWeight = heroBold;
+  // Font boyutları
+  if (heroBaslik && ay.hero_baslik_boyut) heroBaslik.style.fontSize = ay.hero_baslik_boyut + 'px';
+  if (heroAlt && ay.hero_alt_boyut) heroAlt.style.fontSize = ay.hero_alt_boyut + 'px';
+  if (heroUst && ay.hero_ust_boyut) heroUst.style.fontSize = ay.hero_ust_boyut + 'px';
+  // Metin renkleri
+  if (heroBaslik && ay.hero_baslik_renk) heroBaslik.style.color = ay.hero_baslik_renk;
+  if (heroAlt && ay.hero_alt_renk) heroAlt.style.color = ay.hero_alt_renk;
+  if (heroUst && ay.hero_ust_renk) heroUst.style.color = ay.hero_ust_renk;
 }
 
 function waIkon() {
@@ -2053,7 +2248,7 @@ async function blogListeYukle() {
     // Etiket barı
     const etiketBar = document.getElementById('blog-etiket-bar');
     if (etiketBar) {
-      const tumEtiketler = [...new Set(yazılar.flatMap(y => y.etiketler || []))];
+      const tumEtiketler = [...new Set(yazılar.flatMap(y => Array.isArray(y.etiketler) ? y.etiketler : []))];
       etiketBar.innerHTML = tumEtiketler.length
         ? '<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'\')">Tümü</span>' +
           tumEtiketler.map(e => `<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'${e}\')">${e}</span>`).join('')
@@ -2071,7 +2266,7 @@ async function blogListeYukle() {
 
     // Blog liste sayfası
     const filtreli = aktifBlogEtiket
-      ? yazılar.filter(y => (y.etiketler||[]).includes(aktifBlogEtiket))
+      ? yazılar.filter(y => (Array.isArray(y.etiketler)?y.etiketler:[]).includes(aktifBlogEtiket))
       : yazılar;
     grid.innerHTML = '';
     if (!filtreli.length) {
@@ -2120,6 +2315,38 @@ function blogIcerikRender(metin) {
   return html;
 }
 
+async function sayfaGoster(slug) {
+  const ic = document.getElementById('sayfa-icerik-ic');
+  if (!ic) return;
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+  try {
+    const r = await fetch(`/api/public/sayfa/${encodeURIComponent(slug)}`);
+    const j = await r.json();
+    if (!j || !j.success || !j.data) {
+      ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Sayfa bulunamadı</h3></div>';
+      return;
+    }
+    const p = j.data;
+    if (p.durum && p.durum !== 'Yayında' && p.durum !== 'Aktif') {
+      ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">🔒</div><h3>Bu sayfa yayında değil</h3></div>';
+      return;
+    }
+    document.title = (p.seo_baslik || p.baslik || 'Sayfa') + ' — ' + (document.title.split(' — ')[1] || '');
+    const etiketHtml = Array.isArray(p.etiketler) ? p.etiketler.map(e => `<span class="blog-etiket">${e}</span>`).join('') : '';
+    ic.innerHTML = `
+      ${p.kapak_resim ? `<img src="${p.kapak_resim}" alt="${p.baslik||''}" style="width:100%;max-height:340px;object-fit:cover;border-radius:var(--r);margin-bottom:1.5rem">` : ''}
+      <h1 style="font-family:var(--font-baslik);font-size:2rem;margin-bottom:.5rem;color:var(--toprak)">${p.baslik || ''}</h1>
+      ${p.ozet ? `<p style="color:var(--gri-metin);font-size:1.05rem;margin-bottom:1.5rem">${p.ozet}</p>` : ''}
+      <div class="blog-icerik">${p.icerik || ''}</div>
+      ${etiketHtml ? `<div style="margin-top:1.5rem">${etiketHtml}</div>` : ''}
+    `;
+    if (window.seoUpdate) window.seoUpdate('sayfa', { slug, baslik: p.baslik, aciklama: p.seo_aciklama || p.ozet, anahtar: p.seo_anahtar_kelimeler, resim: p.kapak_resim });
+  } catch (e) {
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Sayfa yüklenemedi</h3><p>Lütfen tekrar deneyin</p></div>';
+  }
+}
+window.sayfaGoster = sayfaGoster;
+
 function editorEkle(once, sonra) {
   const ta = document.getElementById('blog-icerik');
   if (!ta) return;
@@ -2136,7 +2363,7 @@ function blogKartOlustur(yazi) {
   const el = document.createElement('div');
   el.className = 'blog-kart';
   const tarih = yazi.olusturma ? new Date(yazi.olusturma).toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' }) : '';
-  const etiketHtml = (yazi.etiketler||[]).map(e => `<span class="blog-etiket">${e}</span>`).join('');
+  const etiketHtml = (Array.isArray(yazi.etiketler)?yazi.etiketler:[]).map(e => `<span class="blog-etiket">${e}</span>`).join('');
   el.innerHTML = `
     <div class="blog-kart-foto">
       ${yazi.kapak_resim ? `<img src="${yazi.kapak_resim}" alt="${yazi.baslik}" loading="lazy">` : '📰'}
@@ -2156,7 +2383,7 @@ async function blogDetayGoster(yazi) {
   if (!ic) return;
   const d = await api.getBlogBySlugOrId(yazi.slug) || yazi;
   const tarih = d.olusturma ? new Date(d.olusturma).toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' }) : '';
-  const etiketHtml = (d.etiketler||[]).map(e => `<span class="blog-etiket">${e}</span>`).join('');
+  const etiketHtml = (Array.isArray(d.etiketler)?d.etiketler:[]).map(e => `<span class="blog-etiket">${e}</span>`).join('');
   ic.innerHTML = `
     ${d.kapak_resim ? `<img src="${d.kapak_resim}" alt="${d.baslik}" style="width:100%;max-height:360px;object-fit:cover;border-radius:var(--r);margin-bottom:1.5rem">` : ''}
     <div style="margin-bottom:.75rem">${etiketHtml}</div>
@@ -2189,43 +2416,50 @@ let blogDuzenleId = null;
 async function adminBlog() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
-  const yazılar = await api.getBlog({ durum: '' });
-  if (!yazılar || yazılar === null) {
-    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3></div>';
-    return;
-  }
+  try {
+    const yazılar = await api.getBlog({ durum: '' });
+    if (_aktifAdminSayfa !== 'blog') return;
+    if (!yazılar || yazılar === null) {
+      ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3></div>';
+      return;
+    }
 
-  let html = `<div class="admin-baslik">Blog / Haberler
-    <button class="btn btn-kirm" onclick="blogModalAc()">+ Yeni Yazı</button>
-  </div>`;
+    let html = `<div class="admin-baslik">Blog / Haberler
+      <button class="btn btn-kirm" onclick="blogModalAc()">+ Yeni Yazı</button>
+    </div>`;
 
-  if (!yazılar.length) {
-    html += '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>İlk blog yazınızı ekleyin</p></div>';
-  } else {
-    html += `<div class="tablo-kont"><table class="tablo">
-      <thead><tr><th>Başlık</th><th>Durum</th><th>Tarih</th><th>Yazar</th><th></th></tr></thead><tbody>`;
-    yazılar.forEach(y => {
-      const tarih = y.olusturma ? new Date(y.olusturma).toLocaleDateString('tr-TR') : '';
-      html += `<tr>
+    if (!yazılar.length) {
+      html += '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>İlk blog yazınızı ekleyin</p></div>';
+    } else {
+      html += `<div class="tablo-kont"><table class="tablo">
+        <thead><tr><th>Başlık</th><th>Durum</th><th>Tarih</th><th>Yazar</th><th></th></tr></thead><tbody>`;
+      yazılar.forEach(y => {
+        const tarih = y.olusturma ? new Date(y.olusturma).toLocaleDateString('tr-TR') : '';
+        html += `<tr>
         <td><strong style="font-size:.9rem">${y.baslik}</strong>
-          <div style="font-size:.75rem;color:var(--gri-metin);margin-top:.15rem">${(y.etiketler||[]).join(', ')}</div>
+          <div style="font-size:.75rem;color:var(--gri-metin);margin-top:.15rem">${(Array.isArray(y.etiketler)?y.etiketler:[]).join(', ')}</div>
         </td>
-        <td><span class="durum-pill ${y.durum === 'Yayında' ? 'dp-Aktif' : 'dp-Taslak'}">${y.durum}</span></td>
-        <td style="font-size:.78rem;color:var(--gri-metin)">${tarih}</td>
-        <td style="font-size:.82rem">${y.yazar||'–'}</td>
-        <td><div class="tablo-eylemler">
-          <button class="btn btn-ntr btn-sm" onclick="blogDuzenle(${y.id})">✏</button>
-          <button class="btn btn-sm" style="background:${y.durum==='Yayında'?'#FEF3C7;color:#92400E':'#D1FAE5;color:#065F46'}"
-            onclick="blogDurumDegis(${y.id},'${y.durum==='Yayında'?'Taslak':'Yayında'}')">
-            ${y.durum==='Yayında'?'⏸':'▶'}
-          </button>
-          <button class="btn btn-hat btn-sm" onclick="if(confirm('Yazı silinsin mi?'))blogSilAdmin(${y.id})">🗑</button>
-        </div></td>
-      </tr>`;
-    });
-    html += '</tbody></table></div>';
+          <td><span class="durum-pill ${y.durum === 'Yayında' ? 'dp-Aktif' : 'dp-Taslak'}">${y.durum}</span></td>
+          <td style="font-size:.78rem;color:var(--gri-metin)">${tarih}</td>
+          <td style="font-size:.82rem">${y.yazar||'–'}</td>
+          <td><div class="tablo-eylemler">
+            <button class="btn btn-ntr btn-sm" onclick="blogDuzenle(${y.id})">✏</button>
+            <button class="btn btn-sm" style="background:${y.durum==='Yayında'?'#FEF3C7;color:#92400E':'#D1FAE5;color:#065F46'}"
+              onclick="blogDurumDegis(${y.id},'${y.durum==='Yayında'?'Taslak':'Yayında'}')">
+              ${y.durum==='Yayında'?'⏸':'▶'}
+            </button>
+            <button class="btn btn-hat btn-sm" onclick="if(confirm('Yazı silinsin mi?'))blogSilAdmin(${y.id})">🗑</button>
+          </div></td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+    if (_aktifAdminSayfa !== 'blog') return;
+    ic.innerHTML = html;
+  } catch (e) {
+    if (_aktifAdminSayfa !== 'blog') return;
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3><p>Lütfen sayfayı yenileyin</p></div>';
   }
-  ic.innerHTML = html;
 }
 
 function blogModalAc(yazi = null) {
@@ -2242,7 +2476,7 @@ function blogModalAc(yazi = null) {
       <div class="form-grup"><label class="form-etiket">Kısa Özet</label>
         <input class="form-girdi" id="blog-ozet" value="${yazi?.ozet||''}" placeholder="Listede görünecek kısa açıklama…"></div>
       <div class="form-grup"><label class="form-etiket">Etiketler <span style="font-size:.72rem;color:var(--gri-metin)">(virgülle ayırın)</span></label>
-        <input class="form-girdi" id="blog-etiketler" value="${(yazi?.etiketler||[]).join(', ')}" placeholder="Fethiye, Satılık, Yatırım…"></div>
+        <input class="form-girdi" id="blog-etiketler" value="${(Array.isArray(yazi?.etiketler)?yazi.etiketler:[]).join(', ')}" placeholder="Fethiye, Satılık, Yatırım…"></div>
 
       <div class="form-grup">
         <label class="form-etiket">İçerik</label>
@@ -2611,14 +2845,25 @@ async function kayitYap() {
 // ══════════════════════════════════════════════════════════════════
 let _sliderZamanlayici = {};
 
+const BANNER_KONUMLAR = ['anasayfa_ust','anasayfa_hero_alti','ilanlar_ust','haberler_ust','tum_sayfalar_ust','tum_sayfalar_alt'];
+
 async function bannerlariYukle(konum) {
-  const elId = konum === 'anasayfa' ? 'banner-anasayfa-ust' : null;
-  if (!elId) return;
-  const el = document.getElementById(elId);
+  if (!konum) {
+    await Promise.all(BANNER_KONUMLAR.map(k => bannerlariYukle(k)));
+    return;
+  }
+  // Admin sayfasında bannerları gösterme
+  if (document.getElementById('sayfa-admin')?.classList.contains('aktif')) {
+    const el = document.getElementById(`banner-${konum}`) || document.getElementById(`banner-${konum.replace(/_/g, '-')}`);
+    if (el) el.style.display = 'none';
+    return;
+  }
+  const el = document.getElementById(`banner-${konum}`) || document.getElementById(`banner-${konum.replace(/_/g, '-')}`);
   if (!el) return;
 
   const bannerlar = await api.getBannerlar({ konum, sadece_aktif: 1 });
-  if (!bannerlar || !bannerlar.length) { el.innerHTML = ''; return; }
+  if (!bannerlar || !bannerlar.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
 
   const sliderler = bannerlar.filter(b => b.tip === 'slider');
   const duyurular = bannerlar.filter(b => b.tip === 'duyuru');
@@ -2627,18 +2872,17 @@ async function bannerlariYukle(konum) {
 
   // Slider bannerlar
   if (sliderler.length) {
-    const boyutCls = 'boyut-' + (sliderler[0].boyut || 'normal');
     const yukseklik = { tam: '420px', normal: '280px', kucuk: '160px' }[sliderler[0].boyut] || '280px';
-    html += `<div class="banner-alan slider-kont ${boyutCls}" id="slider-${konum}" style="height:${yukseklik}">
+    html += `<div class="banner-alan slider-kont" id="slider-${konum}" style="height:${yukseklik}">
       <div class="slider-sarici" id="slider-sarici-${konum}">
         ${sliderler.map((b, i) => `
         <div class="slider-slayt" style="height:${yukseklik}">
           ${b.resim_url ? `<img src="${b.resim_url}" alt="${b.baslik}" loading="lazy">` : `<div style="position:absolute;inset:0;background:${b.renk_arkaplan}"></div>`}
-          ${(b.baslik || b.metin || b.link_url) ? `
-          <div class="slider-slayt-icerik" style="${!b.resim_url ? 'background:none' : ''}">
+          ${(b.baslik || b.alt_metin || b.link_url) ? `
+          <div class="slider-slayt-icerik">
             ${b.baslik ? `<div class="slider-baslik" style="color:${b.renk_metin}">${b.baslik}</div>` : ''}
-            ${b.metin  ? `<div class="slider-metin"  style="color:${b.renk_metin}">${b.metin}</div>`  : ''}
-            ${b.link_url ? `<a href="${b.link_url}" class="slider-btn" style="background:${b.renk_arkaplan}">${b.link_metin || 'İncele'} →</a>` : ''}
+            ${b.alt_metin  ? `<div class="slider-metin"  style="color:${b.renk_metin}">${b.alt_metin}</div>`  : ''}
+            ${b.link_url ? `<a href="${b.link_url}" class="slider-btn" style="background:${b.renk_arkaplan};color:#fff">${b.link_metin || 'İncele'} →</a>` : ''}
           </div>` : ''}
         </div>`).join('')}
       </div>
@@ -2660,15 +2904,15 @@ async function bannerlariYukle(konum) {
   }
 
   // Duyuru bannerlar
-  duyurular.forEach((b, i) => {
-    html += `<div class="duyuru-banner boyut-${b.boyut||'normal'}" id="duyuru-${b.id}"
+  duyurular.forEach(b => {
+    html += `<div class="duyuru-banner" id="duyuru-${b.id}"
                style="background:${b.renk_arkaplan};color:${b.renk_metin}">
       ${b.resim_url ? `<div class="duyuru-ikon"><img src="${b.resim_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover"></div>` : '<div class="duyuru-ikon">📢</div>'}
       <div class="duyuru-icerik">
         ${b.baslik ? `<div class="duyuru-baslik">${b.baslik}</div>` : ''}
-        ${b.metin  ? `<div class="duyuru-metin">${b.metin}</div>`   : ''}
+        ${b.alt_metin  ? `<div class="duyuru-metin">${b.alt_metin}</div>`   : ''}
       </div>
-      ${b.link_url ? `<a href="${b.link_url}" class="slider-btn" style="background:rgba(0,0,0,.2);flex-shrink:0">${b.link_metin||'İncele'} →</a>` : ''}
+      ${b.link_url ? `<a href="${b.link_url}" class="slider-btn" style="background:rgba(0,0,0,.2);flex-shrink:0;color:inherit">${b.link_metin||'İncele'} →</a>` : ''}
       <button class="duyuru-kapat" onclick="duyuruKapat(${b.id})">✕</button>
     </div>`;
   });
@@ -2719,6 +2963,9 @@ async function adminBannerlar() {
 
   let html = `<div class="admin-baslik">Bannerlar
     <button class="btn btn-kirm" onclick="bannerYeniModal(${JSON.stringify(konumlar).replace(/"/g,'&quot;')},${JSON.stringify(boyutlar).replace(/"/g,'&quot;')})">+ Yeni Banner</button>
+  </div>
+  <div style="font-size:.78rem;color:var(--gri-metin);margin-bottom:1rem;padding:.6rem .85rem;background:var(--krem);border-radius:var(--r-sm);border:1px solid var(--kumtasi)">
+    💡 <strong>İpucu:</strong> Slayt gösterisi (dönen slider) için aynı konumda <strong>birden çok banner</strong> oluşturun. Her banner bir slayttır.
   </div>`;
 
   if (!bannerlar.length) {
@@ -2948,7 +3195,7 @@ async function bannerKaydet(id) {
     const resimInput = document.getElementById('b-resim-input');
     if (resimInput && resimInput.files && resimInput.files[0] && newId) {
       const fd = new FormData();
-      fd.append('dosya', resimInput.files[0]);
+      fd.append('file', resimInput.files[0]);
       api.upload('bannerlar', newId, fd).then(rr => {
         if (rr) { bildirim('Görsel yüklendi!', 'basari'); adminBannerlar(); bannerlariYukle(); }
         else { bannerlariYukle(); }
@@ -2967,7 +3214,7 @@ function bannerResimModal(id) {
     const dosya = e.target.files[0];
     if (!dosya) return;
     const fd = new FormData();
-    fd.append('dosya', dosya);
+    fd.append('file', dosya);
     const r = await api.upload('bannerlar', id, fd);
     if (r) {
       bildirim('Resim yüklendi!', 'basari');
@@ -3006,9 +3253,9 @@ function bannerResimSec(dosya) {
     if (drop) drop.style.borderColor = 'var(--zeytun)';
   };
   reader.readAsDataURL(dosya);
-  // Input'a dosyayı ata
+  // Input'a dosyayı ata (her seçimde değiştir)
   const input = document.getElementById('b-resim-input');
-  if (input && input.files.length === 0) {
+  if (input) {
     const dt = new DataTransfer();
     dt.items.add(dosya);
     input.files = dt.files;
@@ -3027,7 +3274,7 @@ async function baslat() {
   await siteAyarlariUygula();
   anaSayfaYukle();
   await blogListeYukle();
-  bannerlariYukle("anasayfa");  // Ana sayfadaki blog şeridi için
+  BANNER_KONUMLAR.forEach(k => bannerlariYukle(k));
   favBantGuncelle();
   // URL'de ilan parametresi varsa direkt aç
   const urlParams = new URLSearchParams(window.location.search);
@@ -3202,53 +3449,157 @@ window.kayitModalAc = kayitModalAc;
 const esc = s => String(s||'').replace(/[&<>"']/g, c=>`&#${c.charCodeAt(0)};`);
 const safeJsonParse = (s, d = {}) => { try { return JSON.parse(s); } catch { return d; } };
 
+// ─── Menü Şablonları (görsel ön tanımlı yapılar) ────────────────────────────
+
+const MENU_TEMPLATES = [
+  { id:'header-klasik', ad:'Klasik Header', ikon:'🏠', lok:'header',
+    aciklama:'Ana Sayfa, İlanlar, Blog, İletişim — standart üst menü',
+    ogeler:[
+      {baslik:'Ana Sayfa', url:'/'}, {baslik:'İlanlar', url:'/#ilanlar'},
+      {baslik:'Blog', url:'/#blog'}, {baslik:'İletişim', url:'/#iletisim'},
+    ]},
+  { id:'header-minimal', ad:'Minimal Header', ikon:'↗️', lok:'header',
+    aciklama:'Sadece Ana Sayfa + İletişim — sade tasarım',
+    ogeler:[{baslik:'Ana Sayfa', url:'/'}, {baslik:'İletişim', url:'/#iletisim'}]},
+  { id:'footer-klasik', ad:'Klasik Footer', ikon:'📌', lok:'footer',
+    aciklama:'Kurumsal + Hızlı Linkler + Gizlilik — alt bilgi menüsü',
+    ogeler:[
+      {baslik:'Kurumsal', url:'/kurumsal'}, {baslik:'Hızlı Linkler', url:'/#ilanlar'},
+      {baslik:'Gizlilik Politikası', url:'/gizlilik'}, {baslik:'Kullanım Şartları', url:'/kosullar'},
+    ]},
+  { id:'footer-minimal', ad:'Minimal Footer', ikon:'🔗', lok:'footer',
+    aciklama:'İletişim + Sosyal Medya — sade alt menü',
+    ogeler:[{baslik:'İletişim', url:'/#iletisim'}, {baslik:'Blog', url:'/#blog'}]},
+  { id:'sidebar-dashboard', ad:'Panel Sidebar', ikon:'📊', lok:'sidebar',
+    aciklama:'Admin paneli için: Dashboard, İstatistikler, Raporlar',
+    ogeler:[
+      {baslik:'Dashboard', url:'/admin'}, {baslik:'İstatistikler', url:'/admin/istatistik'},
+      {baslik:'Raporlar', url:'/admin/raporlar'}, {baslik:'Ayarlar', url:'/admin/ayarlar'},
+    ]},
+  { id:'sosyal-medya', ad:'Sosyal Medya', ikon:'🌐', lok:'footer',
+    aciklama:'Sosyal medya bağlantıları: Instagram, Facebook, WhatsApp',
+    ogeler:[
+      {baslik:'Instagram', url:'https://instagram.com', ikon:'📸'},
+      {baslik:'Facebook', url:'https://facebook.com', ikon:'👍'},
+      {baslik:'WhatsApp', url:'https://wa.me/', ikon:'💬'},
+    ]},
+];
+
+function menuSablonGorsel(sablon, index) {
+  return `<div class="menu-sablon-kart" onclick="menuSablonUygula(${index})">
+    <div class="menu-sablon-ikon">${esc(sablon.ikon)}</div>
+    <div class="menu-sablon-ad">${esc(sablon.ad)}</div>
+    <div class="menu-sablon-aciklama">${esc(sablon.aciklama)}</div>
+    <div class="menu-sablon-ogeler">${sablon.ogeler.map(o => `<span>${o.ikon||'•'} ${esc(o.baslik)}</span>`).join('')}</div>
+    <button class="btn btn-sm btn-kirm menu-sablon-btn">Uygula</button>
+  </div>`;
+}
+
+window.menuSablonUygula = async function(index) {
+  const s = MENU_TEMPLATES[index];
+  if (!s) return;
+  if (!confirm(`"${s.ad}" menü şablonu uygulansın mı?\nMevcut menülere eklenir.`)) return;
+  try {
+    const slug = s.id;
+    const mevcut = await api.request(`/api/admin/menuler`).catch(()=>[]);
+    let menu = mevcut.find(m => m.slug === slug);
+    if (!menu) {
+      await api.request('/api/admin/menuler', {
+        method:'POST',
+        body:JSON.stringify({slug, ad:s.ad, lokasyon:s.lok}),
+      });
+      menu = { slug };
+    }
+    const yeni = await api.request(`/api/admin/menuler`).catch(()=>[]);
+    const m = yeni.find(x => x.slug === slug);
+    if (!m) return bildirim('Menü oluşturulamadı','hata');
+    for (let i = 0; i < s.ogeler.length; i++) {
+      const o = s.ogeler[i];
+      const harici = o.url?.startsWith('http');
+      await api.request(`/api/admin/menuler/${m.id}/ogeler`, {
+        method:'POST',
+        body:JSON.stringify({menu_id:m.id, baslik:o.baslik, hedef_tip:harici?'harici':'dahili', hedef_url:o.url||'/', ikon:o.ikon||'', sira:i, aktif:true}),
+      });
+    }
+    bildirim(`"${s.ad}" şablonu uygulandı ✅`,'basari');
+    adminMenuler();
+  } catch(e) { bildirim('Hata: '+e.message,'hata'); }
+};
+
+// ─── Menü Ana Sayfası ──────────────────────────────────────────────────────
+
 async function adminMenuler() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
-  const [menuler, slugListe] = await Promise.all([
-    api.request('/api/admin/menuler'),
-    api.request('/api/menu/ana-menu').catch(()=>[]),
-  ]);
-  let html = '<div class="admin-baslik">Menüler</div>';
-  html += '<div style="margin-bottom:1rem">';
-  html += '<input id="ymn-slug" placeholder="slug (ana-menu)" style="width:130px;margin-right:5px">';
-  html += '<input id="ymn-ad" placeholder="Menü adı" style="width:150px;margin-right:5px">';
-  html += '<select id="ymn-lok"><option value="header">Header</option><option value="footer">Footer</option><option value="sidebar">Sidebar</option></select>';
-  html += `<button class="btn btn-kirm" onclick="menuOlustur()">+ Ekle</button></div>`;
+  const menuler = await api.request('/api/admin/menuler').catch(()=>[]);
+
+  let html = '<div class="admin-baslik">📋 Menü Yöneticisi</div>';
+  html += '<div class="menu-editor">';
+
+  // ── Görsel Şablonlar ────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Hazır Menü Şablonları</div>';
+  html += '<div class="tema-bolum-aciklama">Beğendiğiniz bir menü yapısını seçip tek tıkla uygulayın</div>';
+  html += '<div class="menu-sablon-grid">';
+  MENU_TEMPLATES.forEach((s, i) => { html += menuSablonGorsel(s, i); });
+  html += '</div></div>';
+
+  // ── Mevcut Menüler ──────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Mevcut Menüleriniz</div>';
+  html += '<div class="tema-bolum-aciklama">Aşağıdaki menüleri düzenleyebilir veya yenilerini ekleyebilirsiniz</div>';
+
   if (menuler && menuler.length) {
-    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Slug</th><th>Ad</th><th>Lokasyon</th><th>Aktif</th><th></th></tr></thead><tbody>';
-    menuler.forEach(m => {
-      html += `<tr>
-        <td><strong>${esc(m.slug)}</strong></td>
-        <td>${esc(m.ad)}</td>
-        <td>${esc(m.lokasyon)}</td>
-        <td>${m.aktif ? '✅' : '❌'}</td>
-        <td><button class="btn btn-cik" onclick="menuDuzenle(${m.id})">✏️</button>
-            <button class="btn btn-kirm" onclick="menuSil(${m.id})">🗑️</button>
-            <button class="btn btn-gri" onclick="adminMenuOgelr(${m.id},'${esc(m.slug)}')">📋 Öğeler</button></td>
-      </tr>`;
-    });
-    html += '</tbody></table></div>';
+    html += '<div class="menu-liste">';
+    for (const m of menuler) {
+      const lokIkon = { header:'🏠', footer:'📌', sidebar:'📂' };
+      html += `<div class="menu-kart">
+        <div class="menu-kart-ust">
+          <div class="menu-kart-baslik">
+            <span class="menu-kart-ikon">${lokIkon[m.lokasyon]||'📋'}</span>
+            <div><strong>${esc(m.ad)}</strong><div class="menu-kart-slug">${esc(m.slug)} · ${esc(m.lokasyon)}</div></div>
+          </div>
+          <label class="menu-toggle-label"><input type="checkbox"${m.aktif?' checked':''} onchange="menuAktifToggle(${m.id},this.checked)"><span class="menu-toggle-kut"></span></label>
+        </div>
+        <div class="menu-kart-alt">
+          <button class="btn btn-sm btn-ntr" onclick="adminMenuOgelr(${m.id},'${esc(m.slug)}')">📋 Öğeleri Düzenle</button>
+          <button class="btn btn-sm btn-cik" onclick="menuAdDuzenle(${m.id},'${esc(m.ad)}')">✏️ Ad</button>
+          <button class="btn btn-sm btn-hat" onclick="menuSil(${m.id})">🗑️</button>
+        </div>
+      </div>`;
+    }
+    html += '</div>';
   } else {
-    html += '<div class="bos-durum"><div class="bos-ikon">📋</div><h3>Henüz menü yok</h3></div>';
+    html += '<div class="bos-durum" style="margin:1rem 0"><div class="bos-ikon">📋</div><h3>Henüz menü yok</h3><p>Yukarıdaki şablonlardan birini seçin veya elle ekleyin</p></div>';
   }
+
+  // ── Yeni Menü Ekle (gelişmiş) ──────────────────────────────────────────
+  html += '<div class="menu-yeni-bar"><div class="menu-yeni-baslik">➕ Yeni Menü Ekle</div>';
+  html += '<div class="menu-yeni-girdiler">';
+  html += '<input id="ymn-ad" placeholder="Menü adı (örn: Ana Menü)" class="menu-yeni-input">';
+  html += '<input id="ymn-slug" placeholder="slug (ana-menu)" class="menu-yeni-input">';
+  html += '<select id="ymn-lok" class="menu-yeni-select"><option value="header">🏠 Header</option><option value="footer">📌 Footer</option><option value="sidebar">📂 Sidebar</option></select>';
+  html += '<button class="btn btn-kirm" onclick="menuOlustur()">Oluştur</button>';
+  html += '</div></div>';
+
+  html += '</div></div>'; // .tema-bolum / .menu-editor
   ic.innerHTML = html;
 }
 
+// ─── Menü CRUD ─────────────────────────────────────────────────────────────
+
 window.menuOlustur = async function() {
-  const slug = document.getElementById('ymn-slug')?.value?.trim();
-  if (!slug) return bildirim('Slug gerekli','hata');
-  const ad = document.getElementById('ymn-ad')?.value?.trim() || slug;
+  const ad = document.getElementById('ymn-ad')?.value?.trim();
+  const slug = document.getElementById('ymn-slug')?.value?.trim() || (ad ? ad.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-') : '');
+  if (!slug) return bildirim('Menü adı veya slug gerekli','hata');
   const lok = document.getElementById('ymn-lok')?.value || 'header';
   try {
-    await api.request('/api/admin/menuler', { method:'POST', body:JSON.stringify({slug,ad,lokasyon:lok}) });
-    bildirim('Menü oluşturuldu','basari');
+    await api.request('/api/admin/menuler', { method:'POST', body:JSON.stringify({slug,ad:ad||slug,lokasyon:lok}) });
+    bildirim(`"${ad||slug}" menüsü oluşturuldu ✅`,'basari');
     adminMenuler();
   } catch(e) { bildirim(e.message || 'Hata','hata'); }
 };
 
 window.menuSil = async function(id) {
-  if (!confirm('Menü silinsin mi? (İçindeki tüm öğeler de silinir)')) return;
+  if (!confirm('Bu menü silinsin mi? (içindeki tüm öğeler de silinir)')) return;
   try {
     await api.request(`/api/admin/menuler/${id}`, { method:'DELETE' });
     bildirim('Menü silindi','basari');
@@ -3256,15 +3607,23 @@ window.menuSil = async function(id) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
-window.menuDuzenle = async function(id) {
-  const ad = prompt('Yeni menü adı:');
-  if (!ad) return;
+window.menuAktifToggle = async function(id, aktif) {
   try {
-    await api.request(`/api/admin/menuler/${id}`, { method:'PUT', body:JSON.stringify({ad}) });
-    bildirim('Güncellendi','basari');
+    await api.request(`/api/admin/menuler/${id}`, { method:'PUT', body:JSON.stringify({aktif}) });
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuAdDuzenle = async function(id, eski) {
+  const yeni = prompt('Menü adını girin:', eski);
+  if (!yeni || yeni === eski) return;
+  try {
+    await api.request(`/api/admin/menuler/${id}`, { method:'PUT', body:JSON.stringify({ad:yeni}) });
+    bildirim('Menü adı güncellendi','basari');
     adminMenuler();
   } catch(e) { bildirim(e.message,'hata'); }
 };
+
+// ─── Menü Öğeleri ──────────────────────────────────────────────────────────
 
 let _aktifMenu = 0;
 
@@ -3273,42 +3632,80 @@ async function adminMenuOgelr(menuId, menuSlug) {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const ogeler = await api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]);
-  let html = `<div class="admin-baslik">📋 ${esc(menuSlug)} — Öğeler <button class="btn btn-gri" onclick="adminMenuler()" style="margin-left:10px">← Menüler</button></div>`;
-  html += '<div style="margin-bottom:1rem;display:flex;gap:5px;flex-wrap:wrap">';
-  html += '<input id="ymo-baslik" placeholder="Başlık" style="width:140px">';
-  html += '<input id="ymo-url" placeholder="URL (/iletisim)" style="width:180px">';
-  html += `<button class="btn btn-kirm" onclick="menuOgeEkle(${menuId})">+ Ekle</button></div>`;
+
+  let html = '<div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">';
+  html += `<button class="btn btn-sm btn-ntr" onclick="adminMenuler()" style="font-size:.8rem">← Menüler</button>`;
+  html += `<span>📋 ${esc(menuSlug)} — Öğeler</span></div>`;
+  html += '<div class="menu-oge-editor">';
+
+  // ── Hızlı Ekle ──────────────────────────────────────────────────────────
+  html += '<div class="menu-oge-ekle-bar">';
+  html += '<input id="ymo-baslik" placeholder="Başlık (örn: Ana Sayfa)" class="menu-yeni-input" style="flex:1;min-width:120px">';
+  html += '<input id="ymo-url" placeholder="URL (/iletisim)" class="menu-yeni-input" style="flex:1;min-width:140px">';
+  html += `<select id="ymo-parent" class="menu-yeni-select" style="max-width:120px"><option value="">— Üst Düzey —</option>`;
+  if (ogeler) ogeler.forEach(o => {
+    html += `<option value="${o.id}">${esc(o.baslik)}</option>`;
+  });
+  html += '</select>';
+  html += `<button class="btn btn-kirm btn-sm" onclick="menuOgeEkle(${menuId})">+ Ekle</button></div>`;
+
   if (ogeler && ogeler.length) {
-    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>#</th><th>Başlık</th><th>URL</th><th>Parent</th><th>Sıra</th><th>Aktif</th><th></th></tr></thead><tbody>';
-    ogeler.forEach((o,i) => {
-      html += `<tr>
-        <td>${i+1}</td>
-        <td>${o.ikon || ''} ${esc(o.baslik)}</td>
-        <td style="font-size:.8em;color:var(--gri-metin)">${esc(o.hedef_url||o.hedef_tip)}</td>
-        <td>${o.parent_id || '—'}</td>
-        <td>${o.sira}</td>
-        <td>${o.aktif ? '✅' : '❌'}</td>
-        <td><button class="btn btn-cik" onclick="menuOgeDuzenle(${o.id},'${esc(o.baslik)}')">✏️</button>
-            <button class="btn btn-kirm" onclick="menuOgeSil(${menuId},${o.id})">🗑️</button></td>
-      </tr>`;
-    });
-    html += '</tbody></table></div>';
+    html += '<div class="menu-oge-liste">';
+    // Düz listeyi hiyerarşik göster
+    const ust = ogeler.filter(o => !o.parent_id);
+    const cocuk = id => ogeler.filter(o => o.parent_id === id);
+
+    for (const o of ust) {
+      html += menuOgeKart(o, menuId);
+      for (const c of cocuk(o.id)) {
+        html += menuOgeKart(c, menuId, true);
+      }
+    }
+    html += '</div>';
   } else {
-    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz öğe yok</h3></div>';
+    html += '<div class="bos-durum" style="margin:1.5rem 0"><div class="bos-ikon">📄</div><h3>Henüz öğe yok</h3><p>Yukarıdaki kutulara başlık ve URL yazıp ekleyin</p></div>';
   }
+
+  html += '</div>'; // .menu-oge-editor
   ic.innerHTML = html;
 }
+
+function menuOgeKart(o, menuId, alt = false) {
+  const lokIkon = o.ikon || (o.hedef_url?.startsWith('http') ? '🔗' : '📄');
+  return `<div class="menu-oge-kart${alt?' menu-oge-alt':''}">
+    <div class="menu-oge-kart-sira">
+      <button class="btn btn-sm btn-ntr" onclick="menuOgeTasi(${o.id},${menuId},-1)" title="Yukarı">↑</button>
+      <button class="btn btn-sm btn-ntr" onclick="menuOgeTasi(${o.id},${menuId},1)" title="Aşağı">↓</button>
+    </div>
+    <div class="menu-oge-kart-ic">
+      <div class="menu-oge-kart-ikon">${lokIkon}</div>
+      <div class="menu-oge-kart-bilgi">
+        <div class="menu-oge-kart-baslik">${esc(o.baslik)}</div>
+        <div class="menu-oge-kart-url">${esc(o.hedef_url || o.hedef_tip || '—')}</div>
+      </div>
+    </div>
+    <label class="menu-toggle-label"><input type="checkbox"${o.aktif?' checked':''} onchange="menuOgeAktifToggle(${o.id},${menuId},this.checked)"><span class="menu-toggle-kut"></span></label>
+    <div class="menu-oge-kart-aks">
+      <button class="btn btn-sm btn-cik" onclick="menuOgeDuzenle(${o.id},${menuId})">✏️</button>
+      <button class="btn btn-sm btn-hat" onclick="menuOgeSil(${menuId},${o.id})">🗑️</button>
+    </div>
+  </div>`;
+}
+
+// ─── Menü Öğe CRUD ─────────────────────────────────────────────────────────
 
 window.menuOgeEkle = async function(menuId) {
   const baslik = document.getElementById('ymo-baslik')?.value?.trim();
   if (!baslik) return bildirim('Başlık gerekli','hata');
   const url = document.getElementById('ymo-url')?.value?.trim() || '/';
+  const parent = document.getElementById('ymo-parent')?.value;
+  const harici = url.startsWith('http');
   try {
     await api.request(`/api/admin/menuler/${menuId}/ogeler`, {
       method:'POST',
-      body:JSON.stringify({menu_id:menuId, baslik, hedef_tip:'dahili', hedef_url:url, sira:0, aktif:true})
+      body:JSON.stringify({menu_id:menuId, baslik, hedef_tip:harici?'harici':'dahili', hedef_url:url, parent_id:parent||null, sira:0, aktif:true}),
     });
-    bildirim('Öğe eklendi','basari');
+    bildirim('Öğe eklendi ✅','basari');
     adminMenuOgelr(menuId, '');
   } catch(e) { bildirim(e.message,'hata'); }
 };
@@ -3322,13 +3719,36 @@ window.menuOgeSil = async function(menuId, itemId) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
-window.menuOgeDuzenle = async function(itemId, eskiBaslik) {
-  const yeni = prompt('Yeni başlık:', eskiBaslik);
-  if (!yeni) return;
+window.menuOgeAktifToggle = async function(itemId, menuId, aktif) {
   try {
-    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'PUT', body:JSON.stringify({baslik:yeni}) });
-    bildirim('Güncellendi','basari');
-    adminMenuler();
+    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'PUT', body:JSON.stringify({aktif}) });
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeTasi = async function(itemId, menuId, yon) {
+  try {
+    const ogeler = await api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]);
+    const idx = ogeler.findIndex(o => o.id === itemId);
+    if (idx < 0) return;
+    const hedef = idx + yon;
+    if (hedef < 0 || hedef >= ogeler.length) return;
+    const items = ogeler.map((o, i) => ({ id: o.id, parent_id: o.parent_id, sira: i }));
+    // swap sıraları
+    const tmp = items[idx].sira;
+    items[idx].sira = items[hedef].sira;
+    items[hedef].sira = tmp;
+    await api.request('/api/admin/menu-ogeleri/sirala', { method:'PUT', body:JSON.stringify({items}) });
+    adminMenuOgelr(menuId, '');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeDuzenle = async function(itemId, menuId) {
+  const yeniBaslik = prompt('Yeni başlık:');
+  if (!yeniBaslik) return;
+  try {
+    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'PUT', body:JSON.stringify({baslik:yeniBaslik}) });
+    bildirim('Öğe güncellendi ✅','basari');
+    adminMenuOgelr(menuId, '');
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
@@ -3432,14 +3852,21 @@ window.widgetToggle = async function(id, aktif) {
 // ── Tema — taslak (önizleme + toplu kaydet) ──────────────────────────────────
 
 const TEMA_PALETLERI = [
-  { id:'',          ad:'Kiremit',     renkler:['#C45C35','#A34A28','#FAF7F2','#2D2016'] },
-  { id:'green',     ad:'Zeytun Yeşil',renkler:['#2D7D46','#1F5C33','#F0F7F2','#1A2E1A'] },
-  { id:'navy',      ad:'Lacivert',    renkler:['#1A3C6B','#12295A','#EDF2F7','#0F1A2E'] },
-  { id:'purple',    ad:'Mor',         renkler:['#6D28D9','#5B21B6','#F5F0FF','#1A0F2E'] },
-  { id:'rose',      ad:'Gül',        renkler:['#D9466F','#BE3455','#FFF0F3','#2D1A20'] },
-  { id:'gold',      ad:'Altın',      renkler:['#D4943A','#B87A2E','#FFFAF0','#2D2616'] },
-  { id:'teal',      ad:'Okyanus',    renkler:['#0E7C7B','#0B5E5D','#F0FCFC','#0F1A1A'] },
-  { id:'charcoal',  ad:'Kömür',      renkler:['#4A4A4A','#2D2D2D','#F5F5F5','#141414'] },
+  { id:'kiremit',    ad:'Kiremit',      renkler:['#C45C35','#A34A28','#FAF7F2','#2D2016'] },
+  { id:'green',      ad:'Zeytun Yeşil', renkler:['#2D7D46','#1F5C33','#F0F7F2','#1A2E1A'] },
+  { id:'navy',       ad:'Lacivert',    renkler:['#1A3C6B','#12295A','#EDF2F7','#0F1A2E'] },
+  { id:'purple',     ad:'Mor',         renkler:['#6D28D9','#5B21B6','#F5F0FF','#1A0F2E'] },
+  { id:'rose',       ad:'Gül Rox',     renkler:['#E11D48','#9F1239','#FFF1F2','#27171E'] },
+  { id:'gold',       ad:'Altın',       renkler:['#D97706','#92400E','#FFFAF0','#2D2616'] },
+  { id:'teal',       ad:'Okyanus',     renkler:['#0D9488','#115E59','#F0FDFA','#0F1A1A'] },
+  { id:'charcoal',   ad:'Kömür',
+   renkler:['#1F2937','#111827','#FAFAFA','#1F2937'] },
+  { id:'okyanus',    ad:'Mavi Dalga',  renkler:['#0EA5E9','#0369A1','#F0F9FF','#0C1A2E'] },
+  { id:'gül',        ad:'Pembe Trend', renkler:['#EC4899','#BE185D','#FDF2F8','#2D1A20'] },
+  { id:'mor',        ad:'Lavanta',    renkler:['#9333EA','#6B21A8','#FAF5FF','#1A0F2E'] },
+  { id:'altın',      ad:'Bronz',       renkler:['#B8860B','#92400E','#FFFDF5','#2D2616'] },
+  { id:'kömür',      ad:'Grafit',      renkler:['#374151','#1F2937','#F9FAFB','#1F2937'] },
+  { id:'kiremit-2',  ad:'Terracotta',  renkler:['#C2410C','#9A3412','#FFF7ED','#2D1407'] },
 ];
 
 const FONT_LIST = [
@@ -3451,6 +3878,19 @@ const FONT_LIST = [
   { baslik:'Oswald',           govde:'Roboto' },
   { baslik:'Cinzel',           govde:'Lato' },
   { baslik:'Prata',            govde:'Nunito' },
+];
+
+const HERO_FONTS = [
+  'Playfair Display','Poppins','Montserrat','Raleway','DM Serif Display',
+  'Oswald','Cinzel','Prata','Inter','Open Sans','Merriweather','Lora',
+  'DM Sans','Roboto','Lato','Nunito',
+  'Great Vibes','Pacifico','Caveat','Dancing Script',
+  'Tangerine','Alex Brush','Parisienne',
+  'Cormorant Garamond','Libre Baskerville',
+  'Josefin Sans','Barlow','Quicksand',
+  'Allura','Italianno','Kaushan Script','Cookie','Lobster',
+  'Pinyon Script','Rouge Script','Satisfy',
+  'Abril Fatface','Anton','Bebas Neue','Bodoni Moda',
 ];
 
 const STIL_SECENEKLERI = {
@@ -3489,7 +3929,7 @@ function fontYukle(fontAdi) {
   if (document.querySelector(`link[href*="${isim}"]`)) return;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = `https://fonts.googleapis.com/css2?family=${isim}:wght@400;500;600;700&display=swap`;
+  link.href = `https://fonts.googleapis.com/css2?family=${isim}:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap`;
   document.head.appendChild(link);
 }
 
@@ -3549,16 +3989,28 @@ window.temaDarkToggle = function(el) {
 
 // ── Kaydet / Sıfırla ───────────────────────────────────────────────────────
 
+const TEMA_ANAHTARLAR = new Set([
+  'renk_ana','renk_ana_koy','renk_arka','renk_metin',
+  'font_baslik','font_govde','border_radius','dark_mode',
+  'header_stil','footer_stil','kart_stil','button_stil','animasyon',
+  'shadow_kart','logo_url','favicon_url','template'
+]);
+
 window.temaKaydet = async function() {
-  const degisen = Object.keys(temaDraft);
+  const degisen = Object.keys(temaDraft).filter(k => TEMA_ANAHTARLAR.has(k));
   if (!degisen.length) { bildirim('Değişiklik yok', 'bilgi'); return; }
   try {
     for (const k of degisen) {
       await api.request(`/api/admin/tema/${k}`, { method:'PUT', body:JSON.stringify({anahtar:k,deger:temaDraft[k]}) });
     }
+    // Backend'deki spam satırları temizle
+    try {
+      await api.request('/api/admin/tema/cleanup', { method:'POST' });
+    } catch {}
     Object.assign(temaSaved, temaDraft);
     temaDraft = {};
     bildirim('Tema kaydedildi ✅', 'basari');
+    siteAyarlariUygula();
   } catch(e) { bildirim('Kaydedilirken hata: ' + e.message, 'hata'); }
 };
 
@@ -4456,6 +4908,7 @@ window.saasApiTest = saasApiTest;
 
 // ── /CMS Admin ────────────────────────────────────────────────────────────────
 window.adminMenuler = adminMenuler;
+window.adminMenuOgelr = adminMenuOgelr;
 window.adminSayfalar = adminSayfalar;
 window.adminWidgetler = adminWidgetler;
 window.adminTema = adminTema;

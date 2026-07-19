@@ -8,6 +8,34 @@ from backend.repositories.base import BaseRepository
 from backend.db.database import row_to_dict, rows_to_dicts
 
 
+def _parse_etiketler(val: Any) -> list:
+    """etiketler alanını güvenli şekilde listeye çevirir.
+
+    Veritabanında etiketler geçerli JSON listesi, çift kaçışlı JSON string
+    veya None olabilir. Her durumda list döner.
+    """
+    if val is None or val == "":
+        return []
+    if isinstance(val, list):
+        return val
+    try:
+        parsed = json.loads(val)
+        if isinstance(parsed, list):
+            return parsed
+        if isinstance(parsed, str):
+            # çift kaçışlı durum: json.loads string verdi, tekrar dene
+            try:
+                inner = json.loads(parsed)
+                if isinstance(inner, list):
+                    return inner
+            except Exception:
+                pass
+            return [parsed]
+        return [str(parsed)]
+    except Exception:
+        return []
+
+
 # ─── İstek Repository ─────────────────────────────────────────────────────────
 class IstekRepository(BaseRepository):
     """Kullanıcı istekleri CRUD operasyonları."""
@@ -322,7 +350,7 @@ class BlogRepository(BaseRepository):
         result = []
         for r in rows:
             d = dict(r)
-            d["etiketler"] = json.loads(d.get("etiketler") or "[]")
+            d["etiketler"] = _parse_etiketler(d.get("etiketler"))
             result.append(d)
         return result
     
@@ -345,7 +373,7 @@ class BlogRepository(BaseRepository):
             return None
             
         d = dict(row)
-        d["etiketler"] = json.loads(d.get("etiketler") or "[]")
+        d["etiketler"] = _parse_etiketler(d.get("etiketler"))
         return d
     
     def create(self, data: dict, yazar_id: Optional[int]) -> int:

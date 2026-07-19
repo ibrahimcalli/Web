@@ -267,7 +267,7 @@ export class ServerAdapter {
       return this.updateIstekDurum(id, q.durum || data.durum);
     }
     if (resource === "bannerlar" && action === "aktif") {
-      return this._request(`${R.bannerlar}/${id}/aktif` + toQuery(q), { method: "PATCH" });
+      return this._request(`${R.bannerlar}/${id}/aktif`, { method: "PATCH", body: JSON.stringify(q) });
     }
     if (resource === "kullanicilar" && action === "onayla") {
       return this._request(`${R.kullanicilar}/${id}/onayla`, { method: "PATCH" });
