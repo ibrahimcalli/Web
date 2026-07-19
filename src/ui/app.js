@@ -3537,7 +3537,7 @@ async function wizardAdim1() {
   if (!ad) { bildirim('Firma adı gerekli', 'hata'); return; }
 
   try {
-    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST' });
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST', body: '{}' }, { silent: true });
     if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
     wizardState.wizard_id = r.wizard_id;
     wizardState.adim = 1;
@@ -3571,7 +3571,7 @@ function sektorIkon(sector) {
 
 async function wizardBaslat(sector) {
   try {
-    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST' });
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST', body: '{}' });
     if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
     wizardState.wizard_id = r.wizard_id;
     wizardState.adim = 1;
