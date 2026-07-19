@@ -124,7 +124,7 @@ export class TemplateRenderer {
       const grid = document.getElementById('blog-grid');
       if (!grid || !items) return;
       grid.innerHTML = items.map(y => `
-        <div class="blog-kart" onclick="sayfaGit('blog',${y.id})">
+        <div class="blog-kart" onclick='sayfaGit("blog-detay",${JSON.stringify(y).replace(/'/g,"&#39;")})'>
           ${y.kapak_resim ? `<div class="blog-resim" style="background-image:url(${y.kapak_resim})"></div>` : ''}
           <div class="blog-ic">
             <h3>${y.baslik}</h3>

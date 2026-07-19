@@ -2013,48 +2013,59 @@ function seoGuncelle({ baslik, aciklama, resim, url, tip = 'website', fiyat = ''
 // FAZ 3 — BLOG LİSTE
 // ══════════════════════════════════════════════════════════════════
 let aktifBlogEtiket = '';
+let blogYukleniyor = false;
 
 async function blogListeYukle() {
+  if (blogYukleniyor) return;
+  blogYukleniyor = true;
   const grid = document.getElementById('blog-grid');
-  if (!grid) return;
+  if (!grid) { blogYukleniyor = false; return; }
   grid.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
-  const yazılar = await api.getBlog();
-  if (!yazılar) return;
+  try {
+    const yazılar = await api.getBlog();
+    if (!yazılar || !yazılar.length) {
+      grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
+      blogYukleniyor = false; return;
+    }
 
-  seoGuncelle({
-    baslik: 'Fethiye Gayrimenkul Haberleri',
-    aciklama: 'Fethiye piyasa haberleri, gayrimenkul trendleri ve yatırım önerileri.'
-  });
+    seoGuncelle({
+      baslik: 'Fethiye Gayrimenkul Haberleri',
+      aciklama: 'Fethiye piyasa haberleri, gayrimenkul trendleri ve yatırım önerileri.'
+    });
 
-  // Etiket barı
-  const etiketBar = document.getElementById('blog-etiket-bar');
-  if (etiketBar) {
-    const tumEtiketler = [...new Set(yazılar.flatMap(y => y.etiketler || []))];
-    etiketBar.innerHTML = tumEtiketler.length
-      ? '<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'\')">Tümü</span>' +
-        tumEtiketler.map(e => `<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'${e}\')">${e}</span>`).join('')
-      : '';
+    // Etiket barı
+    const etiketBar = document.getElementById('blog-etiket-bar');
+    if (etiketBar) {
+      const tumEtiketler = [...new Set(yazılar.flatMap(y => y.etiketler || []))];
+      etiketBar.innerHTML = tumEtiketler.length
+        ? '<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'\')">Tümü</span>' +
+          tumEtiketler.map(e => `<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'${e}\')">${e}</span>`).join('')
+        : '';
+    }
+
+    // Ana sayfa blog şeridi
+    const anaGrid = document.getElementById('ana-blog-grid');
+    const anaSerit = document.getElementById('ana-blog-serit');
+    if (anaGrid && anaSerit && yazılar.length > 0) {
+      anaSerit.style.display = '';
+      anaGrid.innerHTML = '';
+      yazılar.slice(0, 3).forEach(y => anaGrid.appendChild(blogKartOlustur(y)));
+    }
+
+    // Blog liste sayfası
+    const filtreli = aktifBlogEtiket
+      ? yazılar.filter(y => (y.etiketler||[]).includes(aktifBlogEtiket))
+      : yazılar;
+    grid.innerHTML = '';
+    if (!filtreli.length) {
+      grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
+      blogYukleniyor = false; return;
+    }
+    filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
+  } catch (e) {
+    grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3><p>Lütfen sayfayı yenileyin</p></div>';
   }
-
-  // Ana sayfa blog şeridi
-  const anaGrid = document.getElementById('ana-blog-grid');
-  const anaSerit = document.getElementById('ana-blog-serit');
-  if (anaGrid && anaSerit && yazılar.length > 0) {
-    anaSerit.style.display = '';
-    anaGrid.innerHTML = '';
-    yazılar.slice(0, 3).forEach(y => anaGrid.appendChild(blogKartOlustur(y)));
-  }
-
-  // Blog liste sayfası
-  const filtreli = aktifBlogEtiket
-    ? yazılar.filter(y => (y.etiketler||[]).includes(aktifBlogEtiket))
-    : yazılar;
-  grid.innerHTML = '';
-  if (!filtreli.length) {
-    grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-    return;
-  }
-  filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
+  blogYukleniyor = false;
 }
 
 function blogEtiketFiltre(etiket) {
@@ -2163,7 +2174,10 @@ async function adminBlog() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const yazılar = await api.getBlog({ durum: '' });
-  if (yazılar === null) return;
+  if (!yazılar || yazılar === null) {
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3></div>';
+    return;
+  }
 
   let html = `<div class="admin-baslik">Blog / Haberler
     <button class="btn btn-kirm" onclick="blogModalAc()">+ Yeni Yazı</button>
