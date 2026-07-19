@@ -3603,10 +3603,10 @@ async function adminTema() {
   html += '<div class="tema-font-grid">';
   html += '<div class="tema-font-kolon"><label>Başlık Fontu</label><select class="tema-select" data-key="font_baslik" onchange="temaFontSec(this)">';
   for (const f of FONT_LIST) html += `<option value="${esc(f.baslik)}"${tema.font_baslik===f.baslik||(!tema.font_baslik&&f.baslik==='Playfair Display')?' selected':''}>${esc(f.baslik)}</option>`;
-  html += '</select><div class="tema-font-ornek" style="font-family:&apos;" + (tema.font_baslik||'Playfair Display') + "&apos;,serif">Aa Başlık Örneği</div></div>';
+  html += `</select><div class="tema-font-ornek" style="font-family:'${esc(tema.font_baslik||'Playfair Display')}',serif">Aa Başlık Örneği</div></div>`;
   html += '<div class="tema-font-kolon"><label>Gövde Fontu</label><select class="tema-select" data-key="font_govde" onchange="temaFontSec(this)">';
   for (const f of FONT_LIST) html += `<option value="${esc(f.govde)}"${tema.font_govde===f.govde||(!tema.font_govde&&f.govde==='Inter')?' selected':''}>${esc(f.govde)}</option>`;
-  html += '</select><div class="tema-font-ornek" style="font-family:&apos;" + (tema.font_govde||'Inter') + "&apos;,sans-serif">Aa Gövde metni örneği — lorem ipsum dolor sit amet.</div></div>';
+  html += `</select><div class="tema-font-ornek" style="font-family:'${esc(tema.font_govde||'Inter')}',sans-serif">Aa Gövde metni örneği — lorem ipsum dolor sit amet.</div></div>`;
   html += '</div></div>';
 
   // ── 4) Stiller ──────────────────────────────────────────────────────────
