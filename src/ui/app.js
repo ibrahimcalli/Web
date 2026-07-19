@@ -3170,6 +3170,7 @@ window.blogResimIcerigeEkle = blogResimIcerigeEkle;
 window.kayitModalAc = kayitModalAc;
 // ── CMS Admin Sayfaları ──────────────────────────────────────────────────────
 const esc = s => String(s||'').replace(/[&<>"']/g, c=>`&#${c.charCodeAt(0)};`);
+const safeJsonParse = (s, d = {}) => { try { return JSON.parse(s); } catch { return d; } };
 
 async function adminMenuler() {
   const ic = document.getElementById('admin-ic');
@@ -3439,31 +3440,48 @@ async function adminSablonlar() {
   ]);
   let html = '<div class="admin-baslik">Şablonlar <span style="font-size:.8rem;font-weight:400;color:var(--gri-metin)">— Anasayfa Bölüm Yönetimi</span></div>';
 
-  // Aktif şablon
-  const aktif = templates?.find(t => t.varsayilan);
-  html += `<div style="background:var(--kumtasi-l);padding:1rem;border-radius:12px;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">`;
-  html += `<div><strong>Aktif Şablon:</strong> ${esc(aktif?.ad || '—')} <code style="margin-left:8px;font-size:.8em">${esc(aktif?.klasor || '')}</code></div>`;
-  html += `<div style="display:flex;gap:8px">`;
-  if (templates) templates.forEach(t => {
-    if (!t.varsayilan) {
-      html += `<button class="btn btn-cik" onclick="sablonAktiflestir(${t.id})" style="font-size:.8rem">${esc(t.ad)}</button>`;
-    }
-  });
-  html += `</div></div>`;
+  // Template kartları
+  if (templates) {
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;margin-bottom:1.5rem">';
+    templates.forEach(t => {
+      const moduller = safeJsonParse(t.modules || '{}');
+      const isActive = t.varsayilan;
+      html += `<div style="background:var(--beyaz);border-radius:var(--r);padding:1rem;border:2px solid ${isActive ? 'var(--kiremit)' : 'var(--kumtasi)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div><strong>${esc(t.ad)}</strong> <code style="font-size:.75em">${esc(t.klasor)}</code></div>
+          ${isActive ? '<span style="background:var(--kiremit);color:#fff;padding:2px 10px;border-radius:20px;font-size:.7rem">AKTİF</span>' : `<button class="btn btn-cik btn-sm" onclick="sablonAktiflestir(${t.id})" style="font-size:.7rem">Aktifleştir</button>`}
+        </div>
+        <div style="font-size:.82rem;color:var(--gri-metin);margin-bottom:.5rem">${esc(t.aciklama)}</div>
+        <div style="border-top:1px solid var(--kumtasi);padding-top:.5rem">
+          <div style="font-size:.8rem;font-weight:600;margin-bottom:.4rem">Modüller</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+            ${['blog','gallery','forum','banner','portfolio','services','testimonials'].map(m => `
+              <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;cursor:pointer;padding:2px 0">
+                <input type="checkbox" ${moduller[m] !== false ? 'checked' : ''} onchange="templateModuleToggle(${t.id},'${m}',this.checked)">
+                ${m.charAt(0).toUpperCase() + m.slice(1)}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
 
   // Bölüm listesi
   if (bolumler && bolumler.length) {
+    html += '<div class="admin-baslik" style="font-size:1rem;margin-bottom:.75rem">Anasayfa Bölümleri</div>';
     html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>#</th><th>Bölüm</th><th>Başlık</th><th>Durum</th><th>Animasyon</th><th>Padding</th><th></th></tr></thead><tbody>';
     bolumler.forEach((b, i) => {
       const a = b.ayarlar || {};
-      html += `<tr>
+      html += `<tr${!b.aktif ? ' style="opacity:.5"' : ''}>
         <td>${b.sira}</td>
         <td><code>${esc(b.section_key)}</code></td>
         <td>${esc(b.baslik || '')}</td>
-        <td>✅</td>
+        <td><span class="toggle-slider" style="${b.aktif !== false ? 'background:var(--kiremit)' : ''}" onclick="sablonBolumAktifToggle(${b.id}, ${!(b.aktif !== false)})"></span></td>
         <td style="font-size:.8em">${esc(a.animasyon || '—')}</td>
         <td style="font-size:.8em">${esc(a.padding || '—')}</td>
-        <td><button class="btn btn-cik" onclick="sablonBolumDuzenle(${b.id})">⚙️</button></td>
+        <td><button class="btn btn-cik btn-sm" onclick="sablonBolumDuzenle(${b.id})">⚙️</button></td>
       </tr>`;
     });
     html += '</tbody></table></div>';
@@ -3494,28 +3512,76 @@ window.sablonAktiflestir = async function(id) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
-window.sablonBolumDuzenle = async function(id) {
-  const yeniAd = prompt('Bölüm başlığı:');
-  if (yeniAd === null) return;
-  const animasyon = prompt('Animasyon (fadeIn/fadeUp/slide/none):', 'fadeIn');
-  const padding = prompt('Padding (örn. 80px 0):', '60px 0');
-  const renk = prompt('Arka plan rengi (boş=varsayılan):', '');
-  const genislik = prompt('Container genişliği (boxed/full):', 'boxed');
+window.templateModuleToggle = async function(tid, modul, aktif) {
   try {
+    const t = await api.request(`/api/admin/templates/${tid}`);
+    const moduller = safeJsonParse(t.modules || '{}');
+    moduller[modul] = aktif;
+    await api.request(`/api/admin/templates/${tid}`, { method:'PUT', body:JSON.stringify({modules:JSON.stringify(moduller)}) });
+    bildirim(`${modul} ${aktif ? 'aktif' : 'pasif'}`,'basari');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumAktifToggle = async function(id, aktif) {
+  try {
+    await api.request(`/api/admin/bolumler/${id}`, { method:'PUT', body:JSON.stringify({aktif}) });
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumDuzenle = async function(id) {
+  const bolum = await api.request(`/api/admin/bolumler/${id}`);
+  if (!bolum) return;
+  const a = safeJsonParse(bolum.ayarlar || '{}');
+
+  const html = `<div class="modal-zemin" id="bolum-modal" onclick="if(event.target===this)document.getElementById('bolum-modal').remove()">
+    <div class="modal-kapsul" style="max-width:480px">
+      <h3 style="margin-bottom:1rem">Bölüm Ayarları <code style="font-size:.75em">${esc(bolum.section_key)}</code></h3>
+      <div style="display:grid;gap:.75rem">
+        <label>Başlık <input id="bm-baslik" class="form-girdi" value="${esc(bolum.baslik || '')}"></label>
+        <label style="display:flex;align-items:center;gap:8px">Aktif <input type="checkbox" class="toggle-label-cb" id="bm-aktif" ${bolum.aktif !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+        <label>Animasyon <select id="bm-animasyon" class="form-girdi">
+          ${['fadeIn','fadeUp','slide','zoom','none'].map(o => `<option value="${o}" ${a.animasyon === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select></label>
+        <label>Padding <input id="bm-padding" class="form-girdi" value="${esc(a.padding || '60px 0')}"></label>
+        <label>Arka Plan Rengi <input id="bm-renk" class="form-girdi" value="${esc(a.arka_renk || '')}" placeholder="#FFFFFF veya boş"></label>
+        <label>Container <select id="bm-genislik" class="form-girdi">
+          ${['boxed','full'].map(o => `<option value="${o}" ${a.container_genislik === o ? 'selected' : ''}>${o === 'boxed' ? 'Boxed (dar)' : 'Full (geniş)'}</option>`).join('')}
+        </select></label>
+        <label style="display:flex;align-items:center;gap:8px">Başlık Göster <input type="checkbox" class="toggle-label-cb" id="bm-baslik-goster" ${a.baslik_goster !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button class="btn btn-kirm" onclick="sablonBolumKaydet(${id})">💾 Kaydet</button>
+        <button class="btn btn-ntr" onclick="document.getElementById('bolum-modal').remove()">İptal</button>
+      </div>
+    </div>
+  </div>`;
+  const existing = document.getElementById('bolum-modal');
+  if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.sablonBolumKaydet = async function(id) {
+  try {
+    const baslik = document.getElementById('bm-baslik')?.value?.trim() || '';
+    const aktif = document.getElementById('bm-aktif')?.checked ?? true;
+    const animasyon = document.getElementById('bm-animasyon')?.value || 'fadeIn';
+    const padding = document.getElementById('bm-padding')?.value || '60px 0';
+    const arka_renk = document.getElementById('bm-renk')?.value || '';
+    const genislik = document.getElementById('bm-genislik')?.value || 'boxed';
+    const baslik_goster = document.getElementById('bm-baslik-goster')?.checked ?? true;
+
     await api.request(`/api/admin/bolumler/${id}`, {
       method:'PUT',
       body:JSON.stringify({
-        baslik: yeniAd || '',
-        ayarlar: JSON.stringify({
-          animasyon: animasyon || 'fadeIn',
-          padding: padding || '60px 0',
-          arka_renk: renk || '',
-          container_genislik: genislik || 'boxed',
-          baslik_goster: true,
-        }),
+        baslik,
+        aktif,
+        ayarlar: JSON.stringify({animasyon,padding,arka_renk,container_genislik:genislik,baslik_goster}),
       }),
     });
     bildirim('Bölüm güncellendi','basari');
+    const modal = document.getElementById('bolum-modal');
+    if (modal) modal.remove();
     adminSablonlar();
   } catch(e) { bildirim(e.message,'hata'); }
 };

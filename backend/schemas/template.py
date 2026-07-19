@@ -22,6 +22,7 @@ class TemplateUpdate(BaseModel):
     klasor: Optional[str] = None
     aktif: Optional[bool] = None
     varsayilan: Optional[bool] = None
+    modules: Optional[str] = None
 
 
 class TemplateOut(BaseModel):
@@ -32,6 +33,7 @@ class TemplateOut(BaseModel):
     klasor: str
     aktif: bool
     varsayilan: bool
+    modules: str = '{}'
     olusturma: str
 
 

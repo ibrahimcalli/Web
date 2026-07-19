@@ -363,6 +363,7 @@ def init_db(database: Database | None = None) -> None:
         "ALTER TABLE portfoyler ADD COLUMN musteri_not TEXT DEFAULT ''",
         "ALTER TABLE bannerlar ADD COLUMN alt_metin TEXT DEFAULT ''",
         "ALTER TABLE bannerlar ADD COLUMN link_hedef TEXT DEFAULT '_self'",
+        "ALTER TABLE templates ADD COLUMN modules TEXT DEFAULT '{}'",
     ]:
         try:
             c.execute(mig)
