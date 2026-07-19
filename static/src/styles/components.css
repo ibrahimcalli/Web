@@ -107,7 +107,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   gap: 1rem;
 }
 .modal-baslik h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1rem, 3vw, 1.1rem);
   font-weight: 700;
   word-break: break-word;
@@ -259,7 +259,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   overflow: auto;
 }
 .admin-baslik {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.1rem, 4vw, 1.4rem);
   font-weight: 700; color: var(--toprak);
   margin-bottom: 1.5rem;
@@ -287,7 +287,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   box-shadow: var(--kart-gol);
 }
 .stat-sayi {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.5rem, 6vw, 2rem);
   font-weight: 700; color: var(--toprak);
 }
@@ -501,7 +501,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   margin: 0 auto .75rem;
 }
 .giris-kart h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.1rem, 4vw, 1.3rem);
   font-weight: 700; text-align: center;
 }
@@ -568,7 +568,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
 .bos-durum { text-align: center; padding: clamp(2rem, 8vw, 4rem) clamp(1rem, 4vw, 2rem); color: var(--gri-metin); }
 .bos-ikon { font-size: clamp(2.5rem, 10vw, 3rem); margin-bottom: 1rem; }
 .bos-durum h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1rem, 4vw, 1.2rem);
   color: var(--toprak);
   margin-bottom: .5rem;
@@ -594,7 +594,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   .footer-ic { grid-template-columns: 1fr 1fr 1fr; }
 }
 .footer-marka h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1rem, 3vw, 1.1rem);
   color: #fff;
   margin-bottom: .4rem;
@@ -672,7 +672,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   flex-wrap: wrap; gap: .5rem;
 }
 .bant-baslik h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.1rem, 4vw, 1.35rem);
   font-weight: 700;
 }
@@ -723,7 +723,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   margin-bottom: .4rem;
 }
 .blog-kart-baslik {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(.95rem, 3vw, 1.05rem);
   font-weight: 700; color: var(--toprak);
   margin-bottom: .4rem; line-height: 1.35;
@@ -752,12 +752,12 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   word-break: break-word;
 }
 .blog-detay-icerik h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.2rem, 4vw, 1.4rem);
   margin: 1.5rem 0 .6rem; color: var(--toprak);
 }
 .blog-detay-icerik h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1rem, 3vw, 1.15rem);
   margin: 1.25rem 0 .5rem; color: var(--toprak);
 }
@@ -885,7 +885,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   gap: .5rem;
 }
 .banner-slide-baslik {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.1rem, 4vw, 2rem);
   font-weight: 700; color: #fff;
   text-shadow: 0 2px 8px rgba(0,0,0,.4);
@@ -984,7 +984,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   flex: 1; min-width: 0;
 }
 .banner-duyuru-baslik {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1rem, 4vw, 1.6rem);
   font-weight: 700; color: #fff;
   margin-bottom: .35rem;
@@ -1085,7 +1085,7 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   align-items: center; justify-content: center;
 }
 .slider-baslik {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.3rem, 5vw, 2.2rem);
   font-weight: 700; color: #fff;
   margin-bottom: .6rem;
@@ -1165,4 +1165,322 @@ textarea.form-girdi { resize: vertical; min-height: 90px; }
   width: 28px; height: 28px; color: inherit;
   font-size: .8rem;
   display: flex; align-items: center; justify-content: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   11. TEMA YÖNETİCİSİ (admin tema editor UI)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tema-editor {
+  max-width: 800px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 1.5rem;
+}
+
+.tema-bolum {
+  background: var(--beyaz); border: 1px solid var(--kumtasi);
+  border-radius: var(--r); padding: 1.25rem;
+}
+
+.tema-bolum-baslik {
+  font-family: var(--font-baslik);
+  font-size: clamp(1rem, 3vw, 1.15rem);
+  font-weight: 700; margin-bottom: .25rem;
+}
+
+.tema-bolum-aciklama {
+  font-size: clamp(.78rem, 2vw, .82rem);
+  color: var(--gri-metin); margin-bottom: 1rem;
+}
+
+/* Palet kartları */
+.tema-palet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: .75rem;
+}
+
+.tema-palet-kart {
+  position: relative;
+  border: 2px solid var(--kumtasi);
+  border-radius: var(--r-sm);
+  padding: .75rem;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+  background: var(--krem);
+}
+
+.tema-palet-kart:hover {
+  border-color: var(--kiremit-a);
+  transform: translateY(-2px);
+}
+
+.tema-palet-kart.aktif {
+  border-color: var(--kiremit);
+  box-shadow: 0 0 0 3px var(--kiremit-a);
+}
+
+.tema-palet-renkler {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: .5rem;
+}
+
+.tema-palet-renkler span {
+  height: 24px;
+}
+
+.tema-palet-ad {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--toprak);
+  text-align: center;
+}
+
+.tema-palet-check {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 22px; height: 22px;
+  background: var(--kiremit);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+
+/* Renk input satırı */
+.tema-renk-satir {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .6rem;
+  flex-wrap: wrap;
+}
+
+.tema-renk-satir label {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--toprak);
+  min-width: 120px;
+}
+
+.tema-renk-girdi-grup {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.tema-renk-picker {
+  width: 40px; height: 40px;
+  border: 1.5px solid var(--kumtasi);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  padding: 2px;
+  background: none;
+}
+
+.tema-renk-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.tema-renk-picker::-webkit-color-swatch { border: none; border-radius: 4px; }
+
+.tema-renk-text {
+  width: 110px;
+  padding: .45rem .7rem;
+  border: 1.5px solid var(--kumtasi);
+  border-radius: var(--r-sm);
+  font-size: .85rem;
+  font-family: 'Inter', monospace;
+  color: var(--toprak);
+  background: var(--beyaz);
+}
+
+.tema-renk-text:focus {
+  border-color: var(--kiremit);
+  outline: none;
+}
+
+/* Font seçici */
+.tema-font-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.tema-font-kolon {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.tema-font-kolon label {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--toprak);
+}
+
+.tema-select {
+  width: 100%;
+  padding: .55rem .75rem;
+  border: 1.5px solid var(--kumtasi);
+  border-radius: var(--r-sm);
+  font-size: .85rem;
+  color: var(--toprak);
+  background: var(--beyaz);
+  cursor: pointer;
+  outline: none;
+}
+
+.tema-select:focus {
+  border-color: var(--kiremit);
+}
+
+.tema-font-ornek {
+  padding: .75rem;
+  border-radius: var(--r-sm);
+  border: 1px dashed var(--kumtasi);
+  font-size: .9rem;
+  color: var(--toprak);
+  background: var(--krem);
+  line-height: 1.4;
+}
+
+/* Stil seçici */
+.tema-stil-grup {
+  margin-bottom: 1rem;
+}
+
+.tema-stil-label {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--toprak);
+  margin-bottom: .15rem;
+}
+
+.tema-stil-aciklama {
+  font-size: .75rem;
+  color: var(--gri-metin);
+  margin-bottom: .5rem;
+}
+
+.tema-stil-secenekler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.tema-stil-chip {
+  padding: .4rem .85rem;
+  border: 1.5px solid var(--kumtasi);
+  border-radius: 20px;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--gri-metin);
+  background: var(--krem);
+  cursor: pointer;
+  transition: .12s;
+}
+
+.tema-stil-chip:hover {
+  border-color: var(--kiremit-a);
+  color: var(--kiremit);
+}
+
+.tema-stil-chip.aktif {
+  border-color: var(--kiremit);
+  color: var(--kiremit);
+  background: var(--kiremit-a);
+  font-weight: 600;
+}
+
+/* Slider */
+.tema-slider-satir {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tema-slider {
+  flex: 1;
+  height: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--kumtasi);
+  border-radius: 3px;
+  outline: none;
+}
+
+.tema-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--kiremit);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+
+.tema-slider-satir span {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--toprak);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Koyu Mod toggle */
+.tema-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--toprak);
+  cursor: pointer;
+}
+
+.tema-toggle input { display: none; }
+
+.tema-toggle-slider {
+  position: relative;
+  width: 44px; height: 24px;
+  background: var(--kumtasi);
+  border-radius: 12px;
+  transition: .2s;
+}
+
+.tema-toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15);
+}
+
+.tema-toggle input:checked + .tema-toggle-slider {
+  background: var(--kiremit);
+}
+
+.tema-toggle input:checked + .tema-toggle-slider::after {
+  left: 23px;
+}
+
+@media (max-width: 480px) {
+  .tema-palet-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+  .tema-font-grid {
+    grid-template-columns: 1fr;
+  }
+  .tema-renk-satir label {
+    min-width: 80px;
+  }
 }

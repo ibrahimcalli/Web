@@ -1545,6 +1545,18 @@ async function siteAyarlariUygula() {
   if (ay.renk_metin) root.style.setProperty('--toprak', ay.renk_metin);
   if (ay.renk_ana) root.style.setProperty('--kiremit-a', lightenHex(ay.renk_ana, 72));
 
+  // Tema ayarlarından font ve stil uygula
+  const tm = await api.request('/api/tema').catch(()=>({}));
+  if (tm.font_baslik) root.style.setProperty('--font-baslik', tm.font_baslik);
+  if (tm.font_govde) root.style.setProperty('--font-govde', tm.font_govde);
+  if (tm.border_radius) {
+    const br = parseInt(tm.border_radius) || 12;
+    root.style.setProperty('--r', br + 'px');
+    root.style.setProperty('--r-sm', Math.max(4, Math.round(br * 0.66)) + 'px');
+  }
+  if (tm.dark_mode === '1') document.body.classList.add('dark-mode');
+  else document.body.classList.remove('dark-mode');
+
   // İletişim
   const fTel = document.getElementById('footer-tel');
   if (fTel) fTel.innerHTML = ay.telefon ? `<a href="tel:${ay.telefon}" style="color:rgba(255,255,255,.7)">${ay.telefon}</a>` : '–';
@@ -2013,19 +2025,24 @@ function seoGuncelle({ baslik, aciklama, resim, url, tip = 'website', fiyat = ''
 // FAZ 3 — BLOG LİSTE
 // ══════════════════════════════════════════════════════════════════
 let aktifBlogEtiket = '';
-let blogYukleniyor = false;
 
 async function blogListeYukle() {
-  if (blogYukleniyor) return;
-  blogYukleniyor = true;
   const grid = document.getElementById('blog-grid');
-  if (!grid) { blogYukleniyor = false; return; }
+  if (!grid) return;
   grid.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+
+  // Güvenlik zaman aşımı — 8sn sonra spinner'ı kaldır
+  let timeout;
+  const safety = new Promise((_, rej) => {
+    timeout = setTimeout(() => rej(new Error('Zaman aşımı')), 8000);
+  });
+
   try {
-    const yazılar = await api.getBlog();
+    const yazılar = await Promise.race([api.getBlog(), safety]);
+    clearTimeout(timeout);
     if (!yazılar || !yazılar.length) {
       grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-      blogYukleniyor = false; return;
+      return;
     }
 
     seoGuncelle({
@@ -2059,13 +2076,12 @@ async function blogListeYukle() {
     grid.innerHTML = '';
     if (!filtreli.length) {
       grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-      blogYukleniyor = false; return;
+      return;
     }
     filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
   } catch (e) {
     grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3><p>Lütfen sayfayı yenileyin</p></div>';
   }
-  blogYukleniyor = false;
 }
 
 function blogEtiketFiltre(etiket) {
@@ -3010,7 +3026,7 @@ async function baslat() {
   await authGuncelle();
   await siteAyarlariUygula();
   anaSayfaYukle();
-  blogListeYukle();
+  await blogListeYukle();
   bannerlariYukle("anasayfa");  // Ana sayfadaki blog şeridi için
   favBantGuncelle();
   // URL'de ilan parametresi varsa direkt aç
@@ -3413,35 +3429,194 @@ window.widgetToggle = async function(id, aktif) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
-// ── Tema ─────────────────────────────────────────────────────────────────────
+// ── Tema Paletleri (renk şemaları) ────────────────────────────────────────────
+
+const TEMA_PALETLERI = [
+  { id:'',          ad:'Kiremit',      renkler:['#C45C35','#A34A28','#FAF7F2','#2D2016'] },
+  { id:'green',     ad:'Zeytun Yeşil',  renkler:['#2D7D46','#1F5C33','#F0F7F2','#1A2E1A'] },
+  { id:'navy',      ad:'Lacivert',      renkler:['#1A3C6B','#12295A','#EDF2F7','#0F1A2E'] },
+  { id:'purple',    ad:'Mor',           renkler:['#6D28D9','#5B21B6','#F5F0FF','#1A0F2E'] },
+  { id:'rose',      ad:'Gül',          renkler:['#D9466F','#BE3455','#FFF0F3','#2D1A20'] },
+  { id:'gold',      ad:'Altın',        renkler:['#D4943A','#B87A2E','#FFFAF0','#2D2616'] },
+  { id:'teal',      ad:'Okyanus',      renkler:['#0E7C7B','#0B5E5D','#F0FCFC','#0F1A1A'] },
+  { id:'charcoal',  ad:'Kömür',        renkler:['#4A4A4A','#2D2D2D','#F5F5F5','#141414'] },
+];
+
+const FONT_LIST = [
+  { baslik:'Playfair Display', govde:'Inter' },
+  { baslik:'Poppins',          govde:'Open Sans' },
+  { baslik:'Montserrat',       govde:'Merriweather' },
+  { baslik:'Raleway',          govde:'Lora' },
+  { baslik:'DM Serif Display', govde:'DM Sans' },
+  { baslik:'Oswald',           govde:'Roboto' },
+  { baslik:'Cinzel',           govde:'Lato' },
+  { baslik:'Prata',            govde:'Nunito' },
+];
+
+const STIL_SECENEKLERI = {
+  header_stil:   { ad:'Header', secim:{ sticky:'Yapışkan', fixed:'Sabit', default:'Varsayılan', minimal:'Minimal' }, aciklama:'Üst navigasyon çubuğu stili' },
+  footer_stil:   { ad:'Footer', secim:{ default:'Varsayılan', minimal:'Minimal', compact:'Kompakt' }, aciklama:'Alt bilgi alanı stili' },
+  kart_stil:     { ad:'Kart',   secim:{ default:'Varsayılan', shadow:'Gölgeli', bordered:'Kenarlıklı', modern:'Modern', minimal:'Minimal' }, aciklama:'İlan/blog kartları görünümü' },
+  button_stil:   { ad:'Buton',  secim:{ default:'Varsayılan', rounded:'Yuvarlak', pill:'Hap', outline:'Outline', gradient:'Gradyan' }, aciklama:'Buton görünümü' },
+  animasyon:     { ad:'Animasyon', secim:{ minimize:'Minimal', fade:'Soluk', slide:'Kaydır', zoom:'Büyüt', none:'Yok' }, aciklama:'Sayfa geçiş animasyonu' },
+};
+
+function temaPaletGorsel(palet, seciliId) {
+  const secili = seciliId === palet.id;
+  return `<div class="tema-palet-kart${secili?' aktif':''}" onclick="temaPaletSec('${esc(palet.id)}')">
+    <div class="tema-palet-renkler">${palet.renkler.map(r => `<span style="background:${r}"></span>`).join('')}</div>
+    <div class="tema-palet-ad">${esc(palet.ad)}</div>
+    ${secili ? '<div class="tema-palet-check">✓</div>' : ''}
+  </div>`;
+}
+
+function temaRenkInput(etiket, anahtar, deger) {
+  return `<div class="tema-renk-satir">
+    <label>${esc(etiket)}</label>
+    <div class="tema-renk-girdi-grup">
+      <input type="color" class="tema-renk-picker" value="${esc(deger)}" data-key="${esc(anahtar)}" onchange="temaRenkDegisti(this)">
+      <input type="text" class="tema-renk-text" value="${esc(deger)}" data-key="${esc(anahtar)}" oninput="temaRenkYaziDegisti(this)" onchange="temaRenkKaydet('${esc(anahtar)}',this.value)">
+    </div>
+  </div>`;
+}
+
+function stilKart(anahtar, secenek, mevcut) {
+  return `<div class="tema-stil-grup">
+    <div class="tema-stil-label">${esc(secenek.ad)}</div>
+    <div class="tema-stil-aciklama">${esc(secenek.aciklama)}</div>
+    <div class="tema-stil-secenekler">${Object.entries(secenek.secim).map(([k,v]) =>
+      `<div class="tema-stil-chip${mevcut===k?' aktif':''}" onclick="temaStilSec('${esc(anahtar)}','${esc(k)}')">${esc(v)}</div>`
+    ).join('')}</div>
+  </div>`;
+}
+
+// ── Global tema yardımcıları ────────────────────────────────────────────────
+
+window.temaPaletSec = async function(id) {
+  const palet = TEMA_PALETLERI.find(p => p.id === id);
+  if (!palet) return;
+  const renkMap = { renk_ana: palet.renkler[0], renk_ana_koy: palet.renkler[1], renk_arka: palet.renkler[2], renk_metin: palet.renkler[3] };
+  for (const [k,v] of Object.entries(renkMap)) {
+    await api.request(`/api/admin/tema/${k}`, { method:'PUT', body:JSON.stringify({anahtar:k,deger:v}) });
+  }
+  document.body.setAttribute('data-tema', id);
+  window.siteAyarlariUygula && siteAyarlariUygula();
+  bildirim(`${palet.ad} paleti uygulandı`, 'basari');
+  adminTema();
+};
+
+window.temaRenkDegisti = function(el) {
+  const val = el.value;
+  const text = el.parentElement.querySelector('.tema-renk-text');
+  if (text) text.value = val;
+  temaRenkKaydet(el.dataset.key, val);
+};
+
+window.temaRenkYaziDegisti = function(el) {
+  const picker = el.parentElement.querySelector('.tema-renk-picker');
+  if (picker && /^#[0-9a-f]{6}$/i.test(el.value)) picker.value = el.value;
+};
+
+window.temaRenkKaydet = async function(anahtar, deger) {
+  try {
+    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger}) });
+    window.siteAyarlariUygula && siteAyarlariUygula();
+  } catch(e) { bildirim(e.message, 'hata'); }
+};
+
+window.temaStilSec = async function(anahtar, deger) {
+  try {
+    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger}) });
+    bildirim('Stil güncellendi', 'basari');
+    adminTema();
+  } catch(e) { bildirim(e.message, 'hata'); }
+};
+
+window.temaFontSec = async function(el) {
+  const anahtar = el.dataset.key;
+  const deger = el.value;
+  try {
+    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger}) });
+    siteAyarlariUygula();
+    bildirim('Font güncellendi', 'basari');
+  } catch(e) { bildirim(e.message, 'hata'); }
+};
+
+window.temaBorderRadius = async function(el) {
+  const v = el.value;
+  document.getElementById('br-value').textContent = v + 'px';
+  await api.request('/api/admin/tema/border_radius', { method:'PUT', body:JSON.stringify({anahtar:'border_radius',deger:v}) });
+  document.documentElement.style.setProperty('--r', v + 'px');
+  document.documentElement.style.setProperty('--r-sm', Math.max(4, Math.round(v * 0.66)) + 'px');
+};
+
+window.temaDarkToggle = async function(el) {
+  const v = el.checked ? '1' : '0';
+  await api.request('/api/admin/tema/dark_mode', { method:'PUT', body:JSON.stringify({anahtar:'dark_mode',deger:v}) });
+  document.body.classList.toggle('dark-mode', el.checked);
+};
+
+// ── Admin Tema Sayfası ──────────────────────────────────────────────────────
 
 async function adminTema() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const tema = await api.request('/api/admin/tema').catch(()=>({}));
-  let html = '<div class="admin-baslik">Tema Ayarları</div>';
-  html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Değer</th><th></th></tr></thead><tbody>';
-  for (const [k,v] of Object.entries(tema)) {
-    const isRenk = k.startsWith('renk_');
-    html += `<tr>
-      <td><code>${esc(k)}</code></td>
-      <td>${isRenk ? `<span style="display:inline-block;width:20px;height:20px;background:${esc(v)};border-radius:4px;vertical-align:middle;margin-right:6px;border:1px solid #ddd"></span>` : ''}${esc(v)}</td>
-      <td><button class="btn btn-cik" onclick="temaDuzenle('${esc(k)}','${esc(v)}')">✏️</button></td>
-    </tr>`;
+
+  const mevcutPalet = tema.renk_ana ? TEMA_PALETLERI.find(p =>
+    p.renkler[0].toLowerCase() === tema.renk_ana.toLowerCase() &&
+    p.renkler[2].toLowerCase() === (tema.renk_arka||'').toLowerCase()
+  ) : TEMA_PALETLERI[0];
+  const paletId = mevcutPalet ? mevcutPalet.id : '';
+
+  let html = '<div class="admin-baslik">🎨 Tema Yöneticisi</div>';
+  html += '<div class="tema-editor">';
+
+  // ── 1) Renk Paletleri ────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Renk Paletleri</div><div class="tema-bolum-aciklama">Hazır renk şemalarından birini seçin veya aşağıdan özelleştirin</div>';
+  html += '<div class="tema-palet-grid">';
+  for (const p of TEMA_PALETLERI) html += temaPaletGorsel(p, paletId);
+  html += '</div></div>';
+
+  // ── 2) Özel Renkler ─────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Özel Renkler</div><div class="tema-bolum-aciklama">Renk kutucuğuna tıklayarak veya hex kodu yazarak ince ayar yapın</div>';
+  html += temaRenkInput('Ana Renk', 'renk_ana', tema.renk_ana || '#C45C35');
+  html += temaRenkInput('Ana Renk (Koyu)', 'renk_ana_koy', tema.renk_ana_koy || '#A34A28');
+  html += temaRenkInput('Arka Plan', 'renk_arka', tema.renk_arka || '#FAF7F2');
+  html += temaRenkInput('Metin Rengi', 'renk_metin', tema.renk_metin || '#2D2016');
+  html += '</div>';
+
+  // ── 3) Fontlar ──────────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Fontlar</div><div class="tema-bolum-aciklama">Başlık ve gövde metni fontlarını seçin</div>';
+  html += '<div class="tema-font-grid">';
+  html += '<div class="tema-font-kolon"><label>Başlık Fontu</label><select class="tema-select" data-key="font_baslik" onchange="temaFontSec(this)">';
+  for (const f of FONT_LIST) html += `<option value="${esc(f.baslik)}"${tema.font_baslik===f.baslik||(!tema.font_baslik&&f.baslik==='Playfair Display')?' selected':''}>${esc(f.baslik)}</option>`;
+  html += '</select><div class="tema-font-ornek" style="font-family:&apos;" + (tema.font_baslik||'Playfair Display') + "&apos;,serif">Aa Başlık Örneği</div></div>';
+  html += '<div class="tema-font-kolon"><label>Gövde Fontu</label><select class="tema-select" data-key="font_govde" onchange="temaFontSec(this)">';
+  for (const f of FONT_LIST) html += `<option value="${esc(f.govde)}"${tema.font_govde===f.govde||(!tema.font_govde&&f.govde==='Inter')?' selected':''}>${esc(f.govde)}</option>`;
+  html += '</select><div class="tema-font-ornek" style="font-family:&apos;" + (tema.font_govde||'Inter') + "&apos;,sans-serif">Aa Gövde metni örneği — lorem ipsum dolor sit amet.</div></div>';
+  html += '</div></div>';
+
+  // ── 4) Stiller ──────────────────────────────────────────────────────────
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Stiller</div><div class="tema-bolum-aciklama">Bileşen görünümlerini özelleştirin</div>';
+  for (const [k, v] of Object.entries(STIL_SECENEKLERI)) {
+    html += stilKart(k, v, tema[k] || Object.keys(v.secim)[0]);
   }
-  html += '</tbody></table></div>';
+  html += '</div>';
+
+  // ── 5) Köşe Yuvarlaklığı ────────────────────────────────────────────────
+  const br = parseInt(tema.border_radius || '12');
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Köşe Yuvarlaklığı</div>';
+  html += '<div class="tema-slider-satir"><input type="range" min="0" max="24" value="' + br + '" class="tema-slider" oninput="temaBorderRadius(this)"><span id="br-value">' + br + 'px</span></div></div>';
+
+  // ── 6) Koyu Mod ─────────────────────────────────────────────────────────
+  const dm = tema.dark_mode === '1';
+  html += '<div class="tema-bolum"><div class="tema-bolum-baslik">Koyu Mod</div>';
+  html += '<label class="tema-toggle"><input type="checkbox"' + (dm?' checked':'') + ' onchange="temaDarkToggle(this)"><span class="tema-toggle-slider"></span> Koyu Modu Etkinleştir</label></div>';
+
+  html += '</div>'; // .tema-editor
   ic.innerHTML = html;
 }
-
-window.temaDuzenle = async function(anahtar, deger) {
-  const yeni = prompt(`${anahtar} için yeni değer:`, deger);
-  if (yeni === null) return;
-  try {
-    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger:yeni}) });
-    bildirim('Tema ayarı güncellendi','basari');
-    adminTema();
-  } catch(e) { bildirim(e.message,'hata'); }
-};
 
 // ── Şablonlar ─────────────────────────────────────────────────────────────────
 

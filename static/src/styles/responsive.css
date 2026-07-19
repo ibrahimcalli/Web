@@ -44,12 +44,14 @@
   --nav-h:     64px;
   /* Responsive nav yüksekliği (mobilde daha küçük) */
   --nav-h-mob: 56px;
+  --font-baslik: 'Playfair Display', Georgia, serif;
+  --font-govde: 'Inter', system-ui, sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-govde);
   background: var(--krem);
   color: var(--toprak);
   line-height: 1.6;
@@ -70,12 +72,12 @@ img { display: block; max-width: 100%; height: auto; object-fit: cover; }
    2. TİPOGRAFİ (responsive clamp)
    ═══════════════════════════════════════════════════════════════════════════ */
 .t-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-baslik);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -.02em;
 }
-.t-serif { font-family: 'Playfair Display', Georgia, serif; }
+.t-serif { font-family: var(--font-baslik); }
 .t-muted { color: var(--gri-metin); }
 .t-kiremit { color: var(--kiremit); }
 .t-zeytun  { color: var(--zeytun); }
@@ -110,7 +112,7 @@ img { display: block; max-width: 100%; height: auto; object-fit: cover; }
 }
 .nav-logo-text { line-height: 1.1; min-width: 0; }
 .nav-logo-name {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-weight: 700;
   font-size: clamp(.875rem, 3vw, 1rem);
   color: var(--toprak);
@@ -316,11 +318,44 @@ img { display: block; max-width: 100%; height: auto; object-fit: cover; }
 }
 
 .hero-istat-sayi {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-baslik);
   font-size: clamp(1.25rem, 4vw, 1.75rem);
   font-weight: 700; color: var(--toprak);
 }
 .hero-istat-etiket {
   font-size: clamp(.7rem, 2vw, .78rem);
   color: var(--gri-metin);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE (class body'e eklenir)
+   ═══════════════════════════════════════════════════════════════════════════ */
+body.dark-mode {
+  --krem: #1A1A2E;
+  --kiremit: #E07A5F;
+  --kiremit-k: #C8654A;
+  --kiremit-a: #2D2030;
+  --toprak: #E8E0D8;
+  --kumtasi: #2D2D3A;
+  --gri-metin: #9E9EAA;
+  --beyaz: #16162A;
+  --kart-gol: 0 2px 12px rgba(0,0,0,.3);
+  --kart-gol2: 0 8px 32px rgba(0,0,0,.4);
+  background: var(--krem);
+  color: var(--toprak);
+}
+
+body.dark-mode .nav {
+  background: rgba(22, 22, 42, .92);
+  border-bottom-color: var(--kumtasi);
+}
+
+body.dark-mode .tema-bolum,
+body.dark-mode .tablo,
+body.dark-mode .kart,
+body.dark-mode .form-girdi,
+body.dark-mode .tema-select,
+body.dark-mode .tema-renk-text {
+  background: var(--beyaz);
+  color: var(--toprak);
 }
