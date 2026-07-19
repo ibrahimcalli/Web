@@ -2018,8 +2018,16 @@ async function blogListeYukle() {
   const grid = document.getElementById('blog-grid');
   if (!grid) return;
   grid.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+
+  // Güvenlik zaman aşımı — 8sn sonra spinner'ı kaldır
+  let timeout;
+  const safety = new Promise((_, rej) => {
+    timeout = setTimeout(() => rej(new Error('Zaman aşımı')), 8000);
+  });
+
   try {
-    const yazılar = await api.getBlog();
+    const yazılar = await Promise.race([api.getBlog(), safety]);
+    clearTimeout(timeout);
     if (!yazılar || !yazılar.length) {
       grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
       return;

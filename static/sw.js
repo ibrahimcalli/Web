@@ -13,7 +13,7 @@
  * - Hiç ziyaret edilmemiş sayfalar için /offline.html gösterilir
  */
 
-const CACHE_VERSION = 'v2.0.4';
+const CACHE_VERSION = 'v2.0.5';
 const STATIC_CACHE = 'static-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'runtime-' + CACHE_VERSION;
 const OFFLINE_URL = '/offline.html';
