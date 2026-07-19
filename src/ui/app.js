@@ -3533,22 +3533,44 @@ window.sablonBolumDuzenle = async function(id) {
   const bolum = await api.request(`/api/admin/bolumler/${id}`);
   if (!bolum) return;
   const a = safeJsonParse(bolum.ayarlar || '{}');
+  const icerik = a.icerik || {};
+  const isHero = bolum.section_key === 'hero';
+  const isSlider = bolum.section_key === 'slider';
+  const isServices = bolum.section_key === 'services';
 
-  const html = `<div class="modal-zemin" id="bolum-modal" onclick="if(event.target===this)document.getElementById('bolum-modal').remove()">
-    <div class="modal-kapsul" style="max-width:480px">
+  const html = `<div class="modal-zemin" id="bolum-modal" data-key="${esc(bolum.section_key)}" onclick="if(event.target===this)document.getElementById('bolum-modal').remove()">
+    <div class="modal-kapsul" style="max-width:520px">
       <h3 style="margin-bottom:1rem">Bölüm Ayarları <code style="font-size:.75em">${esc(bolum.section_key)}</code></h3>
       <div style="display:grid;gap:.75rem">
         <label>Başlık <input id="bm-baslik" class="form-girdi" value="${esc(bolum.baslik || '')}"></label>
-        <label style="display:flex;align-items:center;gap:8px">Aktif <input type="checkbox" class="toggle-label-cb" id="bm-aktif" ${bolum.aktif !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
-        <label>Animasyon <select id="bm-animasyon" class="form-girdi">
-          ${['fadeIn','fadeUp','slide','zoom','none'].map(o => `<option value="${o}" ${a.animasyon === o ? 'selected' : ''}>${o}</option>`).join('')}
-        </select></label>
-        <label>Padding <input id="bm-padding" class="form-girdi" value="${esc(a.padding || '60px 0')}"></label>
-        <label>Arka Plan Rengi <input id="bm-renk" class="form-girdi" value="${esc(a.arka_renk || '')}" placeholder="#FFFFFF veya boş"></label>
-        <label>Container <select id="bm-genislik" class="form-girdi">
-          ${['boxed','full'].map(o => `<option value="${o}" ${a.container_genislik === o ? 'selected' : ''}>${o === 'boxed' ? 'Boxed (dar)' : 'Full (geniş)'}</option>`).join('')}
-        </select></label>
-        <label style="display:flex;align-items:center;gap:8px">Başlık Göster <input type="checkbox" class="toggle-label-cb" id="bm-baslik-goster" ${a.baslik_goster !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+        ${isHero ? `
+        <label>Alt Başlık <input id="bm-alt-baslik" class="form-girdi" value="${esc(a.alt_baslik || '')}"></label>
+        <label>Buton Metni <input id="bm-buton" class="form-girdi" value="${esc(a.buton_metin || '')}"></label>
+        <label>Buton Linki <input id="bm-link" class="form-girdi" value="${esc(a.buton_link || '')}"></label>
+        <label>Arka Plan Görseli (URL) <input id="bm-gorsel" class="form-girdi" value="${esc(a.arka_gorsel || '')}"></label>` : ''}
+        ${isSlider ? `
+        <label>Slider İçeriği (JSON)
+        <textarea id="bm-slider" class="form-girdi" rows="5" style="resize:vertical">${esc(JSON.stringify(icerik.slides || [{title:'',subtitle:''}], null, 2))}</textarea>
+        <div style="font-size:.75rem;color:var(--gri-metin)">Her slide için: {"title":"...","subtitle":"...","image":"..."}</div></label>` : ''}
+        ${isServices ? `
+        <label>Hizmetler (JSON)
+        <textarea id="bm-services" class="form-girdi" rows="5" style="resize:vertical">${esc(JSON.stringify(icerik.items || [{ikon:'',baslik:'',metin:''}], null, 2))}</textarea>
+        <div style="font-size:.75rem;color:var(--gri-metin)">Her hizmet için: {"ikon":"🏠","baslik":"...","metin":"..."}</div></label>` : ''}
+        <details style="margin-top:.5rem">
+          <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--gri-metin)">⚙️ Gelişmiş Ayarlar</summary>
+          <div style="display:grid;gap:.75rem;margin-top:.75rem">
+            <label style="display:flex;align-items:center;gap:8px">Aktif <input type="checkbox" class="toggle-label-cb" id="bm-aktif" ${bolum.aktif !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+            <label>Animasyon <select id="bm-animasyon" class="form-girdi">
+              ${['fadeIn','fadeUp','slide','zoom','none'].map(o => `<option value="${o}" ${a.animasyon === o ? 'selected' : ''}>${o}</option>`).join('')}
+            </select></label>
+            <label>Padding <input id="bm-padding" class="form-girdi" value="${esc(a.padding || '60px 0')}"></label>
+            <label>Arka Plan Rengi <input id="bm-renk" class="form-girdi" value="${esc(a.arka_renk || '')}" placeholder="#FFFFFF veya boş"></label>
+            <label>Container <select id="bm-genislik" class="form-girdi">
+              ${['boxed','full'].map(o => `<option value="${o}" ${a.container_genislik === o ? 'selected' : ''}>${o === 'boxed' ? 'Boxed (dar)' : 'Full (geniş)'}</option>`).join('')}
+            </select></label>
+            <label style="display:flex;align-items:center;gap:8px">Başlık Göster <input type="checkbox" class="toggle-label-cb" id="bm-baslik-goster" ${a.baslik_goster !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+        </details>
       </div>
       <div style="display:flex;gap:8px;margin-top:1rem">
         <button class="btn btn-kirm" onclick="sablonBolumKaydet(${id})">💾 Kaydet</button>
@@ -3563,6 +3585,12 @@ window.sablonBolumDuzenle = async function(id) {
 
 window.sablonBolumKaydet = async function(id) {
   try {
+    const modal = document.getElementById('bolum-modal');
+    const sectionKey = modal?.dataset?.key || '';
+    const isHero = sectionKey === 'hero';
+    const isSlider = sectionKey === 'slider';
+    const isServices = sectionKey === 'services';
+
     const baslik = document.getElementById('bm-baslik')?.value?.trim() || '';
     const aktif = document.getElementById('bm-aktif')?.checked ?? true;
     const animasyon = document.getElementById('bm-animasyon')?.value || 'fadeIn';
@@ -3571,16 +3599,30 @@ window.sablonBolumKaydet = async function(id) {
     const genislik = document.getElementById('bm-genislik')?.value || 'boxed';
     const baslik_goster = document.getElementById('bm-baslik-goster')?.checked ?? true;
 
+    const ayarlar = {animasyon,padding,arka_renk,container_genislik:genislik,baslik_goster};
+
+    if (isHero) {
+      ayarlar.alt_baslik = document.getElementById('bm-alt-baslik')?.value || '';
+      ayarlar.buton_metin = document.getElementById('bm-buton')?.value || '';
+      ayarlar.buton_link = document.getElementById('bm-link')?.value || '';
+      ayarlar.arka_gorsel = document.getElementById('bm-gorsel')?.value || '';
+    }
+    if (isSlider) {
+      try {
+        ayarlar.icerik = { slides: JSON.parse(document.getElementById('bm-slider')?.value || '[]') };
+      } catch {}
+    }
+    if (isServices) {
+      try {
+        ayarlar.icerik = { items: JSON.parse(document.getElementById('bm-services')?.value || '[]') };
+      } catch {}
+    }
+
     await api.request(`/api/admin/bolumler/${id}`, {
       method:'PUT',
-      body:JSON.stringify({
-        baslik,
-        aktif,
-        ayarlar: JSON.stringify({animasyon,padding,arka_renk,container_genislik:genislik,baslik_goster}),
-      }),
+      body:JSON.stringify({baslik, aktif, ayarlar: JSON.stringify(ayarlar)}),
     });
     bildirim('Bölüm güncellendi','basari');
-    const modal = document.getElementById('bolum-modal');
     if (modal) modal.remove();
     adminSablonlar();
   } catch(e) { bildirim(e.message,'hata'); }
