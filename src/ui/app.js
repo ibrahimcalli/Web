@@ -2013,19 +2013,16 @@ function seoGuncelle({ baslik, aciklama, resim, url, tip = 'website', fiyat = ''
 // FAZ 3 — BLOG LİSTE
 // ══════════════════════════════════════════════════════════════════
 let aktifBlogEtiket = '';
-let blogYukleniyor = false;
 
 async function blogListeYukle() {
-  if (blogYukleniyor) return;
-  blogYukleniyor = true;
   const grid = document.getElementById('blog-grid');
-  if (!grid) { blogYukleniyor = false; return; }
+  if (!grid) return;
   grid.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
   try {
     const yazılar = await api.getBlog();
     if (!yazılar || !yazılar.length) {
       grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-      blogYukleniyor = false; return;
+      return;
     }
 
     seoGuncelle({
@@ -2059,13 +2056,12 @@ async function blogListeYukle() {
     grid.innerHTML = '';
     if (!filtreli.length) {
       grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-      blogYukleniyor = false; return;
+      return;
     }
     filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
   } catch (e) {
     grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3><p>Lütfen sayfayı yenileyin</p></div>';
   }
-  blogYukleniyor = false;
 }
 
 function blogEtiketFiltre(etiket) {
@@ -3010,7 +3006,7 @@ async function baslat() {
   await authGuncelle();
   await siteAyarlariUygula();
   anaSayfaYukle();
-  blogListeYukle();
+  await blogListeYukle();
   bannerlariYukle("anasayfa");  // Ana sayfadaki blog şeridi için
   favBantGuncelle();
   // URL'de ilan parametresi varsa direkt aç

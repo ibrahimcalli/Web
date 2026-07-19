@@ -52,6 +52,11 @@ function sayfaGit(sayfa, data = null) {
   if (sayfa === 'admin')        { adminKontrol(); adminSayfa('portfoyler'); }
   if (sayfa === 'detay' && data) detayGoster(data);
   window.scrollTo(0, 0);
+  
+  // SEO update hook (mevcut fonksiyonu bozmaz, sadece meta tags günceller)
+  if (typeof window.seoUpdate === 'function') {
+    window.seoUpdate(sayfa, data);
+  }
 }
 function geriGit() { sayfaGit(gecmisSayfa); }
 
@@ -104,7 +109,7 @@ function adminKontrol() {
 async function katYukle() {
   const d = await api.getKategoriler();
   if (!d) return;
-  kategoriler = d.kategoriler; ilanTipleri = d.ilan_tipleri;
+  kategoriler = d.kategoriler || {}; ilanTipleri = d.ilan_tipleri || {};
 
   // Ana kategori bantları
   const bantlar = ['ana-kat-bant', 'ilan-kat-bant'];
@@ -895,10 +900,17 @@ async function resimSil(url, pid) {
 // ── Admin Sayfaları ───────────────────────────────────────────────────────────
 function adminSayfa(sayfa) {
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('aktif'));
-  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8 };
+  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12, sablonlar:13, wizard:14 };
   const items = document.querySelectorAll('.sidebar-item');
   if (items[harita[sayfa]]) items[harita[sayfa]].classList.add('aktif');
   const ic = document.getElementById('admin-ic');
+  if (sayfa && sayfa.startsWith && sayfa.startsWith('sistem-')) {
+    const alt = sayfa.slice('sistem-'.length);
+    const fn = window.sistemSayfaAc;
+    if (typeof fn === 'function' && fn(alt)) return;
+    if (ic) ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+    return;
+  }
   if (sayfa === 'portfoyler')  adminPortfoyler();
   else if (sayfa === 'yeni')   { modalAc(); }
   else if (sayfa === 'belge')  adminBelge();
@@ -907,8 +919,15 @@ function adminSayfa(sayfa) {
   else if (sayfa === 'istekler') adminIstekler();
   else if (sayfa === 'kullanicilar') adminKullanicilar();
   else if (sayfa === 'ayarlar') adminAyarlar();
-  else if (sayfa === 'bannerlar') adminBannerlar();
   else if (sayfa === 'hesabim') adminHesabim();
+  else if (sayfa === 'menuler') adminMenuler();
+  else if (sayfa === 'sayfalar') adminSayfalar();
+  else if (sayfa === 'widgetler') adminWidgetler();
+  else if (sayfa === 'tema') adminTema();
+  else if (sayfa === 'sablonlar') adminSablonlar();
+  else if (sayfa === 'wizard') adminWizard();
+  else if (sayfa === 'marketplace') adminMarketplace();
+  else if (sayfa === 'saas') adminSaaS();
 }
 
 async function adminPortfoyler() {
@@ -1496,6 +1515,14 @@ async function ayarlariKaydet() {
 }
 
 // ── Site Ayarlarını Uygula ────────────────────────────────────────────────────
+function lightenHex(hex, percent = 70) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  const m = c => Math.round(c + (255 - c) * percent / 100);
+  return `#${m(r).toString(16).padStart(2,'0')}${m(g).toString(16).padStart(2,'0')}${m(b).toString(16).padStart(2,'0')}`;
+}
+
 async function siteAyarlariUygula() {
   const ay = await api.getAyarlar(); if (!ay) return;
   const setEl = (id, val) => { const e = document.getElementById(id); if (e && val) e.textContent = val; };
@@ -1508,6 +1535,15 @@ async function siteAyarlariUygula() {
   setEl('footer-adres', ay.adres);
   if (ay.site_adi) document.title = ay.site_adi + ' — Fethiye';
   if (ay.renk_tema) document.body.setAttribute('data-tema', ay.renk_tema);
+
+  // Wizard'dan gelen özel renkleri CSS değişkenlerine uygula
+  const root = document.documentElement;
+  if (ay.renk_ana) root.style.setProperty('--kiremit', ay.renk_ana);
+  if (ay.renk_ana_koy) root.style.setProperty('--kiremit-k', ay.renk_ana_koy);
+  else if (ay.renk_ana_koyu) root.style.setProperty('--kiremit-k', ay.renk_ana_koyu);
+  if (ay.renk_arka) root.style.setProperty('--krem', ay.renk_arka);
+  if (ay.renk_metin) root.style.setProperty('--toprak', ay.renk_metin);
+  if (ay.renk_ana) root.style.setProperty('--kiremit-a', lightenHex(ay.renk_ana, 72));
 
   // İletişim
   const fTel = document.getElementById('footer-tel');
@@ -1977,48 +2013,59 @@ function seoGuncelle({ baslik, aciklama, resim, url, tip = 'website', fiyat = ''
 // FAZ 3 — BLOG LİSTE
 // ══════════════════════════════════════════════════════════════════
 let aktifBlogEtiket = '';
+let blogYukleniyor = false;
 
 async function blogListeYukle() {
+  if (blogYukleniyor) return;
+  blogYukleniyor = true;
   const grid = document.getElementById('blog-grid');
-  if (!grid) return;
+  if (!grid) { blogYukleniyor = false; return; }
   grid.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
-  const yazılar = await api.getBlog();
-  if (!yazılar) return;
+  try {
+    const yazılar = await api.getBlog();
+    if (!yazılar || !yazılar.length) {
+      grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
+      blogYukleniyor = false; return;
+    }
 
-  seoGuncelle({
-    baslik: 'Fethiye Gayrimenkul Haberleri',
-    aciklama: 'Fethiye piyasa haberleri, gayrimenkul trendleri ve yatırım önerileri.'
-  });
+    seoGuncelle({
+      baslik: 'Fethiye Gayrimenkul Haberleri',
+      aciklama: 'Fethiye piyasa haberleri, gayrimenkul trendleri ve yatırım önerileri.'
+    });
 
-  // Etiket barı
-  const etiketBar = document.getElementById('blog-etiket-bar');
-  if (etiketBar) {
-    const tumEtiketler = [...new Set(yazılar.flatMap(y => y.etiketler || []))];
-    etiketBar.innerHTML = tumEtiketler.length
-      ? '<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'\')">Tümü</span>' +
-        tumEtiketler.map(e => `<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'${e}\')">${e}</span>`).join('')
-      : '';
+    // Etiket barı
+    const etiketBar = document.getElementById('blog-etiket-bar');
+    if (etiketBar) {
+      const tumEtiketler = [...new Set(yazılar.flatMap(y => y.etiketler || []))];
+      etiketBar.innerHTML = tumEtiketler.length
+        ? '<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'\')">Tümü</span>' +
+          tumEtiketler.map(e => `<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'${e}\')">${e}</span>`).join('')
+        : '';
+    }
+
+    // Ana sayfa blog şeridi
+    const anaGrid = document.getElementById('ana-blog-grid');
+    const anaSerit = document.getElementById('ana-blog-serit');
+    if (anaGrid && anaSerit && yazılar.length > 0) {
+      anaSerit.style.display = '';
+      anaGrid.innerHTML = '';
+      yazılar.slice(0, 3).forEach(y => anaGrid.appendChild(blogKartOlustur(y)));
+    }
+
+    // Blog liste sayfası
+    const filtreli = aktifBlogEtiket
+      ? yazılar.filter(y => (y.etiketler||[]).includes(aktifBlogEtiket))
+      : yazılar;
+    grid.innerHTML = '';
+    if (!filtreli.length) {
+      grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
+      blogYukleniyor = false; return;
+    }
+    filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
+  } catch (e) {
+    grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3><p>Lütfen sayfayı yenileyin</p></div>';
   }
-
-  // Ana sayfa blog şeridi
-  const anaGrid = document.getElementById('ana-blog-grid');
-  const anaSerit = document.getElementById('ana-blog-serit');
-  if (anaGrid && anaSerit && yazılar.length > 0) {
-    anaSerit.style.display = '';
-    anaGrid.innerHTML = '';
-    yazılar.slice(0, 3).forEach(y => anaGrid.appendChild(blogKartOlustur(y)));
-  }
-
-  // Blog liste sayfası
-  const filtreli = aktifBlogEtiket
-    ? yazılar.filter(y => (y.etiketler||[]).includes(aktifBlogEtiket))
-    : yazılar;
-  grid.innerHTML = '';
-  if (!filtreli.length) {
-    grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-    return;
-  }
-  filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
+  blogYukleniyor = false;
 }
 
 function blogEtiketFiltre(etiket) {
@@ -2127,7 +2174,10 @@ async function adminBlog() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const yazılar = await api.getBlog({ durum: '' });
-  if (yazılar === null) return;
+  if (!yazılar || yazılar === null) {
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3></div>';
+    return;
+  }
 
   let html = `<div class="admin-baslik">Blog / Haberler
     <button class="btn btn-kirm" onclick="blogModalAc()">+ Yeni Yazı</button>
@@ -3132,6 +3182,1060 @@ window.blogResimModalAc = blogResimModalAc;
 window.blogResimSecildi = blogResimSecildi;
 window.blogResimIcerigeEkle = blogResimIcerigeEkle;
 window.kayitModalAc = kayitModalAc;
+// ── CMS Admin Sayfaları ──────────────────────────────────────────────────────
+const esc = s => String(s||'').replace(/[&<>"']/g, c=>`&#${c.charCodeAt(0)};`);
+const safeJsonParse = (s, d = {}) => { try { return JSON.parse(s); } catch { return d; } };
+
+async function adminMenuler() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const [menuler, slugListe] = await Promise.all([
+    api.request('/api/admin/menuler'),
+    api.request('/api/menu/ana-menu').catch(()=>[]),
+  ]);
+  let html = '<div class="admin-baslik">Menüler</div>';
+  html += '<div style="margin-bottom:1rem">';
+  html += '<input id="ymn-slug" placeholder="slug (ana-menu)" style="width:130px;margin-right:5px">';
+  html += '<input id="ymn-ad" placeholder="Menü adı" style="width:150px;margin-right:5px">';
+  html += '<select id="ymn-lok"><option value="header">Header</option><option value="footer">Footer</option><option value="sidebar">Sidebar</option></select>';
+  html += `<button class="btn btn-kirm" onclick="menuOlustur()">+ Ekle</button></div>`;
+  if (menuler && menuler.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Slug</th><th>Ad</th><th>Lokasyon</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    menuler.forEach(m => {
+      html += `<tr>
+        <td><strong>${esc(m.slug)}</strong></td>
+        <td>${esc(m.ad)}</td>
+        <td>${esc(m.lokasyon)}</td>
+        <td>${m.aktif ? '✅' : '❌'}</td>
+        <td><button class="btn btn-cik" onclick="menuDuzenle(${m.id})">✏️</button>
+            <button class="btn btn-kirm" onclick="menuSil(${m.id})">🗑️</button>
+            <button class="btn btn-gri" onclick="adminMenuOgelr(${m.id},'${esc(m.slug)}')">📋 Öğeler</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📋</div><h3>Henüz menü yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.menuOlustur = async function() {
+  const slug = document.getElementById('ymn-slug')?.value?.trim();
+  if (!slug) return bildirim('Slug gerekli','hata');
+  const ad = document.getElementById('ymn-ad')?.value?.trim() || slug;
+  const lok = document.getElementById('ymn-lok')?.value || 'header';
+  try {
+    await api.request('/api/admin/menuler', { method:'POST', body:JSON.stringify({slug,ad,lokasyon:lok}) });
+    bildirim('Menü oluşturuldu','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message || 'Hata','hata'); }
+};
+
+window.menuSil = async function(id) {
+  if (!confirm('Menü silinsin mi? (İçindeki tüm öğeler de silinir)')) return;
+  try {
+    await api.request(`/api/admin/menuler/${id}`, { method:'DELETE' });
+    bildirim('Menü silindi','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuDuzenle = async function(id) {
+  const ad = prompt('Yeni menü adı:');
+  if (!ad) return;
+  try {
+    await api.request(`/api/admin/menuler/${id}`, { method:'PUT', body:JSON.stringify({ad}) });
+    bildirim('Güncellendi','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+let _aktifMenu = 0;
+
+async function adminMenuOgelr(menuId, menuSlug) {
+  _aktifMenu = menuId;
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const ogeler = await api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]);
+  let html = `<div class="admin-baslik">📋 ${esc(menuSlug)} — Öğeler <button class="btn btn-gri" onclick="adminMenuler()" style="margin-left:10px">← Menüler</button></div>`;
+  html += '<div style="margin-bottom:1rem;display:flex;gap:5px;flex-wrap:wrap">';
+  html += '<input id="ymo-baslik" placeholder="Başlık" style="width:140px">';
+  html += '<input id="ymo-url" placeholder="URL (/iletisim)" style="width:180px">';
+  html += `<button class="btn btn-kirm" onclick="menuOgeEkle(${menuId})">+ Ekle</button></div>`;
+  if (ogeler && ogeler.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>#</th><th>Başlık</th><th>URL</th><th>Parent</th><th>Sıra</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    ogeler.forEach((o,i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td>${o.ikon || ''} ${esc(o.baslik)}</td>
+        <td style="font-size:.8em;color:var(--gri-metin)">${esc(o.hedef_url||o.hedef_tip)}</td>
+        <td>${o.parent_id || '—'}</td>
+        <td>${o.sira}</td>
+        <td>${o.aktif ? '✅' : '❌'}</td>
+        <td><button class="btn btn-cik" onclick="menuOgeDuzenle(${o.id},'${esc(o.baslik)}')">✏️</button>
+            <button class="btn btn-kirm" onclick="menuOgeSil(${menuId},${o.id})">🗑️</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz öğe yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.menuOgeEkle = async function(menuId) {
+  const baslik = document.getElementById('ymo-baslik')?.value?.trim();
+  if (!baslik) return bildirim('Başlık gerekli','hata');
+  const url = document.getElementById('ymo-url')?.value?.trim() || '/';
+  try {
+    await api.request(`/api/admin/menuler/${menuId}/ogeler`, {
+      method:'POST',
+      body:JSON.stringify({menu_id:menuId, baslik, hedef_tip:'dahili', hedef_url:url, sira:0, aktif:true})
+    });
+    bildirim('Öğe eklendi','basari');
+    adminMenuOgelr(menuId, '');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeSil = async function(menuId, itemId) {
+  if (!confirm('Öğe silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'DELETE' });
+    bildirim('Öğe silindi','basari');
+    adminMenuOgelr(menuId, '');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeDuzenle = async function(itemId, eskiBaslik) {
+  const yeni = prompt('Yeni başlık:', eskiBaslik);
+  if (!yeni) return;
+  try {
+    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'PUT', body:JSON.stringify({baslik:yeni}) });
+    bildirim('Güncellendi','basari');
+    adminMenuler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Sayfalar ─────────────────────────────────────────────────────────────────
+
+async function adminSayfalar() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const sayfalar = await api.request('/api/admin/sayfalar').catch(()=>[]);
+  let html = '<div class="admin-baslik">Sayfalar</div>';
+  html += '<div style="margin-bottom:1rem;display:flex;gap:5px;flex-wrap:wrap">';
+  html += '<input id="ysf-baslik" placeholder="Sayfa başlığı" style="width:160px">';
+  html += '<input id="ysf-slug" placeholder="slug" style="width:120px">';
+  html += '<select id="ysf-durum"><option value="Taslak">Taslak</option><option value="Yayınla">Yayınla</option></select>';
+  html += `<button class="btn btn-kirm" onclick="sayfaOlustur()">+ Ekle</button></div>`;
+  if (sayfalar && sayfalar.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Başlık</th><th>Slug</th><th>Durum</th><th>Şablon</th><th>Güncelleme</th><th></th></tr></thead><tbody>';
+    sayfalar.forEach(s => {
+      html += `<tr>
+        <td><strong>${esc(s.baslik)}</strong></td>
+        <td>${esc(s.slug)}</td>
+        <td>${s.durum === 'Yayınla' ? '✅ Yayınla' : '📝 Taslak'}</td>
+        <td>${esc(s.sablon)}</td>
+        <td style="font-size:.8em">${(s.guncelleme||'').slice(0,10)}</td>
+        <td><button class="btn btn-cik" onclick="sayfaDuzenle(${s.id})">✏️</button>
+            <button class="btn btn-kirm" onclick="sayfaSil(${s.id})">🗑️</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz sayfa yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.sayfaOlustur = async function() {
+  const baslik = document.getElementById('ysf-baslik')?.value?.trim();
+  const slug = document.getElementById('ysf-slug')?.value?.trim();
+  const durum = document.getElementById('ysf-durum')?.value || 'Taslak';
+  if (!baslik || !slug) return bildirim('Başlık ve slug gerekli','hata');
+  try {
+    await api.request('/api/admin/sayfalar', { method:'POST', body:JSON.stringify({baslik,slug,durum}) });
+    bildirim('Sayfa oluşturuldu','basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sayfaSil = async function(id) {
+  if (!confirm('Sayfa silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/sayfalar/${id}`, { method:'DELETE' });
+    bildirim('Sayfa silindi','basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sayfaDuzenle = async function(id) {
+  const yeni = prompt('Yeni başlık:');
+  if (!yeni) return;
+  try {
+    await api.request(`/api/admin/sayfalar/${id}`, { method:'PUT', body:JSON.stringify({baslik:yeni}) });
+    bildirim('Güncellendi','basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Widget'lar ───────────────────────────────────────────────────────────────
+
+async function adminWidgetler() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const widgetlar = await api.request('/api/admin/widgets').catch(()=>[]);
+  let html = '<div class="admin-baslik">Widget\'lar</div>';
+  if (widgetlar && widgetlar.length) {
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Ad</th><th>Tip</th><th>Konum</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    widgetlar.forEach(w => {
+      html += `<tr>
+        <td><code>${esc(w.anahtar)}</code></td>
+        <td>${esc(w.ad)}</td>
+        <td>${esc(w.tip)}</td>
+        <td>${esc(w.konum)}</td>
+        <td>${w.aktif ? '✅' : '❌'}</td>
+        <td><button class="btn ${w.aktif ? 'btn-cik' : 'btn-yes'}" onclick="widgetToggle(${w.id},${w.aktif ? 0 : 1})">${w.aktif ? 'Devre Dışı' : 'Aktifleştir'}</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">🧩</div><h3>Henüz widget yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.widgetToggle = async function(id, aktif) {
+  try {
+    await api.request(`/api/admin/widgets/${id}`, { method:'PUT', body:JSON.stringify({aktif:!!aktif}) });
+    bildirim(`Widget ${aktif ? 'aktifleştirildi' : 'devre dışı bırakıldı'}`,'basari');
+    adminWidgetler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Tema ─────────────────────────────────────────────────────────────────────
+
+async function adminTema() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const tema = await api.request('/api/admin/tema').catch(()=>({}));
+  let html = '<div class="admin-baslik">Tema Ayarları</div>';
+  html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Değer</th><th></th></tr></thead><tbody>';
+  for (const [k,v] of Object.entries(tema)) {
+    const isRenk = k.startsWith('renk_');
+    html += `<tr>
+      <td><code>${esc(k)}</code></td>
+      <td>${isRenk ? `<span style="display:inline-block;width:20px;height:20px;background:${esc(v)};border-radius:4px;vertical-align:middle;margin-right:6px;border:1px solid #ddd"></span>` : ''}${esc(v)}</td>
+      <td><button class="btn btn-cik" onclick="temaDuzenle('${esc(k)}','${esc(v)}')">✏️</button></td>
+    </tr>`;
+  }
+  html += '</tbody></table></div>';
+  ic.innerHTML = html;
+}
+
+window.temaDuzenle = async function(anahtar, deger) {
+  const yeni = prompt(`${anahtar} için yeni değer:`, deger);
+  if (yeni === null) return;
+  try {
+    await api.request(`/api/admin/tema/${anahtar}`, { method:'PUT', body:JSON.stringify({anahtar,deger:yeni}) });
+    bildirim('Tema ayarı güncellendi','basari');
+    adminTema();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── Şablonlar ─────────────────────────────────────────────────────────────────
+
+async function adminSablonlar() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  const [templates, bolumler] = await Promise.all([
+    api.request('/api/admin/templates'),
+    api.request('/api/template/homepage'),
+  ]);
+  let html = '<div class="admin-baslik">Şablonlar <span style="font-size:.8rem;font-weight:400;color:var(--gri-metin)">— Anasayfa Bölüm Yönetimi</span></div>';
+
+  // Template kartları
+  if (templates) {
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem;margin-bottom:1.5rem">';
+    templates.forEach(t => {
+      const moduller = safeJsonParse(t.modules || '{}');
+      const isActive = t.varsayilan;
+      html += `<div style="background:var(--beyaz);border-radius:var(--r);padding:1rem;border:2px solid ${isActive ? 'var(--kiremit)' : 'var(--kumtasi)'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div><strong>${esc(t.ad)}</strong> <code style="font-size:.75em">${esc(t.klasor)}</code></div>
+          ${isActive ? '<span style="background:var(--kiremit);color:#fff;padding:2px 10px;border-radius:20px;font-size:.7rem">AKTİF</span>' : `<button class="btn btn-cik btn-sm" onclick="sablonAktiflestir(${t.id})" style="font-size:.7rem">Aktifleştir</button>`}
+        </div>
+        <div style="font-size:.82rem;color:var(--gri-metin);margin-bottom:.5rem">${esc(t.aciklama)}</div>
+        <div style="border-top:1px solid var(--kumtasi);padding-top:.5rem">
+          <div style="font-size:.8rem;font-weight:600;margin-bottom:.4rem">Modüller</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px">
+            ${['blog','gallery','forum','banner','portfolio','services','testimonials'].map(m => `
+              <label style="display:flex;align-items:center;gap:5px;font-size:.78rem;cursor:pointer;padding:2px 0">
+                <input type="checkbox" ${moduller[m] !== false ? 'checked' : ''} onchange="templateModuleToggle(${t.id},'${m}',this.checked)">
+                ${m.charAt(0).toUpperCase() + m.slice(1)}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Bölüm listesi
+  if (bolumler && bolumler.length) {
+    html += '<div class="admin-baslik" style="font-size:1rem;margin-bottom:.75rem">Anasayfa Bölümleri</div>';
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>#</th><th>Bölüm</th><th>Başlık</th><th>Durum</th><th>Animasyon</th><th>Padding</th><th></th></tr></thead><tbody>';
+    bolumler.forEach((b, i) => {
+      const a = b.ayarlar || {};
+      html += `<tr${!b.aktif ? ' style="opacity:.5"' : ''}>
+        <td>${b.sira}</td>
+        <td><code>${esc(b.section_key)}</code></td>
+        <td>${esc(b.baslik || '')}</td>
+        <td><span class="toggle-slider" style="${b.aktif !== false ? 'background:var(--kiremit)' : ''}" onclick="sablonBolumAktifToggle(${b.id}, ${!(b.aktif !== false)})"></span></td>
+        <td style="font-size:.8em">${esc(a.animasyon || '—')}</td>
+        <td style="font-size:.8em">${esc(a.padding || '—')}</td>
+        <td><button class="btn btn-cik btn-sm" onclick="sablonBolumDuzenle(${b.id})">⚙️</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+
+    // Sıralama kontrolleri
+    html += `<div style="margin-top:1rem;display:flex;gap:8px;flex-wrap:wrap">`;
+    bolumler.forEach((b, i) => {
+      html += `<div style="background:var(--kumtasi);padding:6px 12px;border-radius:8px;font-size:.85rem;display:flex;align-items:center;gap:6px">
+        <span>${i + 1}</span>
+        <code style="font-size:.75em">${esc(b.section_key)}</code>
+        ${i > 0 ? `<button class="btn btn-gri" onclick="sablonBolumTasi(${b.id},${bolumler[i-1].id})" style="padding:2px 8px;font-size:.7rem">↑</button>` : ''}
+        ${i < bolumler.length - 1 ? `<button class="btn btn-gri" onclick="sablonBolumTasi(${b.id},${bolumler[i+1].id})" style="padding:2px 8px;font-size:.7rem">↓</button>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="bos-durum"><div class="bos-ikon">📐</div><h3>Henüz bölüm yok</h3></div>';
+  }
+  ic.innerHTML = html;
+}
+
+window.sablonAktiflestir = async function(id) {
+  if (!confirm('Bu şablonu aktifleştir?')) return;
+  try {
+    await api.request(`/api/admin/templates/${id}`, { method:'PUT', body:JSON.stringify({varsayilan:true}) });
+    bildirim('Şablon değiştirildi','basari');
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.templateModuleToggle = async function(tid, modul, aktif) {
+  try {
+    const t = await api.request(`/api/admin/templates/${tid}`);
+    const moduller = safeJsonParse(t.modules || '{}');
+    moduller[modul] = aktif;
+    await api.request(`/api/admin/templates/${tid}`, { method:'PUT', body:JSON.stringify({modules:JSON.stringify(moduller)}) });
+    bildirim(`${modul} ${aktif ? 'aktif' : 'pasif'}`,'basari');
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumAktifToggle = async function(id, aktif) {
+  try {
+    await api.request(`/api/admin/bolumler/${id}`, { method:'PUT', body:JSON.stringify({aktif}) });
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumDuzenle = async function(id) {
+  const bolum = await api.request(`/api/admin/bolumler/${id}`);
+  if (!bolum) return;
+  const a = safeJsonParse(bolum.ayarlar || '{}');
+  const icerik = a.icerik || {};
+  const isHero = bolum.section_key === 'hero';
+  const isSlider = bolum.section_key === 'slider';
+  const isServices = bolum.section_key === 'services';
+
+  const html = `<div class="modal-zemin" id="bolum-modal" data-key="${esc(bolum.section_key)}" onclick="if(event.target===this)document.getElementById('bolum-modal').remove()">
+    <div class="modal-kapsul" style="max-width:520px">
+      <h3 style="margin-bottom:1rem">Bölüm Ayarları <code style="font-size:.75em">${esc(bolum.section_key)}</code></h3>
+      <div style="display:grid;gap:.75rem">
+        <label>Başlık <input id="bm-baslik" class="form-girdi" value="${esc(bolum.baslik || '')}"></label>
+        ${isHero ? `
+        <label>Alt Başlık <input id="bm-alt-baslik" class="form-girdi" value="${esc(a.alt_baslik || '')}"></label>
+        <label>Buton Metni <input id="bm-buton" class="form-girdi" value="${esc(a.buton_metin || '')}"></label>
+        <label>Buton Linki <input id="bm-link" class="form-girdi" value="${esc(a.buton_link || '')}"></label>
+        <label>Arka Plan Görseli (URL) <input id="bm-gorsel" class="form-girdi" value="${esc(a.arka_gorsel || '')}"></label>` : ''}
+        ${isSlider ? `
+        <label>Slider İçeriği (JSON)
+        <textarea id="bm-slider" class="form-girdi" rows="5" style="resize:vertical">${esc(JSON.stringify(icerik.slides || [{title:'',subtitle:''}], null, 2))}</textarea>
+        <div style="font-size:.75rem;color:var(--gri-metin)">Her slide için: {"title":"...","subtitle":"...","image":"..."}</div></label>` : ''}
+        ${isServices ? `
+        <label>Hizmetler (JSON)
+        <textarea id="bm-services" class="form-girdi" rows="5" style="resize:vertical">${esc(JSON.stringify(icerik.items || [{ikon:'',baslik:'',metin:''}], null, 2))}</textarea>
+        <div style="font-size:.75rem;color:var(--gri-metin)">Her hizmet için: {"ikon":"🏠","baslik":"...","metin":"..."}</div></label>` : ''}
+        <details style="margin-top:.5rem">
+          <summary style="cursor:pointer;font-size:.85rem;font-weight:600;color:var(--gri-metin)">⚙️ Gelişmiş Ayarlar</summary>
+          <div style="display:grid;gap:.75rem;margin-top:.75rem">
+            <label style="display:flex;align-items:center;gap:8px">Aktif <input type="checkbox" class="toggle-label-cb" id="bm-aktif" ${bolum.aktif !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+            <label>Animasyon <select id="bm-animasyon" class="form-girdi">
+              ${['fadeIn','fadeUp','slide','zoom','none'].map(o => `<option value="${o}" ${a.animasyon === o ? 'selected' : ''}>${o}</option>`).join('')}
+            </select></label>
+            <label>Padding <input id="bm-padding" class="form-girdi" value="${esc(a.padding || '60px 0')}"></label>
+            <label>Arka Plan Rengi <input id="bm-renk" class="form-girdi" value="${esc(a.arka_renk || '')}" placeholder="#FFFFFF veya boş"></label>
+            <label>Container <select id="bm-genislik" class="form-girdi">
+              ${['boxed','full'].map(o => `<option value="${o}" ${a.container_genislik === o ? 'selected' : ''}>${o === 'boxed' ? 'Boxed (dar)' : 'Full (geniş)'}</option>`).join('')}
+            </select></label>
+            <label style="display:flex;align-items:center;gap:8px">Başlık Göster <input type="checkbox" class="toggle-label-cb" id="bm-baslik-goster" ${a.baslik_goster !== false ? 'checked' : ''}><span class="toggle-slider"></span></label>
+          </div>
+        </details>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button class="btn btn-kirm" onclick="sablonBolumKaydet(${id})">💾 Kaydet</button>
+        <button class="btn btn-ntr" onclick="document.getElementById('bolum-modal').remove()">İptal</button>
+      </div>
+    </div>
+  </div>`;
+  const existing = document.getElementById('bolum-modal');
+  if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.sablonBolumKaydet = async function(id) {
+  try {
+    const modal = document.getElementById('bolum-modal');
+    const sectionKey = modal?.dataset?.key || '';
+    const isHero = sectionKey === 'hero';
+    const isSlider = sectionKey === 'slider';
+    const isServices = sectionKey === 'services';
+
+    const baslik = document.getElementById('bm-baslik')?.value?.trim() || '';
+    const aktif = document.getElementById('bm-aktif')?.checked ?? true;
+    const animasyon = document.getElementById('bm-animasyon')?.value || 'fadeIn';
+    const padding = document.getElementById('bm-padding')?.value || '60px 0';
+    const arka_renk = document.getElementById('bm-renk')?.value || '';
+    const genislik = document.getElementById('bm-genislik')?.value || 'boxed';
+    const baslik_goster = document.getElementById('bm-baslik-goster')?.checked ?? true;
+
+    const ayarlar = {animasyon,padding,arka_renk,container_genislik:genislik,baslik_goster};
+
+    if (isHero) {
+      ayarlar.alt_baslik = document.getElementById('bm-alt-baslik')?.value || '';
+      ayarlar.buton_metin = document.getElementById('bm-buton')?.value || '';
+      ayarlar.buton_link = document.getElementById('bm-link')?.value || '';
+      ayarlar.arka_gorsel = document.getElementById('bm-gorsel')?.value || '';
+    }
+    if (isSlider) {
+      try {
+        ayarlar.icerik = { slides: JSON.parse(document.getElementById('bm-slider')?.value || '[]') };
+      } catch {}
+    }
+    if (isServices) {
+      try {
+        ayarlar.icerik = { items: JSON.parse(document.getElementById('bm-services')?.value || '[]') };
+      } catch {}
+    }
+
+    await api.request(`/api/admin/bolumler/${id}`, {
+      method:'PUT',
+      body:JSON.stringify({baslik, aktif, ayarlar: JSON.stringify(ayarlar)}),
+    });
+    bildirim('Bölüm güncellendi','basari');
+    if (modal) modal.remove();
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.sablonBolumTasi = async function(id1, id2) {
+  try {
+    const r = await api.request('/api/admin/bolumler/sirala', {
+      method:'PUT',
+      body:JSON.stringify({items:[{id:id1,sira:0},{id:id2,sira:1}]}),
+    });
+    bildirim('Sıra değiştirildi','basari');
+    adminSablonlar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// ── /CMS Admin ────────────────────────────────────────────────────────────────
+// ── Site Sihirbazı (FAZ 3) ─────────────────────────────────────────────────
+let wizardState = { wizard_id: null, adim: 1, veri: {} };
+
+async function adminWizard() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Site Oluşturma Sihirbazı</div>
+    <div class="wizard-step"><div class="wizard-secili">Adım 1/10</div>
+    <div class="wizard-adimlar"><span class="wizard-adim aktif">1</span><span class="wizard-adim">2</span><span class="wizard-adim">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
+    <div style="background:var(--krem);border-radius:var(--r-sm);padding:1.5rem;max-width:500px">
+    <label>Firma Adı <input id="wf-ad" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="Firma Adı"></label>
+    <label>E-Posta <input id="wf-email" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="info@firma.com"></label>
+    <label>Telefon <input id="wf-tel" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="+90 555 000 00 00"></label>
+    <button class="btn btn-kirm" onclick="wizardAdim1()">Devam →</button></div>`;
+}
+
+async function wizardAdim1() {
+  const ad = document.getElementById('wf-ad')?.value?.trim();
+  const email = document.getElementById('wf-email')?.value?.trim();
+  const tel = document.getElementById('wf-tel')?.value?.trim();
+  if (!ad) { bildirim('Firma adı gerekli', 'hata'); return; }
+
+  try {
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST', body: '{}' }, { silent: true });
+    if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
+    wizardState.wizard_id = r.wizard_id;
+    wizardState.adim = 1;
+    wizardState.veri = { firma_adi: ad, firma_email: email, firma_tel: tel };
+    await api.request(`/api/admin/wizard/${r.wizard_id}/adim/1`, {
+      method: 'POST', body: JSON.stringify(wizardState.veri),
+    });
+    // Step 2: Sektör seç
+    const sektorler = await api.request('/api/wizard/sektorler');
+    const ic = document.getElementById('admin-ic');
+    let html = `<div class="admin-baslik">✨ Adım 2/10 — Sektör Seçin</div>
+      <div class="wizard-step"><div class="wizard-secili">${esc(ad)}</div>
+      <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim aktif">2</span><span class="wizard-adim">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
+      <div class="wizard-grid">`;
+    (sektorler || []).forEach(s => {
+      html += `<div class="wizard-kart" onclick="wizardAdim2('${s.sector}')">
+        <div class="wizard-ikon">${sektorIkon(s.sector)}</div>
+        <div class="wizard-label">${esc(s.label)}</div>
+        <div class="wizard-acik">${s.templates.length} template</div>
+      </div>`;
+    });
+    html += '</div>';
+    ic.innerHTML = html;
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+function sektorIkon(sector) {
+  const ikonlar = { estate:'🏠', travel:'✈️', hotel:'🏨', restaurant:'🍽️', corporate:'🏢', clinic:'🏥', landing:'🚀', construction:'🏗️' };
+  return ikonlar[sector] || '📦';
+}
+
+async function wizardBaslat(sector) {
+  try {
+    const r = await api.request('/api/admin/wizard/baslat', { method: 'POST', body: '{}' }, { silent: true });
+    if (!r || !r.wizard_id) throw new Error('Wizard başlatılamadı');
+    wizardState.wizard_id = r.wizard_id;
+    wizardState.adim = 1;
+    wizardState.veri = {};
+    await api.request(`/api/admin/wizard/${r.wizard_id}/adim/1`, {
+      method: 'POST',
+      body: JSON.stringify({ sector }),
+    });
+    await wizardAdim2(sector);
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function wizardAdim2(sector) {
+  if (!wizardState.wizard_id) return;
+  wizardState.veri.sector = sector;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/adim/2`, {
+    method: 'POST', body: JSON.stringify({ sector }),
+  });
+  const ic = document.getElementById('admin-ic');
+  const detay = await api.request(`/api/wizard/sektor/${sector}`);
+  let tip = '';
+  const isim = { estate:'Emlak', travel:'Seyahat', hotel:'Otel', restaurant:'Restaurant', corporate:'Kurumsal', clinic:'Klinik', landing:'Landing', construction:'İnşaat' };
+  tip = isim[sector] || sector;
+
+  const templates = detay?.templates || [];
+  const tplLabels = { 'estate-modern':'Estate Modern', 'estate-luxury':'Estate Luxury', 'travel':'Travel', 'hotel':'Hotel', 'corporate':'Corporate', 'landing':'Landing', 'minimal':'Minimal' };
+  let html = `<div class="admin-baslik">✨ Adım 3/10 — Template Seçin</div>
+    <div class="wizard-step"><div class="wizard-secili">${tip}</div>
+    <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim">2</span><span class="wizard-adim aktif">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
+    <div class="wizard-grid">`;
+  templates.forEach(t => {
+    const label = tplLabels[t] || t;
+    html += `<div class="wizard-kart" onclick="wizardAdim3('${t}')">
+      <div class="wizard-label">${esc(label)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  ic.innerHTML = html;
+}
+
+async function wizardAdim3(template) {
+  if (!wizardState.wizard_id) return;
+  wizardState.veri.template = template;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/adim/3`, {
+    method: 'POST', body: JSON.stringify({ template }),
+  });
+  const ic = document.getElementById('admin-ic');
+  const sector = wizardState.veri.sector || 'corporate';
+  const palettes = await api.request(`/api/wizard/sektor/${sector}/palettes`);
+  let html = `<div class="admin-baslik">✨ Adım 4/10 — Renk Paleti</div>
+    <div class="wizard-step"><div class="wizard-secili">${esc(template)}</div>
+    <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim">2</span><span class="wizard-adim">3</span><span class="wizard-adim aktif">4</span><span>…</span><span class="wizard-adim">10</span></div></div>
+    <div class="wizard-palettes">`;
+  (palettes || []).forEach(p => {
+    const c = p.colors || {};
+    const escJson = esc(JSON.stringify(p));
+    html += `<div class="wizard-palet-kart" onclick="wizardAdim4('${escJson}')">
+      <div class="wizard-palet-renkler">
+        <span style="background:${c.ana || '#ccc'}"></span>
+        <span style="background:${c.arka || '#fff'}"></span>
+        <span style="background:${c.metin || '#333'}"></span>
+      </div>
+      <div class="wizard-palet-ad">${esc(p.name)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  ic.innerHTML = html;
+}
+
+async function wizardAdim4(paletteArg) {
+  if (!wizardState.wizard_id) return;
+  let palette;
+  try { palette = typeof paletteArg === 'string' ? JSON.parse(paletteArg) : paletteArg; }
+  catch { palette = {}; }
+  wizardState.veri.renk_paleti = palette;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/renk`, {
+    method: 'POST', body: JSON.stringify({ palette }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 5/10 — Menüler</div>
+    <p>Menüler otomatik oluşturulsun mu?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim5(true)">Evet, Oluştur</button>
+    <button class="btn btn-cik" onclick="wizardAdim5(false)">Sonra Ben Eklerim</button>`;
+}
+
+async function wizardAdim5(auto) {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/menuler`, {
+    method: 'POST', body: JSON.stringify({ auto }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 6/10 — Sayfalar</div>
+    <p>Sayfalar otomatik oluşturulsun mu?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim6(true)">Evet, Oluştur</button>
+    <button class="btn btn-cik" onclick="wizardAdim6(false)">Sonra Ben Eklerim</button>`;
+}
+
+async function wizardAdim6(auto) {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/sayfalar`, {
+    method: 'POST', body: JSON.stringify({ auto }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 7/10 — Widget'lar</div>
+    <p>Hangi widget'lar aktif olsun?</p>
+    <label><input type="checkbox" id="ww-wh" checked> WhatsApp</label><br>
+    <label><input type="checkbox" id="ww-gm" checked> Google Maps</label><br>
+    <label><input type="checkbox" id="ww-tel" checked> Telefon</label><br>
+    <label><input type="checkbox" id="ww-ig"> Instagram</label><br>
+    <label><input type="checkbox" id="ww-cb"> Çerez Bildirimi</label><br>
+    <button class="btn btn-kirm" onclick="wizardAdim7()" style="margin-top:1rem">Devam</button>`;
+}
+
+async function wizardAdim7() {
+  if (!wizardState.wizard_id) return;
+  const list = [];
+  ['ww-wh','ww-gm','ww-tel','ww-ig','ww-cb'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.checked) list.push(id.replace('ww-', ''));
+  });
+  const map = { wh:'whatsapp', gm:'google_maps', tel:'telefon', ig:'instagram', cb:'cookie_banner' };
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/widgetlar`, {
+    method: 'POST',
+    body: JSON.stringify({ widget_list: list.map(k => map[k] || k) }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 8/10 — Forum</div>
+    <p>Forum kullanmak istiyor musunuz?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim8(true)">Evet</button>
+    <button class="btn btn-cik" onclick="wizardAdim8(false)">Hayır</button>`;
+}
+
+async function wizardAdim8(aktif) {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/forum`, {
+    method: 'POST', body: JSON.stringify({ aktif }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 9/10 — SEO</div>
+    <p>SEO ayarları otomatik oluşturulsun mu?</p>
+    <button class="btn btn-kirm" onclick="wizardAdim9()">Evet, Oluştur</button>`;
+}
+
+async function wizardAdim9() {
+  if (!wizardState.wizard_id) return;
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/seo`, {
+    method: 'POST', body: JSON.stringify({ seo: {} }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Adım 10/10 — Demo İçerik</div>
+    <p>Hangi demo içerikler oluşturulsun?</p>
+    <label><input type="checkbox" id="dm-banner" checked> Banner</label><br>
+    <label><input type="checkbox" id="dm-blog" checked> Blog Yazıları</label><br>
+    <label><input type="checkbox" id="dm-galeri" checked> Galeri</label><br>
+    <label><input type="checkbox" id="dm-portfoy" checked> Portföy</label><br>
+    <label><input type="checkbox" id="dm-forum"> Forum</label><br>
+    <label><input type="checkbox" id="dm-referans" checked> Referanslar</label><br>
+    <button class="btn btn-kirm" onclick="wizardAdim10()" style="margin-top:1rem">Devam</button>`;
+}
+
+async function wizardAdim10() {
+  if (!wizardState.wizard_id) return;
+  const demo = {};
+  ['banner','blog','gallery','portfolio','forum','testimonials','services'].forEach(k => {
+    const el = document.getElementById('dm-' + (k === 'testimonials' ? 'referans' : k === 'portfolio' ? 'portfoy' : k === 'gallery' ? 'galeri' : k));
+    if (el) demo[k] = el.checked;
+  });
+  await api.request(`/api/admin/wizard/${wizardState.wizard_id}/demo`, {
+    method: 'POST', body: JSON.stringify({ demo }),
+  });
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = `<div class="admin-baslik">✨ Tüm Adımlar Tamamlandı</div>
+    <p style="margin:1rem 0">Siteyi oluşturmak için butona tıklayın.</p>
+    <button class="btn btn-kirm" onclick="wizardSon()" style="font-size:1.2rem;padding:1rem 2rem">🚀 Siteyi Oluştur</button>`;
+}
+
+async function wizardSon() {
+  if (!wizardState.wizard_id) return;
+  try {
+    const r = await api.request(`/api/admin/wizard/${wizardState.wizard_id}/olustur`, { method: 'POST', body: '{}' }, { silent: true });
+    if (r?.success) {
+      bildirim('✅ Site başarıyla oluşturuldu!', 'basari');
+      api.clearCache();
+      setTimeout(() => location.reload(), 1500);
+      adminSayfa('sablonlar');
+    } else {
+      bildirim('Hata: ' + (r?.message || 'Bilinmeyen hata'), 'hata');
+    }
+  } catch (e) {
+    bildirim(e.message, 'hata');
+  }
+}
+
+window.adminWizard = adminWizard;
+window.wizardBaslat = wizardBaslat;
+window.wizardAdim1 = wizardAdim1;
+window.wizardAdim2 = wizardAdim2;
+window.wizardAdim3 = wizardAdim3;
+window.wizardAdim4 = wizardAdim4;
+window.wizardAdim5 = wizardAdim5;
+window.wizardAdim6 = wizardAdim6;
+window.wizardAdim7 = wizardAdim7;
+window.wizardAdim8 = wizardAdim8;
+window.wizardAdim9 = wizardAdim9;
+window.wizardAdim10 = wizardAdim10;
+window.wizardSon = wizardSon;
+window.sektorIkon = sektorIkon;
+
+// ── Marketplace (FAZ 4) ────────────────────────────────────────────────────
+async function adminMarketplace() {
+  const ic = document.getElementById('admin-ic');
+  let html = '<div class="admin-baslik">🏪 Marketplace</div><div class="market-grid">';
+
+  const pluginler = await api.request('/api/admin/plugins').catch(() => []);
+  if (pluginler && pluginler.length) {
+    pluginler.forEach(p => {
+      html += `<div class="market-kart">
+        <div class="market-baslik">${esc(p.ad)}</div>
+        <div class="market-acik">${esc(p.aciklama || '')}</div>
+        <div class="market-vers">v${esc(p.versiyon || '1.0.0')}</div>
+        <button class="btn btn-${p.aktif ? 'kirm' : 'cik'}" onclick="adminPluginToggle(${p.id})" style="margin-top:.5rem;font-size:.8rem">${p.aktif ? 'Devre Dışı Bırak' : 'Aktif Et'}</button>
+      </div>`;
+    });
+  }
+  html += '</div>';
+  ic.innerHTML = html;
+}
+
+async function adminPluginToggle(id) {
+  await api.request(`/api/admin/plugins/${id}/toggle`);
+  bildirim('Plugin durumu değiştirildi', 'basari');
+  adminMarketplace();
+}
+
+window.adminMarketplace = adminMarketplace;
+window.adminPluginToggle = adminPluginToggle;
+
+// ── SaaS Yönetimi (FAZ 4) ───────────────────────────────────────────────
+async function adminSaaS() {
+  const ic = document.getElementById('admin-ic');
+  let html = `<div class="admin-baslik">☁️ SaaS Yönetimi</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      <button class="btn btn-kirm" onclick="saasTenant()">🏢 Multi-Tenant</button>
+      <button class="btn btn-kirm" onclick="saasBackup()">💾 Yedekleme</button>
+      <button class="btn btn-kirm" onclick="saasUpdate()">🔄 Güncelleme</button>
+      <button class="btn btn-kirm" onclick="saasApi()">🔌 API Marketplace</button>
+    </div>
+    <div id="saas-ic" style="margin-top:1rem">
+      <p style="color:var(--gri-metin)">Bir modül seçin.</p>
+    </div>`;
+  ic.innerHTML = html;
+}
+
+// ── 4.1 — Multi-Tenant ───────────────────────────────────────────────────
+async function saasTenant() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const list = await api.request('/api/admin/saas/tenant');
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🏢 Multi-Tenant Domainler</h3>
+      <button class="btn btn-kirm" onclick="saasTenantEkle()">+ Yeni Domain</button>
+    </div>`;
+    if (!list || !list.length) {
+      html += '<div class="bos-durum"><p>Henüz domain eklenmemiş.</p></div>';
+    } else {
+      html += '<table class="admin-table"><tr><th>Domain</th><th>Firma</th><th>Lisans</th><th></th></tr>';
+      list.forEach(t => {
+        html += `<tr>
+          <td>${esc(t.domain)}</td>
+          <td>${esc(t.firma_adi)}</td>
+          <td>${esc(t.paket || '-')}</td>
+          <td><button class="btn btn-hat btn-sm" onclick="saasTenantSil(${t.id})">🗑</button></td>
+        </tr>`;
+      });
+      html += '</table>';
+    }
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasTenantEkle() {
+  const domain = prompt('Domain (ör: firma.domain.com):');
+  if (!domain) return;
+  const firma = prompt('Firma adı:');
+  if (!firma) return;
+  try {
+    await api.request('/api/admin/saas/tenant', { method: 'POST', body: JSON.stringify({ domain, firma_adi: firma }) });
+    bildirim('Domain eklendi', 'basari');
+    saasTenant();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasTenantSil(id) {
+  if (!confirm('Emin misiniz?')) return;
+  try {
+    await api.request(`/api/admin/saas/tenant/${id}`, { method: 'DELETE' });
+    bildirim('Silindi', 'basari');
+    saasTenant();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+// ── 4.2 — Yedekleme ─────────────────────────────────────────────────────
+async function saasBackup() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const list = await api.request('/api/admin/saas/backup');
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">💾 Yedeklemeler</h3>
+      <button class="btn btn-kirm" onclick="saasBackupOlustur()">+ Yeni Yedek</button>
+    </div>`;
+    if (!list || !list.length) {
+      html += '<div class="bos-durum"><p>Henüz yedek alınmamış.</p></div>';
+    } else {
+      html += '<table class="admin-table"><tr><th>Dosya</th><th>Boyut</th><th>Tür</th><th>Tarih</th><th></th></tr>';
+      list.forEach(b => {
+        const boyut = b.boyut > 1024 ? (b.boyut / 1024).toFixed(1) + ' KB' : b.boyut + ' B';
+        html += `<tr>
+          <td>${esc(b.dosya_adi)}</td>
+          <td>${boyut}</td>
+          <td>${esc(b.tur)}</td>
+          <td>${(b.olusturma || '').slice(0, 19)}</td>
+          <td>
+            <button class="btn btn-ntr btn-sm" onclick="saasBackupRestore(${b.id})">🔄</button>
+            <button class="btn btn-hat btn-sm" onclick="saasBackupSil(${b.id})">🗑</button>
+          </td>
+        </tr>`;
+      });
+      html += '</table>';
+    }
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasBackupOlustur() {
+  try {
+    const r = await api.request('/api/admin/saas/backup', { method: 'POST' });
+    if (r?.success) bildirim('✅ Yedek alındı: ' + r.dosya_adi, 'basari');
+    else bildirim('Hata: ' + (r?.error || '?'), 'hata');
+    saasBackup();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasBackupRestore(id) {
+  if (!confirm('Yedeği geri yüklemek mevcut veritabanını değiştirir. Emin misiniz?')) return;
+  try {
+    const r = await api.request(`/api/admin/saas/backup/${id}/restore`, { method: 'POST' });
+    if (r?.success) bildirim('✅ Yedek geri yüklendi', 'basari');
+    else bildirim('Hata: ' + (r?.error || '?'), 'hata');
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasBackupSil(id) {
+  if (!confirm('Yedek silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/saas/backup/${id}`, { method: 'DELETE' });
+    bildirim('Silindi', 'basari');
+    saasBackup();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+// ── 4.2 — Güncelleme ─────────────────────────────────────────────────────
+async function saasUpdate() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const r = await api.request('/api/admin/saas/update/durum');
+    const v = r?.versiyon || {};
+    const d = r?.durum || {};
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🔄 Güncelleme</h3>
+      <button class="btn btn-kirm" onclick="saasUpdateYap()">Güncelle</button>
+    </div>
+    <div style="background:var(--krem);border-radius:var(--r-sm);padding:1rem;margin-bottom:1rem">
+      <div><strong>Versiyon:</strong> ${esc(v.current_version || '-')}</div>
+      <div><strong>Branch:</strong> ${esc(v.current_branch || '-')}</div>
+      <div><strong>Commit:</strong> <code>${esc(v.current_hash || '-')}</code></div>
+      <div><strong>Durum:</strong> ${d.clean ? '✅ Temiz' : '⚠️ Değişiklik var'}</div>
+    </div>`;
+    if (v.son_commits && v.son_commits.length) {
+      html += '<div style="font-size:.85rem"><strong>Son 5 commit:</strong><ul>';
+      v.son_commits.forEach(c => { html += `<li><code>${esc(c)}</code></li>`; });
+      html += '</ul></div>';
+    }
+    if (d.degisken_dosyalar && d.degisken_dosyalar.length) {
+      html += '<div style="color:var(--kiremit-k);font-size:.85rem;margin-top:.5rem">Değişen dosyalar:</div>';
+      d.degisken_dosyalar.forEach(f => { html += `<div style="font-size:.8rem">${esc(f)}</div>`; });
+    }
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasUpdateYap() {
+  if (!confirm('Güncelleme yapılsın mı? (git pull)')) return;
+  try {
+    const r = await api.request('/api/admin/saas/update', { method: 'POST' });
+    if (r?.success) bildirim('✅ ' + r.message, 'basari');
+    else bildirim('Hata: ' + (r?.message || '?'), 'hata');
+    saasUpdate();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+// ── 4.3 — API Marketplace ───────────────────────────────────────────────
+async function saasApi() {
+  const ic = document.getElementById('saas-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const [entegrasyonlar, saglayicilar] = await Promise.all([
+      api.request('/api/admin/saas/api'),
+      api.request('/api/admin/saas/api/saglayicilar').catch(() => []),
+    ]);
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="margin:0">🔌 API Marketplace</h3>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">`;
+    (saglayicilar || []).forEach(s => {
+      const ent = (entegrasyonlar || []).find(e => e.saglayici === s.key);
+      const aktif = ent?.aktif || false;
+      const apiKey = ent?.api_key || '';
+      html += `<div class="market-kart" style="position:relative">
+        <div style="font-weight:600;font-size:.95rem">${esc(s.ad)}</div>
+        <div style="font-size:.75rem;color:var(--gri-metin);margin:.25rem 0">${esc(s.key)}</div>
+        <div style="font-size:.8rem;margin:.5rem 0">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${aktif ? '#16a34a' : '#9ca3af'};margin-right:.4rem"></span>
+          ${aktif ? 'Aktif' : 'Pasif'}
+          ${apiKey ? '· 🔑 Var' : '· Anahtar Yok'}
+        </div>
+        <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem">
+          <button class="btn btn-ntr btn-sm" onclick="saasApiDuzenle('${s.key}','${esc(s.ad)}')">✏</button>
+          <button class="btn btn-sm" style="background:${aktif ? '#FEF3C7' : '#D1FAE5'}" onclick="saasApiToggle('${s.key}')">${aktif ? 'Pasif' : 'Aktif'}</button>
+          <button class="btn btn-ntr btn-sm" onclick="saasApiTest('${s.key}')">🔍 Test</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    ic.innerHTML = html;
+  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
+}
+
+async function saasApiDuzenle(saglayici, ad) {
+  try {
+    const mevcut = await api.request(`/api/admin/saas/api/${saglayici}`);
+    const apiKey = prompt(`${ad} API Key girin:`, mevcut?.api_key || '');
+    if (apiKey === null) return;
+    const apiUrl = prompt(`${ad} API URL:`, mevcut?.api_url || '');
+    if (apiUrl === null) return;
+    await api.request(`/api/admin/saas/api/${saglayici}`, {
+      method: 'POST', body: JSON.stringify({ api_key: apiKey, api_url: apiUrl }),
+    });
+    bildirim(`${ad} güncellendi`, 'basari');
+    saasApi();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasApiToggle(saglayici) {
+  try {
+    await api.request(`/api/admin/saas/api/${saglayici}/toggle`);
+    bildirim('Durum değiştirildi', 'basari');
+    saasApi();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function saasApiTest(saglayici) {
+  try {
+    const r = await api.request(`/api/admin/saas/api/${saglayici}/test`, { method: 'POST' });
+    if (r?.success) bildirim('✅ ' + r.message, 'basari');
+    else bildirim('❌ ' + (r?.message || 'Test başarısız'), 'hata');
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+window.adminSaaS = adminSaaS;
+window.saasTenant = saasTenant;
+window.saasTenantEkle = saasTenantEkle;
+window.saasTenantSil = saasTenantSil;
+window.saasBackup = saasBackup;
+window.saasBackupOlustur = saasBackupOlustur;
+window.saasBackupRestore = saasBackupRestore;
+window.saasBackupSil = saasBackupSil;
+window.saasUpdate = saasUpdate;
+window.saasUpdateYap = saasUpdateYap;
+window.saasApi = saasApi;
+window.saasApiDuzenle = saasApiDuzenle;
+window.saasApiToggle = saasApiToggle;
+window.saasApiTest = saasApiTest;
+
+// ── Wizard CSS (head'e ekle) ──────────────────────────────────────────────
+(function() {
+  if (document.getElementById('wizard-css')) return;
+  const s = document.createElement('style');
+  s.id = 'wizard-css';
+  s.textContent = `
+.wizard-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-top:1.5rem; }
+.wizard-kart { background:var(--krem); border-radius:var(--r-sm); padding:1.5rem; cursor:pointer; transition:.2s; text-align:center; }
+.wizard-kart:hover { transform:translateY(-3px); box-shadow:var(--golge); }
+.wizard-ikon { font-size:2.5rem; margin-bottom:.5rem; }
+.wizard-label { font-weight:600; font-size:.95rem; }
+.wizard-acik { color:var(--gri-metin); font-size:.8rem; }
+.wizard-step { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+.wizard-secili { background:var(--kiremit); color:#fff; padding:.3rem 1rem; border-radius:999px; font-size:.85rem; }
+.wizard-adimlar { display:flex; gap:.5rem; align-items:center; font-size:.85rem; }
+.wizard-adim { width:28px; height:28px; border-radius:50%; background:var(--gri-acik); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:600; }
+.wizard-adim.aktif { background:var(--kiremit); color:#fff; }
+.wizard-palettes { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; margin-top:1rem; }
+.wizard-palet-kart { background:var(--krem); border-radius:var(--r-sm); padding:1rem; cursor:pointer; text-align:center; transition:.2s; }
+.wizard-palet-kart:hover { transform:translateY(-2px); box-shadow:var(--golge); }
+.wizard-palet-renkler { display:flex; gap:6px; justify-content:center; margin-bottom:.5rem; }
+.wizard-palet-renkler span { width:32px; height:32px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+.wizard-palet-ad { font-size:.85rem; font-weight:600; }
+.market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-top:1rem; }
+.market-kart { background:var(--krem); border-radius:var(--r-sm); padding:1.2rem; }
+.market-baslik { font-weight:600; font-size:.95rem; }
+.market-acik { color:var(--gri-metin); font-size:.8rem; margin:.3rem 0; }
+.market-vers { font-size:.75rem; color:var(--gri-metin); }
+`;
+  document.head.appendChild(s);
+})();
+
+// ── /CMS Admin ────────────────────────────────────────────────────────────────
+window.adminMenuler = adminMenuler;
+window.adminSayfalar = adminSayfalar;
+window.adminWidgetler = adminWidgetler;
+window.adminTema = adminTema;
+window.adminSablonlar = adminSablonlar;
+
 window.kayitYap = kayitYap;
 window.bannerlariYukle = bannerlariYukle;
 window.sliderGit = sliderGit;

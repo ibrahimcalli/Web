@@ -314,8 +314,8 @@ export class ApiClient {
    * @param {string} path  Örn. "/api/admin/menuler"
    * @param {RequestInit} [opts]
    */
-  async request(path, opts = {}) {
-    return this._wrap(() => this.adapter._request(path, opts));
+  async request(path, opts = {}, wrapOpts = {}) {
+    return this._wrap(() => this.adapter._request(path, opts), wrapOpts);
   }
 
   /** Önbelleği elle temizler. */
