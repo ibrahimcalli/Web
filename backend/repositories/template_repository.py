@@ -29,9 +29,10 @@ class TemplateRepository(BaseRepository):
 
     def create(self, data: dict) -> int:
         return self._execute(
-            "INSERT INTO templates (slug,ad,aciklama,klasor,aktif,varsayilan) VALUES (?,?,?,?,?,?)",
+            "INSERT INTO templates (slug,ad,aciklama,klasor,aktif,varsayilan,modules) VALUES (?,?,?,?,?,?,?)",
             (data["slug"], data["ad"], data.get("aciklama", ""), data.get("klasor", data["slug"]),
-             int(bool(data.get("aktif", True))), int(bool(data.get("varsayilan", False)))),
+             int(bool(data.get("aktif", True))), int(bool(data.get("varsayilan", False))),
+             data.get("modules", "{}")),
         )
 
     def update(self, tid: int, data: dict) -> bool:
@@ -40,9 +41,10 @@ class TemplateRepository(BaseRepository):
             return False
         merged = {**existing, **data, "id": tid}
         self._execute(
-            "UPDATE templates SET slug=?,ad=?,aciklama=?,klasor=?,aktif=?,varsayilan=? WHERE id=?",
+            "UPDATE templates SET slug=?,ad=?,aciklama=?,klasor=?,aktif=?,varsayilan=?,modules=? WHERE id=?",
             (merged["slug"], merged["ad"], merged.get("aciklama", ""), merged.get("klasor", merged["slug"]),
-             int(bool(merged.get("aktif", True))), int(bool(merged.get("varsayilan", False))), tid),
+             int(bool(merged.get("aktif", True))), int(bool(merged.get("varsayilan", False))),
+             merged.get("modules", "{}"), tid),
         )
         return True
 
