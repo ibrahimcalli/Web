@@ -748,13 +748,8 @@ async function portfoyKaydet() {
     musteri_adres:  document.getElementById('f-m-adres')?.value   || '',
     musteri_iliski: document.getElementById('f-m-iliski')?.value  || '',
     musteri_not:    document.getElementById('f-m-not')?.value     || '',
+    musteri_tc:     document.getElementById('f-m-tc')?.value      || '',
     sahip_goster:   document.getElementById('f-sahip-goster')?.checked ? 1 : 0,
-    musteri_tc:    document.getElementById('f-m-tc')?.value    || '',
-    musteri_tc:    document.getElementById('f-m-tc')?.value || '',
-    musteri_adres: document.getElementById('f-m-adres')?.value || '',
-    musteri_not:   document.getElementById('f-m-not')?.value || '',
-    musteri_iliski:document.getElementById('f-m-iliski')?.value || '',
-    sahip_goster:  document.getElementById('f-sahip-goster')?.checked ? 1 : 0,
   };
 
   let sonuc;
@@ -2327,7 +2322,9 @@ async function sayfaGoster(slug) {
       return;
     }
     const p = j.data;
-    if (p.durum && p.durum !== 'Yayında' && p.durum !== 'Aktif') {
+    // Backend durum değerleri: 'Taslak', 'Yayınla', 'Arşiv'
+    // Public görüntüleme sadece 'Yayınla' veya 'Aktif' için
+    if (p.durum && p.durum !== 'Yayınla' && p.durum !== 'Yayında' && p.durum !== 'Aktif') {
       ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">🔒</div><h3>Bu sayfa yayında değil</h3></div>';
       return;
     }
@@ -2531,10 +2528,12 @@ async function blogKaydet() {
     icerik:   document.getElementById('blog-icerik')?.value || '',
     etiketler,
     durum:    document.getElementById('blog-durum')?.value || 'Taslak',
-    kapak_resim: ''
   };
   let r;
   if (blogDuzenleId) {
+    // Mevcut yazıyı çek — kapak resmi kaybolmasın
+    const mevcut = await api.getBlogBySlugOrId(blogDuzenleId);
+    if (mevcut && mevcut.kapak_resim) data.kapak_resim = mevcut.kapak_resim;
     r = await api.update('blog', blogDuzenleId, data);
   } else {
     r = await api.save('blog', data);
@@ -3758,46 +3757,59 @@ async function adminSayfalar() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const sayfalar = await api.request('/api/admin/sayfalar').catch(()=>[]);
-  let html = '<div class="admin-baslik">Sayfalar</div>';
-  html += '<div style="margin-bottom:1rem;display:flex;gap:5px;flex-wrap:wrap">';
-  html += '<input id="ysf-baslik" placeholder="Sayfa başlığı" style="width:160px">';
-  html += '<input id="ysf-slug" placeholder="slug" style="width:120px">';
-  html += '<select id="ysf-durum"><option value="Taslak">Taslak</option><option value="Yayınla">Yayınla</option></select>';
-  html += `<button class="btn btn-kirm" onclick="sayfaOlustur()">+ Ekle</button></div>`;
+  const SABLONLAR = ['default','landing','corporate','minimal','estate-modern','sidebar'];
+  let html = '<div class="admin-baslik">Sayfalar <button class="btn btn-kirm btn-sm" onclick="sayfaDuzenleModal()" style="margin-left:auto">+ Yeni Sayfa</button></div>';
+
+  // Hızlı新建 bar
+  html += '<div style="margin-bottom:1rem;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--beyaz);padding:.85rem 1rem;border-radius:var(--r);border:1px solid var(--kumtasi)">';
+  html += '<input id="ysf-baslik" placeholder="Sayfa başlığı" style="flex:1;min-width:180px" class="form-girdi">';
+  html += '<input id="ysf-slug" placeholder="slug (boşsa otomatik)" style="width:160px" class="form-girdi">';
+  html += '<select id="ysf-durum" class="form-girdi"><option value="Taslak">Taslak</option><option value="Yayınla">Yayınla</option></select>';
+  html += '<button class="btn btn-kirm" onclick="sayfaOlustur()">+ Ekle</button></div>';
+
   if (sayfalar && sayfalar.length) {
     html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Başlık</th><th>Slug</th><th>Durum</th><th>Şablon</th><th>Güncelleme</th><th></th></tr></thead><tbody>';
     sayfalar.forEach(s => {
       html += `<tr>
-        <td><strong>${esc(s.baslik)}</strong></td>
-        <td>${esc(s.slug)}</td>
-        <td>${s.durum === 'Yayınla' ? '✅ Yayınla' : '📝 Taslak'}</td>
-        <td>${esc(s.sablon)}</td>
-        <td style="font-size:.8em">${(s.guncelleme||'').slice(0,10)}</td>
-        <td><button class="btn btn-cik" onclick="sayfaDuzenle(${s.id})">✏️</button>
-            <button class="btn btn-kirm" onclick="sayfaSil(${s.id})">🗑️</button></td>
+        <td><strong>${esc(s.baslik)}</strong>
+          ${s.ozet ? `<div style="font-size:.74rem;color:var(--gri-metin);margin-top:.15rem">${esc((s.ozet||'').slice(0,60))}${s.ozet.length>60?'…':''}</div>` : ''}
+        </td>
+        <td><code style="font-size:.78rem">${esc(s.slug)}</code></td>
+        <td><span class="durum-pill ${s.durum === 'Yayınla' ? 'dp-Aktif' : 'dp-Taslak'}">${s.durum === 'Yayınla' ? '✅ Yayında' : '📝 Taslak'}</span></td>
+        <td style="font-size:.8rem">${esc(s.sablon || 'default')}</td>
+        <td style="font-size:.78rem;color:var(--gri-metin)">${(s.guncelleme||'').slice(0,10)}</td>
+        <td><div class="tablo-eylemler">
+          <button class="btn btn-cik btn-sm" onclick="sayfaDuzenleModal(${s.id})" title="Düzenle">✏️</button>
+          ${s.durum === 'Yayınla' ? `<button class="btn btn-sm" style="background:#FEF3C7;color:#92400E" onclick="sayfaDurumTog(${s.id},'Taslak')" title="Taslak">⏸</button>`
+                                : `<button class="btn btn-sm" style="background:#D1FAE5;color:#065F46" onclick="sayfaDurumTog(${s.id},'Yayınla')" title="Yayınla">▶</button>`}
+          <button class="btn btn-hat btn-sm" onclick="sayfaSil(${s.id})" title="Sil">🗑️</button>
+        </div></td>
       </tr>`;
     });
     html += '</tbody></table></div>';
   } else {
-    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz sayfa yok</h3></div>';
+    html += '<div class="bos-durum"><div class="bos-ikon">📄</div><h3>Henüz sayfa yok</h3><p>Yeni bir CMS sayfası ekleyin</p></div>';
   }
   ic.innerHTML = html;
 }
 
 window.sayfaOlustur = async function() {
   const baslik = document.getElementById('ysf-baslik')?.value?.trim();
-  const slug = document.getElementById('ysf-slug')?.value?.trim();
+  let slug = document.getElementById('ysf-slug')?.value?.trim();
   const durum = document.getElementById('ysf-durum')?.value || 'Taslak';
-  if (!baslik || !slug) return bildirim('Başlık ve slug gerekli','hata');
+  if (!baslik) return bildirim('Başlık gerekli','hata');
+  if (!slug) slug = baslik.toLowerCase()
+    .replace(/ı/g,'i').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ü/g,'u').replace(/ö/g,'o').replace(/ğ/g,'g')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
   try {
-    await api.request('/api/admin/sayfalar', { method:'POST', body:JSON.stringify({baslik,slug,durum}) });
+    const r = await api.request('/api/admin/sayfalar', { method:'POST', body:JSON.stringify({baslik,slug,durum}) });
     bildirim('Sayfa oluşturuldu','basari');
-    adminSayfalar();
+    if (r?.id) sayfaDuzenleModal(r.id); else adminSayfalar();
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
 window.sayfaSil = async function(id) {
-  if (!confirm('Sayfa silinsin mi?')) return;
+  if (!confirm('Sayfa silinsin mi? Bu sayfaya giden menü öğeleri de etkilenecek.')) return;
   try {
     await api.request(`/api/admin/sayfalar/${id}`, { method:'DELETE' });
     bildirim('Sayfa silindi','basari');
@@ -3805,12 +3817,121 @@ window.sayfaSil = async function(id) {
   } catch(e) { bildirim(e.message,'hata'); }
 };
 
-window.sayfaDuzenle = async function(id) {
-  const yeni = prompt('Yeni başlık:');
-  if (!yeni) return;
+window.sayfaDurumTog = async function(id, durum) {
   try {
-    await api.request(`/api/admin/sayfalar/${id}`, { method:'PUT', body:JSON.stringify({baslik:yeni}) });
-    bildirim('Güncellendi','basari');
+    await api.request(`/api/admin/sayfalar/${id}`, { method:'PUT', body:JSON.stringify({durum}) });
+    bildirim('Durum: ' + durum, 'basari');
+    adminSayfalar();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// Tam fonksiyonlu sayfa edit modalı — içerik, özet, SEO, kapak, durum, şablon
+window.sayfaDuzenleModal = async function(id) {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+
+  let sayfa = null;
+  if (id) {
+    try { sayfa = await api.request(`/api/admin/sayfalar/${id}`); } catch {}
+  }
+  const yeniMi = !sayfa;
+  const s = sayfa || { baslik:'', slug:'', ozet:'', icerik:'', durum:'Taslak', sablon:'default',
+                       seo_baslik:'', seo_aciklama:'', seo_anahtar_kelimeler:'', kapak_resim:'' };
+  const SABLONLAR = ['default','landing','corporate','minimal','estate-modern','sidebar'];
+
+  ic.innerHTML = `
+    <div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <button class="btn btn-sm btn-ntr" onclick="adminSayfalar()">← Geri</button>
+      <span>${yeniMi ? 'Yeni Sayfa' : 'Sayfayı Düzenle'}</span>
+    </div>
+    <div style="max-width:840px;display:flex;flex-direction:column;gap:1rem">
+      <div class="form-grup"><label class="form-etiket z">Başlık</label>
+        <input class="form-girdi" id="sdf-baslik" value="${esc(s.baslik)}" placeholder="Sayfa başlığı"></div>
+      <div class="form-ikili">
+        <div class="form-grup"><label class="form-etiket z">Slug</label>
+          <input class="form-girdi" id="sdf-slug" value="${esc(s.slug)}" placeholder="ornek-sayfa"></div>
+        <div class="form-grup"><label class="form-etiket">Durum</label>
+          <select class="form-girdi" id="sdf-durum">
+            <option ${s.durum==='Taslak'?'selected':''}>Taslak</option>
+            <option ${s.durum==='Yayınla'?'selected':''}>Yayınla</option>
+            <option ${s.durum==='Arşiv'?'selected':''}>Arşiv</option>
+          </select></div>
+      </div>
+      <div class="form-grup"><label class="form-etiket">Kısa Özet</label>
+        <input class="form-girdi" id="sdf-ozet" value="${esc(s.ozet||'')}" placeholder="Listede görünecek kısa açıklama"></div>
+      <div class="form-grup"><label class="form-etiket">İçerik (HTML destekler)</label>
+        <div class="editor-araclari">
+          <button onclick="sayfaEditorEkle('**','**')"><b>B</b></button>
+          <button onclick="sayfaEditorEkle('&#60;h2&#62;','&#60;/h2&#62;')">H2</button>
+          <button onclick="sayfaEditorEkle('&#60;p&#62;','&#60;/p&#62;')">¶</button>
+          <button onclick="sayfaEditorEkle('&#60;a href=\\'\\' target=\\'_blank\\'&#62;','&#60;/a&#62;')">🔗</button>
+        </div>
+        <textarea class="blog-editor" id="sdf-icerik" rows="12" placeholder="Sayfa içeriği (HTML)…">${esc(s.icerik||'')}</textarea>
+      </div>
+      <div class="form-ikili">
+        <div class="form-grup"><label class="form-etiket">Şablon</label>
+          <select class="form-girdi" id="sdf-sablon">
+            ${SABLONLAR.map(sb => `<option ${s.sablon===sb?'selected':''} value="${sb}">${sb}</option>`).join('')}
+          </select></div>
+        <div class="form-grup"><label class="form-etiket">Kapak Resmi URL</label>
+          <input class="form-girdi" id="sdf-kapak" value="${esc(s.kapak_resim||'')}" placeholder="/static/uploads/... veya https://…"></div>
+      </div>
+      <details style="border:1px solid var(--kumtasi);border-radius:var(--r);padding:.5rem 1rem">
+        <summary style="cursor:pointer;font-weight:600;color:var(--gri-metin)">🔍 SEO Ayarları</summary>
+        <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.75rem">
+          <div class="form-grup"><label class="form-etiket">SEO Başlık</label>
+            <input class="form-girdi" id="sdf-seo-baslik" value="${esc(s.seo_baslik||'')}" placeholder="Boşsa sayfa başlığı kullanılır"></div>
+          <div class="form-grup"><label class="form-etiket">SEO Açıklama</label>
+            <input class="form-girdi" id="sdf-seo-aciklama" value="${esc(s.seo_aciklama||'')}" placeholder="Meta description"></div>
+          <div class="form-grup"><label class="form-etiket">SEO Anahtar Kelimeler</label>
+            <input class="form-girdi" id="sdf-seo-anahtar" value="${esc(s.seo_anahtar_kelimeler||'')}" placeholder="virgülle ayırın"></div>
+        </div>
+      </details>
+      <div style="display:flex;gap:.75rem;align-items:center;margin-top:.5rem">
+        <button class="btn btn-kirm btn-lg" onclick="sayfaKaydet(${id||'null'})">💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
+        <button class="btn btn-ntr" onclick="adminSayfalar()">Vazgeç</button>
+        ${!yeniMi && s.slug ? `<a href="#/sayfa/${esc(s.slug)}" target="_blank" class="btn btn-ntr btn-sm" style="text-decoration:none">👁 Önizle</a>` : ''}
+      </div>
+    </div>`;
+};
+
+window.sayfaEditorEkle = function(once, sonra) {
+  const ta = document.getElementById('sdf-icerik');
+  if (!ta) return;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const secili = ta.value.substring(start, end);
+  const yeni = ta.value.substring(0, start) + once + secili + sonra + ta.value.substring(end);
+  ta.value = yeni;
+  ta.selectionStart = start + once.length;
+  ta.selectionEnd = start + once.length + secili.length;
+  ta.focus();
+};
+
+window.sayfaKaydet = async function(id) {
+  const baslik = document.getElementById('sdf-baslik')?.value?.trim();
+  if (!baslik) return bildirim('Başlık gerekli','hata');
+  let slug = document.getElementById('sdf-slug')?.value?.trim();
+  if (!slug) slug = baslik.toLowerCase().replace(/ı/g,'i').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ü/g,'u').replace(/ö/g,'o').replace(/ğ/g,'g').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const data = {
+    baslik, slug,
+    ozet:  document.getElementById('sdf-ozet')?.value || '',
+    icerik: document.getElementById('sdf-icerik')?.value || '',
+    durum: document.getElementById('sdf-durum')?.value || 'Taslak',
+    sablon: document.getElementById('sdf-sablon')?.value || 'default',
+    kapak_resim: document.getElementById('sdf-kapak')?.value || '',
+    seo_baslik: document.getElementById('sdf-seo-baslik')?.value || '',
+    seo_aciklama: document.getElementById('sdf-seo-aciklama')?.value || '',
+    seo_anahtar_kelimeler: document.getElementById('sdf-seo-anahtar')?.value || '',
+  };
+  try {
+    if (id) {
+      await api.request(`/api/admin/sayfalar/${id}`, { method:'PUT', body:JSON.stringify(data) });
+      bildirim('Sayfa güncellendi ✅','basari');
+    } else {
+      const r = await api.request('/api/admin/sayfalar', { method:'POST', body:JSON.stringify(data) });
+      bildirim('Sayfa oluşturuldu ✅','basari');
+      if (r?.id) { sayfaDuzenleModal(r.id); return; }
+    }
     adminSayfalar();
   } catch(e) { bildirim(e.message,'hata'); }
 };
@@ -3821,22 +3942,63 @@ async function adminWidgetler() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const widgetlar = await api.request('/api/admin/widgets').catch(()=>[]);
-  let html = '<div class="admin-baslik">Widget\'lar</div>';
+  let html = '<div class="admin-baslik">Widget\'lar <button class="btn btn-kirm btn-sm" onclick="widgetDuzenleModal()" style="margin-left:auto">+ Yeni Widget</button></div>';
+
+  // Widget tipleri ve konumları (widget-renderer.js ile uyumlu)
+  const TIP_LISTESI = {
+    'html': 'Serbest HTML',
+    'contact-form': 'İletişim Formu',
+    'cookie-banner': 'Çerez Bildirimi',
+    'social-bar': 'Sosyal Medya Çubuğu',
+    'whatsapp': 'WhatsApp Butonu',
+    'google-maps': 'Google Maps',
+    'telefon-butonu': 'Telefon Butonu',
+    'instagram-feed': 'Instagram Beslemesi',
+    'info-kart': 'Bilgi Kartı',
+    'embed': 'Embed / Script',
+    'script': 'Script',
+    'link': 'Bağlantı',
+  };
+  const KONUM_LISTESI = {
+    'home-top': 'Anasayfa Üstü',
+    'home-bottom': 'Anasayfa Altı',
+    'anasayfa-top': 'Anasayfa Üstü (alt)',
+    'anasayfa-bottom': 'Anasayfa Alta',
+    'footer-top': 'Footer Üstü',
+    'all-pages': 'Tüm Sayfalarda',
+    'sidebar': 'Sidebar',
+    'header': 'Header',
+    'footer': 'Footer',
+    'floating': 'Sabit (Kayan)',
+    '': 'Yer Belirtilmedi',
+  };
+  // Yardımcı: tip etiketi
+  const tipEtiket = t => TIP_LISTESI[t] || t || '—';
+  const konumEtiket = k => KONUM_LISTESI[k] || k || '—';
+
   if (widgetlar && widgetlar.length) {
-    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Ad</th><th>Tip</th><th>Konum</th><th>Aktif</th><th></th></tr></thead><tbody>';
+    html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Anahtar</th><th>Ad</th><th>Tip</th><th>Konum</th><th>Sıra</th><th>Aktif</th><th></th></tr></thead><tbody>';
     widgetlar.forEach(w => {
       html += `<tr>
-        <td><code>${esc(w.anahtar)}</code></td>
-        <td>${esc(w.ad)}</td>
-        <td>${esc(w.tip)}</td>
-        <td>${esc(w.konum)}</td>
+        <td><code style="font-size:.78rem">${esc(w.anahtar)}</code></td>
+        <td><strong>${esc(w.ad)}</strong>
+          ${w.aciklama ? `<div style="font-size:.72rem;color:var(--gri-metin)">${esc(w.aciklama)}</div>` : ''}
+        </td>
+        <td><span style="font-size:.78rem;background:var(--krem);padding:.2rem .5rem;border-radius:4px">${esc(tipEtiket(w.tip))}</span></td>
+        <td style="font-size:.8rem">${esc(konumEtiket(w.konum))}</td>
+        <td style="font-size:.82rem;color:var(--gri-metin);text-align:center">${w.sira ?? 0}</td>
         <td>${w.aktif ? '✅' : '❌'}</td>
-        <td><button class="btn ${w.aktif ? 'btn-cik' : 'btn-yes'}" onclick="widgetToggle(${w.id},${w.aktif ? 0 : 1})">${w.aktif ? 'Devre Dışı' : 'Aktifleştir'}</button></td>
+        <td><div class="tablo-eylemler">
+          <button class="btn btn-cik btn-sm" title="Düzenle" onclick="widgetDuzenleModal(${w.id})">✏️</button>
+          <button class="btn btn-sm ${w.aktif ? 'btn-cik' : 'btn-yes'}" title="${w.aktif?'Devre dışı':'Aktifleştir'}" onclick="widgetToggle(${w.id},${w.aktif ? 0 : 1})">${w.aktif ? '⏸' : '▶'}</button>
+          <button class="btn btn-hat btn-sm" title="Sil" onclick="widgetSil(${w.id})">🗑️</button>
+        </div></td>
       </tr>`;
     });
     html += '</tbody></table></div>';
+    html += '<div style="margin-top:.75rem;font-size:.78rem;color:var(--gri-metin)">💡 Widget\'lar <code>konum</code> alanına göre <code>data-widget-container="..."</code> nitelikli elementlere yerleşir. Eğer DOM'da ilgili konteyner yoksa otomatik oluşturulur.</div>';
   } else {
-    html += '<div class="bos-durum"><div class="bos-ikon">🧩</div><h3>Henüz widget yok</h3></div>';
+    html += '<div class="bos-durum"><div class="bos-ikon">🧩</div><h3>Henüz widget yok</h3><p>+ Yeni Widget ile başlayın</p></div>';
   }
   ic.innerHTML = html;
 }
@@ -3845,6 +4007,121 @@ window.widgetToggle = async function(id, aktif) {
   try {
     await api.request(`/api/admin/widgets/${id}`, { method:'PUT', body:JSON.stringify({aktif:!!aktif}) });
     bildirim(`Widget ${aktif ? 'aktifleştirildi' : 'devre dışı bırakıldı'}`,'basari');
+    adminWidgetler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.widgetSil = async function(id) {
+  if (!confirm('Widget silinsin mi?')) return;
+  try {
+    await api.request(`/api/admin/widgets/${id}`, { method:'DELETE' });
+    bildirim('Widget silindi','basari');
+    adminWidgetler();
+  } catch(e) { bildirim(e.message,'hata'); }
+};
+
+// Tam fonksiyonelu widget edit/create modalı
+window.widgetDuzenleModal = async function(id) {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+
+  let w = null;
+  if (id) {
+    try { w = await api.request(`/api/admin/widgets/${id}`); } catch {}
+  }
+  const yeniMi = !w;
+  const d = w || { anahtar:'', ad:'', aciklama:'', tip:'html', aktif:false, ayarlar:'{}', konum:'all-pages', sira:0, icerik:'' };
+
+  // ayarlar JSON'ı olabilir; "icerik" genelde serbest HTML içerir
+  let ayarlarObj = {};
+  try { ayarlarObj = JSON.parse(d.ayarlar || '{}'); } catch {}
+  const icerik = d.icerik || ayarlarObj.icerik || '';
+
+  const TIP_OPTS = [
+    ['html','Serbest HTML'], ['contact-form','İletişim Formu'],
+    ['cookie-banner','Çerez Bildirimi'], ['social-bar','Sosyal Medya Çubuğu'],
+    ['whatsapp','WhatsApp Butonu'], ['google-maps','Google Maps'],
+    ['telefon-butonu','Telefon Butonu'], ['instagram-feed','Instagram Beslemesi'],
+    ['info-kart','Bilgi Kartı'], ['embed','Embed / Script'],
+    ['script','Script'], ['link','Bağlantı'],
+  ];
+  const KONUM_OPTS = [
+    ['all-pages','Tüm Sayfalarda'], ['home-top','Anasayfa Üstü'],
+    ['home-bottom','Anasayfa Altı'], ['anasayfa-top','Anasayfa Üstü (alt)'],
+    ['anasayfa-bottom','Anasayfa Alta'], ['footer-top','Footer Üstü'],
+    ['sidebar','Sidebar'], ['header','Header'],
+    ['footer','Footer'], ['floating','Sabit (Kayan)'],
+  ];
+
+  ic.innerHTML = `
+    <div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+      <button class="btn btn-sm btn-ntr" onclick="adminWidgetler()">← Geri</button>
+      <span>${yeniMi ? 'Yeni Widget' : 'Widget Düzenle'}</span>
+    </div>
+    <div style="max-width:760px;display:flex;flex-direction:column;gap:1rem">
+      <div class="form-ikili">
+        <div class="form-grup"><label class="form-etiket z">Anahtar (benzersiz)</label>
+          <input class="form-girdi" id="wg-anahtar" value="${esc(d.anahtar)}" placeholder="örn: whatsapp-banner" ${yeniMi?'':'readonly style="background:var(--krem)"'} ${yeniMi?'':'disabled'}></div>
+        <div class="form-grup"><label class="form-etiket z">Ad</label>
+          <input class="form-girdi" id="wg-ad" value="${esc(d.ad)}" placeholder="Widget adı"></div>
+      </div>
+      <div class="form-grup"><label class="form-etiket">Açıklama (opsiyonel)</label>
+        <input class="form-girdi" id="wg-aciklama" value="${esc(d.aciklama||'')}" placeholder="Kısa açıklama"></div>
+      <div class="form-ikili">
+        <div class="form-grup"><label class="form-etiket z">Tip</label>
+          <select class="form-girdi" id="wg-tip">
+            ${TIP_OPTS.map(([v,l]) => `<option value="${v}" ${d.tip===v?'selected':''}>${l}</option>`).join('')}
+          </select></div>
+        <div class="form-grup"><label class="form-etiket z">Konum</label>
+          <select class="form-girdi" id="wg-konum">
+            ${KONUM_OPTS.map(([v,l]) => `<option value="${v}" ${d.konum===v?'selected':''}>${l}</option>`).join('')}
+          </select></div>
+      </div>
+      <div class="form-ikili">
+        <div class="form-grup"><label class="form-etiket">Sıra</label>
+          <input class="form-girdi" id="wg-sira" type="number" value="${d.sira ?? 0}" style="width:120px"></div>
+        <div class="form-grup"><label class="form-etiket">Aktif</label>
+          <label style="display:flex;align-items:center;gap:.5rem;padding-top:.5rem">
+            <input type="checkbox" id="wg-aktif" ${d.aktif?'checked':''} style="width:16px;height:16px;accent-color:var(--kiremit)">
+            <span style="font-size:.85rem">Bu widget yayında</span>
+          </label></div>
+      </div>
+      <div class="form-grup"><label class="form-etiket">İçerik / HTML / Embed</label>
+        <div style="font-size:.72rem;color:var(--gri-metin);margin-bottom:.4rem">
+          Tip <code>html</code>, <code>google-maps</code>, <code>instagram-feed</code>, <code>info-kart</code> için buradaki HTML kullanılır.
+          Diğer tiplerde ayarlar JSON olarak da işlenebilir.
+        </div>
+        <textarea class="blog-editor" id="wg-icerik" rows="8" placeholder="<div>Widget içeriği…</div>">${esc(icerik)}</textarea>
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:.5rem">
+        <button class="btn btn-kirm btn-lg" onclick="widgetKaydet(${id||'null'})">💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
+        <button class="btn btn-ntr" onclick="adminWidgetler()">Vazgeç</button>
+      </div>
+    </div>`;
+};
+
+window.widgetKaydet = async function(id) {
+  const anahtar = (document.getElementById('wg-anahtar')?.value || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g,'-').replace(/^-+|-+$/g,'');
+  const ad = (document.getElementById('wg-ad')?.value || '').trim();
+  if (!anahtar || !ad) return bildirim('Anahtar ve ad gerekli','hata');
+  const tip = document.getElementById('wg-tip').value;
+  const konum = document.getElementById('wg-konum').value;
+  const sira = parseInt(document.getElementById('wg-sira').value) || 0;
+  const aktif = document.getElementById('wg-aktif').checked;
+  const aciklama = document.getElementById('wg-aciklama')?.value || '';
+  const icerik = document.getElementById('wg-icerik')?.value || '';
+  // ayarlar JSON'ında icerik sakla — widget-renderer.js uyumlu
+  const ayarlar = JSON.stringify({ icerik });
+  const payload = { anahtar, ad, aciklama, tip, aktif, ayarlar, konum, sira };
+  try {
+    if (id) {
+      // anahtar'ı değiştiremeyiz (disabled)
+      await api.request(`/api/admin/widgets/${id}`, { method:'PUT', body:JSON.stringify({ad, aciklama, tip, aktif, ayarlar, konum, sira}) });
+      bildirim('Widget güncellendi ✅','basari');
+    } else {
+      await api.request('/api/admin/widgets', { method:'POST', body:JSON.stringify(payload) });
+      bildirim('Widget oluşturuldu ✅','basari');
+    }
     adminWidgetler();
   } catch(e) { bildirim(e.message,'hata'); }
 };

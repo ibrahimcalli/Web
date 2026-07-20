@@ -143,10 +143,11 @@ class MenuService:
             return []
         items = self.ogeler.get_by_menu(m["id"], aktif_only=True)
         rol = kullanici_rol or ""
-        # Yetki filtrele: izin_rol boşsa herkes, 'admin' ise sadece admin, vb.
+        # Yetki filtrele: izin_rol boşsa herkes; 'admin' ise sadece admin, vb.
         filtered = [
             it for it in items
-            if not it.get("izin_rol") or it["izin_rol"] == "admin" and rol == "admin"
+            if not it.get("izin_rol")
+            or (it["izin_rol"] == "admin" and rol == "admin")
             or it["izin_rol"] == rol
         ]
         return self._agac_yap(filtered, parent_id=None)
