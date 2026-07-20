@@ -2392,8 +2392,8 @@ async function blogDetayGoster(yazi) {
     <div class="blog-detay-icerik">${blogIcerikRender(d.icerik||'')}</div>
     <div style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--kumtasi);display:flex;gap:.5rem;flex-wrap:wrap">
       <span style="font-size:.82rem;color:var(--gri-metin)">Paylaş:</span>
-      <button class="paylasim-btn pb-wa" style="font-size:.75rem;padding:.3rem .7rem" onclick="ilanPaylas('wa',0,'${d.baslik.replace(/'/g,"\\'")}','')">WhatsApp</button>
-      <button class="paylasim-btn pb-fb" style="font-size:.75rem;padding:.3rem .7rem" onclick="ilanPaylas('fb',0,'${d.baslik.replace(/'/g,"\\'")}','')">Facebook</button>
+      <button class="paylasim-btn pb-wa" style="font-size:.75rem;padding:.3rem .7rem" onclick="ilanPaylas('wa',0,'${d.baslik.replace(/'/g,"\'")}','')">WhatsApp</button>
+      <button class="paylasim-btn pb-fb" style="font-size:.75rem;padding:.3rem .7rem" onclick="ilanPaylas('fb',0,'${d.baslik.replace(/'/g,"\'")}','')">Facebook</button>
     </div>`;
 
   seoGuncelle({
@@ -3864,7 +3864,7 @@ window.sayfaDuzenleModal = async function(id) {
           <button onclick="sayfaEditorEkle('**','**')"><b>B</b></button>
           <button onclick="sayfaEditorEkle('&#60;h2&#62;','&#60;/h2&#62;')">H2</button>
           <button onclick="sayfaEditorEkle('&#60;p&#62;','&#60;/p&#62;')">¶</button>
-          <button onclick="sayfaEditorEkle('&#60;a href=\\'\\' target=\\'_blank\\'&#62;','&#60;/a&#62;')">🔗</button>
+          <button onclick="sayfaEditorEkle('&#60;a href=\'\' target=\'_blank\'&#62;','&#60;/a&#62;')">🔗</button>
         </div>
         <textarea class="blog-editor" id="sdf-icerik" rows="12" placeholder="Sayfa içeriği (HTML)…">${esc(s.icerik||'')}</textarea>
       </div>
@@ -3996,7 +3996,7 @@ async function adminWidgetler() {
       </tr>`;
     });
     html += '</tbody></table></div>';
-    html += '<div style="margin-top:.75rem;font-size:.78rem;color:var(--gri-metin)">💡 Widget\'lar <code>konum</code> alanına göre <code>data-widget-container="..."</code> nitelikli elementlere yerleşir. Eğer DOM'da ilgili konteyner yoksa otomatik oluşturulur.</div>';
+    html += '<div style="margin-top:.75rem;font-size:.78rem;color:var(--gri-metin)">💡 Widget\'lar <code>konum</code> alanına göre <code>data-widget-container="..."</code> nitelikli elementlere yerleşir. Eğer DOM\'da ilgili konteyner yoksa otomatik oluşturulur.</div>';
   } else {
     html += '<div class="bos-durum"><div class="bos-ikon">🧩</div><h3>Henüz widget yok</h3><p>+ Yeni Widget ile başlayın</p></div>';
   }
