@@ -17,6 +17,10 @@ class ThemeService:
         self.theme.set(anahtar, deger)
         return {"anahtar": anahtar, "deger": deger}
 
+    def set_many(self, settings: Dict[str, str]) -> dict:
+        adet = self.theme.set_many(settings)
+        return {"guncellenen": adet}
+
     def delete(self, anahtar: str) -> dict:
         self.theme.delete(anahtar)
         return {"anahtar": anahtar, "silindi": True}

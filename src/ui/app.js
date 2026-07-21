@@ -1668,6 +1668,8 @@ async function siteAyarlariUygula() {
   if (tmRenk_arka) root.style.setProperty('--krem', tmRenk_arka);
   if (tmRenk_metin) root.style.setProperty('--toprak', tmRenk_metin);
   if (tmRenk_ana) root.style.setProperty('--kiremit-a', lightenHex(tmRenk_ana, 72));
+  const tmPalet = tm.renk_tema || ay.renk_tema || tm.template || ay.template || '';
+  if (tmPalet) document.body.setAttribute('data-tema', tmPalet);
   if (tm.font_baslik) { root.style.setProperty('--font-baslik', tm.font_baslik); fontYukle(tm.font_baslik); }
   if (tm.font_govde) { root.style.setProperty('--font-govde', tm.font_govde); fontYukle(tm.font_govde); }
   if (tm.border_radius) {
@@ -1716,7 +1718,7 @@ async function siteAyarlariUygula() {
   }
 
   // Theme palet data attribute
-  document.body.setAttribute('data-tema', (ay.renk_tema || tm.template || ''));
+  if (!tmPalet && ay.renk_tema) document.body.setAttribute('data-tema', ay.renk_tema);
 
   // WhatsApp sabit butonu
   const waBtn = document.getElementById('wa-btn');
@@ -4460,6 +4462,7 @@ let temaSaved = {};       // son kaydedilen
 function temaOnizleUygula() {
   if (!temaDraft || !Object.keys(temaDraft).length) return;
   const r = document.documentElement;
+  if (temaDraft.renk_tema) document.body.setAttribute('data-tema', temaDraft.renk_tema);
   if (temaDraft.renk_ana) r.style.setProperty('--kiremit', temaDraft.renk_ana);
   if (temaDraft.renk_ana_koy) r.style.setProperty('--kiremit-k', temaDraft.renk_ana_koy);
   if (temaDraft.renk_arka) r.style.setProperty('--krem', temaDraft.renk_arka);
@@ -4491,6 +4494,7 @@ function fontYukle(fontAdi) {
 window.temaPaletSec = function(id) {
   const palet = TEMA_PALETLERI.find(p => p.id === id);
   if (!palet) return;
+  temaDraft.renk_tema = palet.id;
   temaDraft.renk_ana = palet.renkler[0];
   temaDraft.renk_ana_koy = palet.renkler[1];
   temaDraft.renk_arka = palet.renkler[2];
@@ -4543,7 +4547,7 @@ window.temaDarkToggle = function(el) {
 // ── Kaydet / Sıfırla ───────────────────────────────────────────────────────
 
 const TEMA_ANAHTARLAR = new Set([
-  'renk_ana','renk_ana_koy','renk_arka','renk_metin',
+  'renk_tema','renk_ana','renk_ana_koy','renk_arka','renk_metin',
   'font_baslik','font_govde','border_radius','dark_mode',
   'header_stil','footer_stil','kart_stil','button_stil','animasyon',
   'shadow_kart','logo_url','favicon_url','template'
@@ -4553,13 +4557,12 @@ window.temaKaydet = async function() {
   const degisen = Object.keys(temaDraft).filter(k => TEMA_ANAHTARLAR.has(k));
   if (!degisen.length) { bildirim('Değişiklik yok', 'bilgi'); return; }
   try {
-    for (const k of degisen) {
-      await api.request(`/api/admin/tema/${k}`, { method:'PUT', body:JSON.stringify({anahtar:k,deger:temaDraft[k]}) });
-    }
-    // Backend'deki spam satırları temizle
-    try {
-      await api.request('/api/admin/tema/cleanup', { method:'POST' });
-    } catch {}
+    const ayarlar = {};
+    for (const k of degisen) ayarlar[k] = temaDraft[k];
+    await api.request('/api/admin/tema', {
+      method:'PUT',
+      body:JSON.stringify({ ayarlar }),
+    });
     Object.assign(temaSaved, temaDraft);
     temaDraft = {};
     bildirim('Tema kaydedildi ✅', 'basari');
@@ -4583,10 +4586,10 @@ async function adminTema() {
   temaDraft = {};
 
   const t = temaSaved;
-  const paletId = t.renk_ana ? (TEMA_PALETLERI.find(p =>
+  const paletId = t.renk_tema || (t.renk_ana ? (TEMA_PALETLERI.find(p =>
     p.renkler[0].toLowerCase() === (t.renk_ana||'').toLowerCase() &&
     p.renkler[2].toLowerCase() === (t.renk_arka||'').toLowerCase()
-  ) || TEMA_PALETLERI[0]).id : '';
+  ) || TEMA_PALETLERI[0]).id : '');
 
   let html = '<div class="admin-baslik">🎨 Tema Yöneticisi</div>';
   html += '<div class="tema-editor">';

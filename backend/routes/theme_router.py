@@ -1,7 +1,10 @@
 """Theme Router — Tema ayarları API endpoint'leri (public readonly, admin full CRUD)."""
 from __future__ import annotations
 
+from typing import Dict
+
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from backend.core.dependencies import get_current_user, get_theme_service, require_admin
 from backend.schemas.response import fail, ok
@@ -9,6 +12,10 @@ from backend.schemas.theme import ThemeSettingSet
 from backend.services.theme_service import ThemeService
 
 router = APIRouter(tags=["CMS - Tema"])
+
+
+class ThemeBulkSet(BaseModel):
+    ayarlar: Dict[str, str]
 
 
 @router.get("/tema")
@@ -29,6 +36,19 @@ async def tema_getir(
 ):
     try:
         return ok(theme_service.get_all())
+    except Exception as e:
+        return fail(str(e))
+
+
+@router.put("/admin/tema")
+async def tema_toplu_guncelle(
+    data: ThemeBulkSet,
+    theme_service: ThemeService = Depends(get_theme_service),
+    _=Depends(require_admin),
+):
+    try:
+        temiz = {str(k): "" if v is None else str(v) for k, v in (data.ayarlar or {}).items()}
+        return ok(theme_service.set_many(temiz))
     except Exception as e:
         return fail(str(e))
 
@@ -60,7 +80,7 @@ async def tema_sil(
 
 # Bilinen tema anahtarları (whitelist) — dışından eklenen spam anahtarlar temizlenir
 TEMA_WHITELIST = {
-    "template","renk_ana","renk_ana_koy","renk_arka","renk_metin","dark_mode",
+    "template","renk_tema","renk_ana","renk_ana_koy","renk_arka","renk_metin","dark_mode",
     "font_baslik","font_govde","border_radius","shadow_kart",
     "header_stil","footer_stil","kart_stil","button_stil","animasyon",
     "logo_url","favicon_url",

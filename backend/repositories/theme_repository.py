@@ -27,6 +27,15 @@ class ThemeRepository(BaseRepository):
         )
         return True
 
+    def set_many(self, settings: Dict[str, str]) -> int:
+        if not settings:
+            return 0
+        rows = [(k, v) for k, v in settings.items()]
+        return self._execute_many(
+            "INSERT OR REPLACE INTO theme_settings (anahtar, deger) VALUES (?,?)",
+            rows,
+        )
+
     def delete(self, anahtar: str) -> bool:
         return self._execute("DELETE FROM theme_settings WHERE anahtar=?", (anahtar,)) > 0
 
