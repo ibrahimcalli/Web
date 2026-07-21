@@ -1,7 +1,7 @@
 """İstek, Ayar, Banner, Blog Router'ları."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Request, UploadFile, File, Form
 from pathlib import Path
 
 from backend.core.config import BASE_DIR
@@ -307,22 +307,48 @@ async def blog_sil(
 async def blog_kapak(
     bid: int,
     request: Request,
-    file: UploadFile = File(...),
+    dosya: UploadFile = File(...),
     blog_service: BlogService = Depends(get_blog_service),
 ):
     """Blog kapak resmi (admin)."""
     try:
         import uuid
-        ext = Path(file.filename).suffix if file.filename else ".jpg"
+        ext = Path(dosya.filename).suffix if dosya.filename else ".jpg"
         filename = f"blog_{bid}_{uuid.uuid4().hex}{ext}"
         upload_path = BASE_DIR / "static" / "uploads" / "blogs" / filename
         upload_path.parent.mkdir(parents=True, exist_ok=True)
         
-        content = await file.read()
+        content = await dosya.read()
         upload_path.write_bytes(content)
         
         url = f"/static/uploads/blogs/{filename}"
         result = blog_service.kapak_ekle(bid, url)
+        return ok(result)
+    except Exception as e:
+        return fail(str(e))
+
+
+@blog_router.post("/blog/icerik-resim", dependencies=[Depends(require_admin)])
+async def blog_icerik_resim(
+    request: Request,
+    dosya: UploadFile = File(...),
+    boyut: str = Form("dikdortgen"),
+    konum: str = Form("ortali"),
+    blog_service: BlogService = Depends(get_blog_service),
+):
+    """Blog içeriğe resim ekle (admin)."""
+    try:
+        import uuid
+        ext = Path(dosya.filename).suffix if dosya.filename else ".jpg"
+        filename = f"blog_icerik_{uuid.uuid4().hex}{ext}"
+        upload_path = BASE_DIR / "static" / "uploads" / "blogs" / filename
+        upload_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        content = await dosya.read()
+        upload_path.write_bytes(content)
+        
+        url = f"/static/uploads/blogs/{filename}"
+        result = blog_service.icerik_resim_ekle(url, boyut, konum)
         return ok(result)
     except Exception as e:
         return fail(str(e))

@@ -97,3 +97,15 @@ async def widget_sil(
         return ok(widget_service.sil(widget_id))
     except Exception as e:
         return fail(str(e))
+
+
+@router.patch("/admin/widgets/{widget_id}/aktif", dependencies=[Depends(require_admin)])
+async def widget_aktif_toggle(
+    widget_id: int,
+    widget_service: WidgetService = Depends(get_widget_service),
+):
+    """Widget aktif/pasif toggle (admin)."""
+    try:
+        return ok(widget_service.toggle_aktif(widget_id))
+    except Exception as e:
+        return fail(str(e))

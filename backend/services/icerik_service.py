@@ -323,3 +323,28 @@ class BlogService:
         """
         self.bloglar.set_kapak(bid, url)
         return {"mesaj": "Kapak resmi güncellendi", "url": url}
+    
+    def icerik_resim_ekle(self, url: str, boyut: str, konum: str) -> dict:
+        """
+        Blog içeriğe resim ekle.
+        
+        Args:
+            url: Resim URL
+            boyut: Resim boyutu (kare, dikdortgen, genis, orijinal)
+            konum: Resim konumu (basta, ortali, sonda)
+            
+        Returns:
+            Sonuç mesajı ve HTML snippet
+        """
+        # HTML snippet oluştur
+        boyut_class = f"boyut-{boyut}"
+        konum_class = f"konum-{konum}"
+        html = f'<div class="blog-icerik-resim {boyut_class} {konum_class}"><img src="{url}" loading="lazy" alt=""></div>'
+        
+        return {
+            "mesaj": "Resim yüklendi",
+            "url": url,
+            "boyut": boyut,
+            "konum": konum,
+            "html": html
+        }

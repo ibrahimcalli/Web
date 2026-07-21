@@ -60,6 +60,14 @@ class WidgetRepository(BaseRepository):
     def delete(self, wid: int) -> bool:
         return self._execute("DELETE FROM widgets WHERE id=?", (wid,)) > 0
 
+    def toggle_active(self, wid: int) -> bool:
+        row = self._fetchone("SELECT aktif FROM widgets WHERE id=?", (wid,))
+        if not row:
+            return False
+        yeni = 0 if row["aktif"] else 1
+        self._execute("UPDATE widgets SET aktif=?, guncelleme=datetime('now') WHERE id=?", (yeni, wid))
+        return bool(yeni)
+
     def exists(self, wid: int) -> bool:
         return self._fetchone("SELECT 1 FROM widgets WHERE id=?", (wid,)) is not None
 

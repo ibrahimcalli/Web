@@ -47,3 +47,9 @@ class WidgetService:
             raise NotFoundError("Widget bulunamadı")
         self.widgets.delete(wid)
         return {"id": wid, "silindi": True}
+
+    def toggle_aktif(self, wid: int) -> dict:
+        if not self.widgets.exists(wid):
+            raise NotFoundError("Widget bulunamadı")
+        aktif = self.widgets.toggle_active(wid)
+        return {"id": wid, "aktif": aktif}

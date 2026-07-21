@@ -14,6 +14,8 @@
  *   - Eski tarz `w.icerik` artık yok; render fonksiyonları `wIcerik(w)` okuyarak uyumlu kalır.
  */
 
+console.log('[widget-renderer] Module loaded, readyState:', document.readyState);
+
 function parseAyarlar(w) {
   if (w._ayarObj !== undefined) return w._ayarObj;
   try { w._ayarObj = JSON.parse(w.ayarlar || '{}'); }
@@ -150,14 +152,17 @@ function ensureContainer(lokasyon) {
 }
 
 export async function renderWidgets() {
+  console.log('[widget-renderer] renderWidgets called');
   const ay = await fetch('/api/ayarlar').then(r=>r.json()).then(j=>j && j.success ? j.data : {}).catch(()=>({}));
   for (const lokasyon of WIDGET_LOKASYONLAR) {
     try {
+      console.log('[widget-renderer] Fetching widgets for:', lokasyon);
       const r = await fetch(`/api/public/widgets/${encodeURIComponent(lokasyon)}`);
       if (!r.ok) continue;
       const j = await r.json();
       if (!j || !j.success) continue;
       const widgets = j.data || [];
+      console.log('[widget-renderer] Got widgets for', lokasyon, ':', widgets);
       // aktif olanları al (backend zaten filtreler ama garanti)
       const aktif = widgets.filter(w => w.aktif !== false && w.aktif !== 0);
       if (!aktif.length) continue;

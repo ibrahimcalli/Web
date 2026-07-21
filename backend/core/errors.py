@@ -153,7 +153,7 @@ class CsrfProtectMiddleware(BaseHTTPMiddleware):
         if ct == "application/json":
             return await call_next(request)
         # multipart/form-data → yalnızca upload endpoint'leri için
-        if ct == "multipart/form-data" and ("/upload" in path or "/resim" in path):
+        if ct == "multipart/form-data" and ("/upload" in path or "/resim" in path or "/icerik-resim" in path or "/kapak" in path):
             return await call_next(request)
         
         return JSONResponse(
