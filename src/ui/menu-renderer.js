@@ -15,6 +15,12 @@ const MENU_SLOTLARI = {
   'sidebar-menu': { kont: '#sidebar-menu-widget', render: renderSidebarItem },
 };
 
+const MENU_SLOTLARI_FALLBACK = {
+  'header-menu': ['header-menu', 'ana-menu'],
+  'footer-menu': ['footer-menu'],
+  'sidebar-menu': ['sidebar-menu'],
+};
+
 export async function renderMenus() {
   try {
     await Promise.all(Object.keys(MENU_SLOTLARI).map(renderSlot));
@@ -182,7 +188,12 @@ function itemHtmlTree(item, renderFn) {
 async function renderSlot(slug) {
   const cfg = MENU_SLOTLARI[slug];
   if (!cfg) return;
-  const menu = await fetchMenu(slug);
+  const candidates = MENU_SLOTLARI_FALLBACK[slug] || [slug];
+  let menu = null;
+  for (const candidate of candidates) {
+    menu = await fetchMenu(candidate);
+    if (menu && menu.length) break;
+  }
   if (!menu || !menu.length) return;
   const kont = document.querySelector(cfg.kont);
   if (!kont) return;
