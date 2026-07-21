@@ -43,19 +43,43 @@ function normalizeUrl(item) {
   return url;
 }
 
-function isActive(item) {
+function resolveTarget(item) {
   const url = normalizeUrl(item);
-  if (!url || url === '/') {
+  const lower = url.toLowerCase();
+  if (item.page_slug || item.hedef_page_id) {
+    return { kind: 'sayfa', slug: item.page_slug || lower.replace(/^\/sayfa\//, '').replace(/^#\/sayfa\//, '') };
+  }
+  if (item.hedef_tip === 'blog' || /blog-detay\//i.test(url)) {
+    const m = url.match(/blog-detay\/([^/?#]+)/i);
+    return { kind: 'blog-detay', slug: m ? decodeURIComponent(m[1]) : '' };
+  }
+  if (item.hedef_tip === 'portfoy' || /\/detay\/\d+/i.test(url)) {
+    const m = url.match(/detay\/(\d+)/i);
+    return { kind: 'detay', id: m ? Number(m[1]) : null };
+  }
+  if (lower === '/' || lower === 'anasayfa') return { kind: 'anasayfa' };
+  if (lower === '/#iletisim' || lower === '/iletisim' || lower === '#iletisim') {
+    return { kind: 'sayfa', slug: 'iletisim' };
+  }
+  if (lower === '/#blog' || lower === '/blog' || lower === '#blog') return { kind: 'blog' };
+  if (lower === '/#ilanlar' || lower === '/ilanlar' || lower === '#ilanlar') return { kind: 'ilanlar' };
+  if (/^https?:\/\//i.test(url)) return { kind: 'harici', url };
+  return { kind: 'ozel', url };
+}
+
+function isActive(item) {
+  const target = resolveTarget(item);
+  if (target.kind === 'anasayfa') {
     return window.location.hash === '' || window.location.hash === '#';
   }
-  // #ilanlar, #blog, #/sayfa/slug gibi hash'lerle karşılaştır
   const h = window.location.hash.replace(/^#/, '');
   const hmain = h.split('/')[0];
-  if (url.startsWith('/sayfa/')) {
-    const slug = url.replace('/sayfa/', '');
-    return h === `/sayfa/${slug}`;
-  }
-  return h === url || hmain === url || hmain === (url.replace(/^\//, ''));
+  if (target.kind === 'sayfa') return h === `/sayfa/${target.slug}`;
+  if (target.kind === 'blog-detay') return h.startsWith(`/blog-detay/${target.slug}`);
+  if (target.kind === 'detay') return h.startsWith(`/detay/${target.id}`);
+  if (target.kind === 'blog') return h === '/blog' || h === 'blog' || hmain === 'blog';
+  if (target.kind === 'ilanlar') return h === '/ilanlar' || h === 'ilanlar' || hmain === 'ilanlar';
+  return h === target.url || hmain === target.url || hmain === (target.url.replace(/^\//, ''));
 }
 
 function esc(s) {
@@ -74,17 +98,26 @@ function labelOf(item) {
 function renderHeaderItem(item, childHtml = '') {
   const label = labelOf(item);
   const url = normalizeUrl(item);
+  const target = resolveTarget(item);
   const aktif = isActive(item) ? ' aktif' : '';
   const harici = item.hedef_tip === 'harici' || /^https?:\/\//i.test(url);
 
   // Sayfa bağlantısı: #/sayfa/<slug>
-  if (!harici && url.startsWith('/sayfa/')) {
-    const slug = url.replace('/sayfa/', '');
+  if (target.kind === 'sayfa') {
+    const slug = target.slug;
     return `<a href="#/sayfa/${slug}" class="nav-link${aktif}" onclick="event.preventDefault();sayfaGit('sayfa',{slug:'${slug}'});">${label}</a>${childHtml}`;
   }
   // Anasayfa
-  if (!harici && (url === '/' || url === 'anasayfa')) {
+  if (target.kind === 'anasayfa') {
     return `<span class="nav-link${aktif}" data-sayfa="anasayfa" onclick="sayfaGit('anasayfa')">${label}</span>${childHtml}`;
+  }
+  if (target.kind === 'blog-detay') {
+    const slug = target.slug || '';
+    return `<a href="#/blog-detay/${slug}" class="nav-link${aktif}" onclick="event.preventDefault();sayfaGit('blog-detay',{slug:'${slug}'});">${label}</a>${childHtml}`;
+  }
+  if (target.kind === 'detay') {
+    const id = target.id || '';
+    return `<a href="#/detay/${id}" class="nav-link${aktif}" onclick="event.preventDefault();sayfaGit('detay',{id:${id}});">${label}</a>${childHtml}`;
   }
   // Bilinen SPA rotaları
   if (!harici) {
@@ -103,14 +136,23 @@ function renderHeaderItem(item, childHtml = '') {
 function renderFooterItem(item) {
   const label = labelOf(item);
   const url = normalizeUrl(item);
+  const target = resolveTarget(item);
   const harici = item.hedef_tip === 'harici' || /^https?:\/\//i.test(url);
   const style = 'color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;padding:.25rem 0;display:block';
-  if (!harici && url.startsWith('/sayfa/')) {
-    const slug = url.replace('/sayfa/', '');
+  if (target.kind === 'sayfa') {
+    const slug = target.slug;
     return `<a href="#/sayfa/${slug}" onclick="event.preventDefault();sayfaGit('sayfa',{slug:'${slug}'});" style="${style}">${label}</a>`;
   }
-  if (!harici && (url === '/' || url === 'anasayfa')) {
+  if (target.kind === 'anasayfa') {
     return `<a href="#" onclick="event.preventDefault();sayfaGit('anasayfa');" style="${style}">${label}</a>`;
+  }
+  if (target.kind === 'blog-detay') {
+    const slug = target.slug || '';
+    return `<a href="#/blog-detay/${slug}" onclick="event.preventDefault();sayfaGit('blog-detay',{slug:'${slug}'});" style="${style}">${label}</a>`;
+  }
+  if (target.kind === 'detay') {
+    const id = target.id || '';
+    return `<a href="#/detay/${id}" onclick="event.preventDefault();sayfaGit('detay',{id:${id}});" style="${style}">${label}</a>`;
   }
   if (!harici) {
     const known = { 'ilanlar':'ilanlar', 'blog':'blog' };

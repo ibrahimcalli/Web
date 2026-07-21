@@ -3458,11 +3458,11 @@ const MENU_TEMPLATES = [
     aciklama:'Ana Sayfa, İlanlar, Blog, İletişim — standart üst menü',
     ogeler:[
       {baslik:'Ana Sayfa', url:'/'}, {baslik:'İlanlar', url:'/#ilanlar'},
-      {baslik:'Blog', url:'/#blog'}, {baslik:'İletişim', url:'/#iletisim'},
+      {baslik:'Blog', url:'/#blog'}, {baslik:'İletişim', url:'/sayfa/iletisim'},
     ]},
   { id:'header-minimal', ad:'Minimal Header', ikon:'↗️', lok:'header',
     aciklama:'Sadece Ana Sayfa + İletişim — sade tasarım',
-    ogeler:[{baslik:'Ana Sayfa', url:'/'}, {baslik:'İletişim', url:'/#iletisim'}]},
+    ogeler:[{baslik:'Ana Sayfa', url:'/'}, {baslik:'İletişim', url:'/sayfa/iletisim'}]},
   { id:'footer-klasik', ad:'Klasik Footer', ikon:'📌', lok:'footer',
     aciklama:'Kurumsal + Hızlı Linkler + Gizlilik — alt bilgi menüsü',
     ogeler:[
@@ -3471,7 +3471,7 @@ const MENU_TEMPLATES = [
     ]},
   { id:'footer-minimal', ad:'Minimal Footer', ikon:'🔗', lok:'footer',
     aciklama:'İletişim + Sosyal Medya — sade alt menü',
-    ogeler:[{baslik:'İletişim', url:'/#iletisim'}, {baslik:'Blog', url:'/#blog'}]},
+    ogeler:[{baslik:'İletişim', url:'/sayfa/iletisim'}, {baslik:'Blog', url:'/#blog'}]},
   { id:'sidebar-dashboard', ad:'Panel Sidebar', ikon:'📊', lok:'sidebar',
     aciklama:'Admin paneli için: Dashboard, İstatistikler, Raporlar',
     ogeler:[
@@ -3486,6 +3486,97 @@ const MENU_TEMPLATES = [
       {baslik:'WhatsApp', url:'https://wa.me/', ikon:'💬'},
     ]},
 ];
+
+let _menuDuzenlemeId = null;
+let _menuOgeSecenekler = { sayfalar: [], bloglar: [], portfoyler: [] };
+
+function menuOgeSecenekleriKaydet(secenekler = {}) {
+  _menuOgeSecenekler = {
+    sayfalar: secenekler.sayfalar || [],
+    bloglar: secenekler.bloglar || [],
+    portfoyler: secenekler.portfoyler || [],
+  };
+}
+
+function menuOgeHedefAlanGuncelle(tip = 'ozel', secili = '') {
+  const alan = document.getElementById('ymo-hedef-alan');
+  if (!alan) return;
+  const sayfalar = _menuOgeSecenekler.sayfalar || [];
+  const bloglar = _menuOgeSecenekler.bloglar || [];
+  const portfoyler = _menuOgeSecenekler.portfoyler || [];
+
+  if (tip === 'sayfa') {
+    alan.innerHTML = `
+      <select id="ymo-hedef-sayfa" class="menu-yeni-select" style="flex:1;min-width:220px">
+        <option value="">Sayfa seçin…</option>
+        ${sayfalar.map(s => `<option value="${esc(s.id)}" ${String(s.id) === String(secili) ? 'selected' : ''}>${esc(s.baslik)} · /sayfa/${esc(s.slug)}</option>`).join('')}
+      </select>`;
+    return;
+  }
+  if (tip === 'blog') {
+    alan.innerHTML = `
+      <select id="ymo-hedef-blog" class="menu-yeni-select" style="flex:1;min-width:220px">
+        <option value="">Blog yazısı seçin…</option>
+        ${bloglar.map(b => `<option value="${esc(b.slug || b.id)}" ${String(b.slug || b.id) === String(secili) ? 'selected' : ''}>${esc(b.baslik)} · ${esc(b.slug || b.id)}</option>`).join('')}
+      </select>`;
+    return;
+  }
+  if (tip === 'portfoy') {
+    alan.innerHTML = `
+      <select id="ymo-hedef-portfoy" class="menu-yeni-select" style="flex:1;min-width:220px">
+        <option value="">Portföy seçin…</option>
+        ${portfoyler.map(p => `<option value="${esc(p.id)}" ${String(p.id) === String(secili) ? 'selected' : ''}>${esc(p.baslik)} · #${esc(p.id)}</option>`).join('')}
+      </select>`;
+    return;
+  }
+  alan.innerHTML = `<input id="ymo-url" placeholder="URL (/sayfa/iletisim, /#blog, https://...)" class="menu-yeni-input" style="flex:1;min-width:220px" value="${esc(secili || '')}">`;
+}
+
+function menuOgeFormuTemizle() {
+  _menuDuzenlemeId = null;
+  const btn = document.getElementById('ymo-kaydet-btn');
+  if (btn) btn.textContent = 'Ekle';
+  const iptal = document.getElementById('ymo-iptal-btn');
+  if (iptal) iptal.style.display = 'none';
+  ['ymo-baslik','ymo-ikon','ymo-parent','ymo-tip','ymo-sira'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id === 'ymo-parent') el.value = '';
+    else if (id === 'ymo-tip') el.value = 'ozel';
+    else if (id === 'ymo-sira') el.value = '0';
+    else el.value = '';
+  });
+  const aktif = document.getElementById('ymo-aktif');
+  if (aktif) aktif.checked = true;
+  menuOgeHedefAlanGuncelle('ozel', '');
+}
+
+function menuOgeHedefOku() {
+  const tip = document.getElementById('ymo-tip')?.value || 'ozel';
+  if (tip === 'sayfa') {
+    const id = document.getElementById('ymo-hedef-sayfa')?.value || '';
+    const s = (_menuOgeSecenekler.sayfalar || []).find(x => String(x.id) === String(id));
+    return {
+      hedef_tip: 'sayfa',
+      hedef_url: s ? `/sayfa/${s.slug}` : '',
+      hedef_page_id: s ? s.id : null,
+    };
+  }
+  if (tip === 'blog') {
+    const slug = document.getElementById('ymo-hedef-blog')?.value || '';
+    return { hedef_tip: 'blog', hedef_url: slug ? `/#blog-detay/${slug}` : '', hedef_page_id: null };
+  }
+  if (tip === 'portfoy') {
+    const id = document.getElementById('ymo-hedef-portfoy')?.value || '';
+    return { hedef_tip: 'portfoy', hedef_url: id ? `/#detay/${id}` : '', hedef_page_id: null };
+  }
+  const url = document.getElementById('ymo-url')?.value?.trim() || '';
+  return {
+    hedef_tip: /^https?:\/\//i.test(url) ? 'harici' : 'ozel',
+    hedef_url: url,
+    hedef_page_id: null,
+  };
+}
 
 function menuSablonGorsel(sablon, index) {
   return `<div class="menu-sablon-kart" onclick="menuSablonUygula(${index})">
@@ -3633,7 +3724,13 @@ async function adminMenuOgelr(menuId, menuSlug) {
   _aktifMenu = menuId;
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
-  const ogeler = await api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]);
+  const [ogeler, sayfalar, bloglar, portfoyler] = await Promise.all([
+    api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]),
+    api.request('/api/admin/sayfalar').catch(()=>[]),
+    api.request('/api/blog').catch(()=>[]),
+    api.request('/api/portfoyler?durum=').catch(()=>[]),
+  ]);
+  menuOgeSecenekleriKaydet({ sayfalar, bloglar, portfoyler });
 
   let html = '<div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">';
   html += `<button class="btn btn-sm btn-ntr" onclick="adminMenuler()" style="font-size:.8rem">← Menüler</button>`;
@@ -3642,14 +3739,23 @@ async function adminMenuOgelr(menuId, menuSlug) {
 
   // ── Hızlı Ekle ──────────────────────────────────────────────────────────
   html += '<div class="menu-oge-ekle-bar">';
-  html += '<input id="ymo-baslik" placeholder="Başlık (örn: Ana Sayfa)" class="menu-yeni-input" style="flex:1;min-width:120px">';
-  html += '<input id="ymo-url" placeholder="URL (/iletisim)" class="menu-yeni-input" style="flex:1;min-width:140px">';
+  html += '<input id="ymo-baslik" placeholder="Başlık (örn: İletişim)" class="menu-yeni-input" style="flex:1;min-width:120px">';
+  html += '<input id="ymo-ikon" placeholder="ikon (opsiyonel)" class="menu-yeni-input" style="width:140px;min-width:140px">';
+  html += '<select id="ymo-tip" class="menu-yeni-select" style="width:140px;min-width:140px" onchange="menuOgeHedefAlanGuncelle(this.value)">';
+  html += '<option value="ozel">Özel URL</option><option value="sayfa">CMS Sayfa</option><option value="blog">Blog Yazısı</option><option value="portfoy">Portföy</option>';
+  html += '</select>';
+  html += '<div id="ymo-hedef-alan" style="flex:1;min-width:220px"></div>';
   html += `<select id="ymo-parent" class="menu-yeni-select" style="max-width:120px"><option value="">— Üst Düzey —</option>`;
   if (ogeler) ogeler.forEach(o => {
     html += `<option value="${o.id}">${esc(o.baslik)}</option>`;
   });
   html += '</select>';
-  html += `<button class="btn btn-kirm btn-sm" onclick="menuOgeEkle(${menuId})">+ Ekle</button></div>`;
+  html += '<input id="ymo-sira" type="number" class="menu-yeni-input" style="width:90px;min-width:90px" value="0" min="0" title="Sıra">';
+  html += '<label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;white-space:nowrap"><input type="checkbox" id="ymo-aktif" checked> Aktif</label>';
+  html += `<button id="ymo-kaydet-btn" class="btn btn-kirm btn-sm" onclick="menuOgeEkle(${menuId})">+ Ekle</button>`;
+  html += `<button id="ymo-iptal-btn" class="btn btn-ntr btn-sm" onclick="menuOgeDuzenlemeIptal(${menuId})" style="display:none">İptal</button>`;
+  html += '</div>';
+  html += '<div style="font-size:.75rem;color:var(--gri-metin);margin-top:.5rem">İpucu: İletişim sayfası için <code>CMS Sayfa</code> seçip <code>iletisim</code> sayfasını seçin. Blog ve portföy için ilgili kayıtları seçin.</div>';
 
   if (ogeler && ogeler.length) {
     html += '<div class="menu-oge-liste">';
@@ -3670,10 +3776,14 @@ async function adminMenuOgelr(menuId, menuSlug) {
 
   html += '</div>'; // .menu-oge-editor
   ic.innerHTML = html;
+  menuOgeHedefAlanGuncelle('ozel', '');
 }
 
 function menuOgeKart(o, menuId, alt = false) {
   const lokIkon = o.ikon || (o.hedef_url?.startsWith('http') ? '🔗' : '📄');
+  const hedef = o.page_slug
+    ? `/sayfa/${o.page_slug}`
+    : (o.hedef_tip === 'blog' ? (o.hedef_url || 'blog-detay') : (o.hedef_tip === 'portfoy' ? (o.hedef_url || 'detay') : (o.hedef_url || o.hedef_tip || '—')));
   return `<div class="menu-oge-kart${alt?' menu-oge-alt':''}">
     <div class="menu-oge-kart-sira">
       <button class="btn btn-sm btn-ntr" onclick="menuOgeTasi(${o.id},${menuId},-1)" title="Yukarı">↑</button>
@@ -3683,7 +3793,7 @@ function menuOgeKart(o, menuId, alt = false) {
       <div class="menu-oge-kart-ikon">${lokIkon}</div>
       <div class="menu-oge-kart-bilgi">
         <div class="menu-oge-kart-baslik">${esc(o.baslik)}</div>
-        <div class="menu-oge-kart-url">${esc(o.hedef_url || o.hedef_tip || '—')}</div>
+        <div class="menu-oge-kart-url">${esc(hedef)}</div>
       </div>
     </div>
     <label class="menu-toggle-label"><input type="checkbox"${o.aktif?' checked':''} onchange="menuOgeAktifToggle(${o.id},${menuId},this.checked)"><span class="menu-toggle-kut"></span></label>
@@ -3699,15 +3809,27 @@ function menuOgeKart(o, menuId, alt = false) {
 window.menuOgeEkle = async function(menuId) {
   const baslik = document.getElementById('ymo-baslik')?.value?.trim();
   if (!baslik) return bildirim('Başlık gerekli','hata');
-  const url = document.getElementById('ymo-url')?.value?.trim() || '/';
+  const ikon = document.getElementById('ymo-ikon')?.value?.trim() || '';
   const parent = document.getElementById('ymo-parent')?.value;
-  const harici = url.startsWith('http');
+  const sira = parseInt(document.getElementById('ymo-sira')?.value || '0', 10) || 0;
+  const aktif = !!document.getElementById('ymo-aktif')?.checked;
+  const hedef = menuOgeHedefOku();
+  const payload = { menu_id: menuId, baslik, ikon, parent_id: parent || null, sira, aktif, ...hedef };
   try {
-    await api.request(`/api/admin/menuler/${menuId}/ogeler`, {
-      method:'POST',
-      body:JSON.stringify({menu_id:menuId, baslik, hedef_tip:harici?'harici':'dahili', hedef_url:url, parent_id:parent||null, sira:0, aktif:true}),
-    });
-    bildirim('Öğe eklendi ✅','basari');
+    if (_menuDuzenlemeId) {
+      await api.request(`/api/admin/menu-ogeleri/${_menuDuzenlemeId}`, {
+        method:'PUT',
+        body:JSON.stringify(payload),
+      });
+      bildirim('Öğe güncellendi ✅','basari');
+    } else {
+      await api.request(`/api/admin/menuler/${menuId}/ogeler`, {
+        method:'POST',
+        body:JSON.stringify(payload),
+      });
+      bildirim('Öğe eklendi ✅','basari');
+    }
+    menuOgeDuzenlemeIptal(menuId, true);
     adminMenuOgelr(menuId, '');
   } catch(e) { bildirim(e.message,'hata'); }
 };
@@ -3745,13 +3867,48 @@ window.menuOgeTasi = async function(itemId, menuId, yon) {
 };
 
 window.menuOgeDuzenle = async function(itemId, menuId) {
-  const yeniBaslik = prompt('Yeni başlık:');
-  if (!yeniBaslik) return;
   try {
-    await api.request(`/api/admin/menu-ogeleri/${itemId}`, { method:'PUT', body:JSON.stringify({baslik:yeniBaslik}) });
-    bildirim('Öğe güncellendi ✅','basari');
-    adminMenuOgelr(menuId, '');
+    const ogeler = await api.request(`/api/admin/menuler/${menuId}/ogeler`).catch(()=>[]);
+    const item = ogeler.find(o => o.id === itemId);
+    if (!item) return bildirim('Öğe bulunamadı','hata');
+    _menuDuzenlemeId = itemId;
+    document.getElementById('ymo-baslik').value = item.baslik || '';
+    document.getElementById('ymo-ikon').value = item.ikon || '';
+    document.getElementById('ymo-parent').value = item.parent_id || '';
+    document.getElementById('ymo-sira').value = item.sira ?? 0;
+    document.getElementById('ymo-aktif').checked = !!item.aktif;
+
+    let tip = 'ozel';
+    let secili = item.hedef_url || '';
+    if (item.hedef_page_id || item.page_slug) {
+      tip = 'sayfa';
+      secili = item.hedef_page_id || '';
+    } else if (item.hedef_tip === 'blog' || /blog-detay/i.test(item.hedef_url || '')) {
+      tip = 'blog';
+      secili = (item.hedef_url || '').match(/blog-detay\/([^/?#]+)/i)?.[1] || '';
+    } else if (item.hedef_tip === 'portfoy' || /\/detay\//i.test(item.hedef_url || '')) {
+      tip = 'portfoy';
+      secili = (item.hedef_url || '').match(/detay\/(\d+)/i)?.[1] || '';
+    } else if (/^https?:\/\//i.test(item.hedef_url || '')) {
+      tip = 'ozel';
+    }
+    document.getElementById('ymo-tip').value = tip;
+    menuOgeHedefAlanGuncelle(tip, secili);
+    const btn = document.getElementById('ymo-kaydet-btn');
+    if (btn) btn.textContent = 'Güncelle';
+    const iptal = document.getElementById('ymo-iptal-btn');
+    if (iptal) iptal.style.display = '';
+    document.getElementById('ymo-baslik')?.focus();
   } catch(e) { bildirim(e.message,'hata'); }
+};
+
+window.menuOgeDuzenlemeIptal = async function(menuId, sessiz = false) {
+  menuOgeFormuTemizle();
+  if (!sessiz) {
+    const btn = document.getElementById('ymo-kaydet-btn');
+    if (btn) btn.textContent = 'Ekle';
+    if (menuId) adminMenuOgelr(menuId, '');
+  }
 };
 
 // ── Sayfalar ─────────────────────────────────────────────────────────────────
