@@ -38,6 +38,12 @@ const WIDGET_RENDERERS = {
   },
   'link':            (w) => {
     const ay = parseAyarlar(w);
+    if (w.anahtar === 'whatsapp' && (w.konum === 'floating' || ay.konum === 'floating')) {
+      const num = ((ay && ay.sosyal_wa) || ay.telefon || '').replace(/[^0-9]/g,'');
+      if (!num) return '';
+      const mesaj = encodeURIComponent(`Merhaba, ${ay.site_adi || 'Portföy Gayrimenkul'} sitesinden ulaşıyorum.`);
+      return `<a href="https://wa.me/${num}?text=${mesaj}" target="_blank" rel="noopener" aria-label="WhatsApp ile iletişime geçin" class="wa-btn" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:998;display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:#25D366;color:#fff;font-size:1.4rem;text-decoration:none;box-shadow:0 4px 14px rgba(37,211,102,.5)">💬</a>`;
+    }
     const url = ay.url || wIcerik(w) || '#';
     const label = w.ad || ay.label || 'Bağlantı';
     return `<a href="${url}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--kiremit)">${label}</a>`;
