@@ -4678,10 +4678,20 @@ async function adminTema() {
 async function adminSablonlar() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
-  const [templates, bolumler] = await Promise.all([
+  const [templatesRes, bolumlerRes] = await Promise.allSettled([
     api.request('/api/admin/templates'),
     api.request('/api/template/homepage'),
   ]);
+  const templates = templatesRes.status === 'fulfilled' ? templatesRes.value : [];
+  let bolumler = bolumlerRes.status === 'fulfilled' ? bolumlerRes.value : [];
+  if (!Array.isArray(bolumler)) bolumler = [];
+  if (!bolumler.length && Array.isArray(templates) && templates.length) {
+    const varsayilan = templates.find(t => t.varsayilan) || templates.find(t => t.aktif);
+    if (varsayilan?.id) {
+      const fallback = await api.request(`/api/admin/templates/${varsayilan.id}/bolumler`).catch(() => []);
+      if (Array.isArray(fallback) && fallback.length) bolumler = fallback;
+    }
+  }
   let html = '<div class="admin-baslik">Şablonlar <span style="font-size:.8rem;font-weight:400;color:var(--gri-metin)">— Anasayfa Bölüm Yönetimi</span></div>';
 
   // Template kartları
@@ -4742,7 +4752,7 @@ async function adminSablonlar() {
     });
     html += '</div>';
   } else {
-    html += '<div class="bos-durum"><div class="bos-ikon">📐</div><h3>Henüz bölüm yok</h3></div>';
+    html += '<div class="bos-durum"><div class="bos-ikon">📐</div><h3>Henüz bölüm yok</h3><p>Varsayılan şablon için bölüm kaydı bulunamadı.</p></div>';
   }
   ic.innerHTML = html;
 }
