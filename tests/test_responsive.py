@@ -7,7 +7,19 @@ Responsive cross-device test — tüm cihazlarda görünürlük ve overflow anal
 import asyncio
 import json
 import time
-from playwright.async_api import async_playwright
+
+try:
+    import pytest
+except Exception:  # pragma: no cover - pytest dışı kullanım
+    pytest = None
+
+try:
+    from playwright.async_api import async_playwright
+except ModuleNotFoundError:  # pragma: no cover - ortamda opsiyonel bağımlılık
+    async_playwright = None
+
+if pytest is not None and __name__ != "__main__":  # pragma: no cover - pytest'te standalone test
+    pytestmark = pytest.mark.skip(reason="Standalone responsive script; pytest altında çalıştırılmıyor")
 
 # Test edilecek cihazlar
 DEVICES = [
@@ -222,6 +234,10 @@ async def test_device(playwright, name, width, height, ua):
 
 
 async def main():
+    if async_playwright is None:
+        print("playwright kurulu değil; responsive testi atlandı.")
+        return []
+
     print("=" * 78)
     print("RESPONSIVE CROSS-DEVICE TEST RAPORU")
     print("=" * 78)
