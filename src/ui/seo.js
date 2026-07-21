@@ -80,7 +80,7 @@
       "url": SITE_URL,
       "logo": SITE_URL + '/static/img/logo.png',
       "image": DEFAULT_OG_IMAGE,
-      "telephone": "+905429663636",
+      "telephone": "",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Fethiye",

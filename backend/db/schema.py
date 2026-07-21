@@ -341,7 +341,7 @@ def init_db(database: Database | None = None) -> None:
     defaults = {
         "site_adi": "Portföy Gayrimenkul",
         "site_slogan": "Fethiye'nin Güvenilir Gayrimenkul Danışmanı",
-        "telefon": "0542 966 36 36",
+        "telefon": "",
         "email": "bilgi@portfoygayrimenkul.com.tr",
         "adres": "Fethiye / Muğla",
         "web_sitesi": "portfoygayrimenkul.com.tr",

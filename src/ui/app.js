@@ -1771,9 +1771,12 @@ async function siteAyarlariUygula() {
         ${ay.telefon ? `<div class="panel-iletisim-satir">📞 <strong>${ay.telefon}</strong></div>` : ''}
         ${ay.email   ? `<div class="panel-iletisim-satir">✉️ ${ay.email}</div>` : ''}
         ${ay.sosyal_wa ? `<a href="https://wa.me/${(ay.sosyal_wa||'').replace(/[^0-9]/g,'')}" target="_blank"
-          style="display:inline-flex;align-items:center;gap:.4rem;margin-top:.4rem;padding:.4rem .9rem;
-                 border-radius:6px;background:#25D366;color:#fff;font-size:.82rem;font-weight:600;text-decoration:none;">
-          ${waIkon()} WhatsApp'tan Yaz
+          rel="noopener"
+          aria-label="WhatsApp ile iletişime geçin"
+          style="display:inline-flex;align-items:center;justify-content:center;margin-top:.4rem;width:2.2rem;height:2.2rem;
+                 border-radius:50%;background:#25D366;color:#fff;text-decoration:none;"
+          title="">
+          ${waIkon()}
         </a>` : ''}`;
     }
   });
