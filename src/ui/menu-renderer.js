@@ -49,6 +49,9 @@ function resolveTarget(item) {
   if (item.page_slug || item.hedef_page_id) {
     return { kind: 'sayfa', slug: item.page_slug || lower.replace(/^\/sayfa\//, '').replace(/^#\/sayfa\//, '') };
   }
+  if (lower.startsWith('/sayfa/') || lower.startsWith('#/sayfa/')) {
+    return { kind: 'sayfa', slug: lower.replace(/^#?\/sayfa\//, '').split(/[?#]/)[0] };
+  }
   if (item.hedef_tip === 'blog' || /blog-detay\//i.test(url)) {
     const m = url.match(/blog-detay\/([^/?#]+)/i);
     return { kind: 'blog-detay', slug: m ? decodeURIComponent(m[1]) : '' };

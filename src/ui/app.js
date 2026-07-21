@@ -3501,36 +3501,14 @@ function menuOgeSecenekleriKaydet(secenekler = {}) {
 function menuOgeHedefAlanGuncelle(tip = 'ozel', secili = '') {
   const alan = document.getElementById('ymo-hedef-alan');
   if (!alan) return;
-  const sayfalar = _menuOgeSecenekler.sayfalar || [];
-  const bloglar = _menuOgeSecenekler.bloglar || [];
-  const portfoyler = _menuOgeSecenekler.portfoyler || [];
-
-  if (tip === 'sayfa') {
-    alan.innerHTML = `
-      <select id="ymo-hedef-sayfa" class="menu-yeni-select" style="flex:1;min-width:220px">
-        <option value="">Sayfa seçin…</option>
-        ${sayfalar.map(s => `<option value="${esc(s.id)}" ${String(s.id) === String(secili) ? 'selected' : ''}>${esc(s.baslik)} · /sayfa/${esc(s.slug)}</option>`).join('')}
-      </select>`;
+  if (tip === 'sayfa' || tip === 'blog' || tip === 'portfoy') {
+    alan.innerHTML = menuHedefPanelOlustur(tip, secili);
+    menuHedefFiltrele('');
     return;
   }
-  if (tip === 'blog') {
-    alan.innerHTML = `
-      <select id="ymo-hedef-blog" class="menu-yeni-select" style="flex:1;min-width:220px">
-        <option value="">Blog yazısı seçin…</option>
-        ${bloglar.map(b => `<option value="${esc(b.slug || b.id)}" ${String(b.slug || b.id) === String(secili) ? 'selected' : ''}>${esc(b.baslik)} · ${esc(b.slug || b.id)}</option>`).join('')}
-      </select>`;
-    return;
-  }
-  if (tip === 'portfoy') {
-    alan.innerHTML = `
-      <select id="ymo-hedef-portfoy" class="menu-yeni-select" style="flex:1;min-width:220px">
-        <option value="">Portföy seçin…</option>
-        ${portfoyler.map(p => `<option value="${esc(p.id)}" ${String(p.id) === String(secili) ? 'selected' : ''}>${esc(p.baslik)} · #${esc(p.id)}</option>`).join('')}
-      </select>`;
-    return;
-  }
-  alan.innerHTML = `<input id="ymo-url" placeholder="URL (/sayfa/iletisim, /#blog, https://...)" class="menu-yeni-input" style="flex:1;min-width:220px" value="${esc(secili || '')}">`;
+  alan.innerHTML = `<input id="ymo-url" placeholder="Özel URL (/sayfa/iletisim, /#blog, https://...)" class="menu-yeni-input" style="flex:1;min-width:220px" value="${esc(secili || '')}">`;
 }
+window.menuOgeHedefAlanGuncelle = menuOgeHedefAlanGuncelle;
 
 function menuOgeFormuTemizle() {
   _menuDuzenlemeId = null;
@@ -3548,6 +3526,7 @@ function menuOgeFormuTemizle() {
   });
   const aktif = document.getElementById('ymo-aktif');
   if (aktif) aktif.checked = true;
+  menuIkonSec('');
   menuOgeHedefAlanGuncelle('ozel', '');
 }
 
@@ -3576,6 +3555,139 @@ function menuOgeHedefOku() {
     hedef_url: url,
     hedef_page_id: null,
   };
+}
+
+const MENU_IKON_PAKETI = [
+  { grup: 'Genel', ikonlar: ['🏠','📄','📌','📋','🔗','⭐','✨','💡','⚙️','🧭','📣','📢'] },
+  { grup: 'İletişim', ikonlar: ['📞','✉️','💬','🗨️','☎️','📬','📲','🧑‍💼'] },
+  { grup: 'Emlak', ikonlar: ['🏡','🏢','🏗️','🌿','🏘️','🏠','🗺️','📐','🪟','🔑'] },
+  { grup: 'Blog', ikonlar: ['✍️','📰','🖊️','📚','🧾','🗞️','📖','📝'] },
+  { grup: 'Sosyal', ikonlar: ['📸','👍','💬','💙','▶️','🌐','📷','🎬'] },
+  { grup: 'Yön', ikonlar: ['←','→','↑','↓','↗️','↘️','↔️','↕️'] },
+];
+
+function menuIkonFiltrele(q = '') {
+  const arama = String(q || '').trim().toLowerCase();
+  document.querySelectorAll('[data-menu-ikon]').forEach(btn => {
+    const metin = `${btn.dataset.menuIkon} ${btn.dataset.menuIkonGrup}`.toLowerCase();
+    btn.style.display = !arama || metin.includes(arama) ? '' : 'none';
+  });
+}
+window.menuIkonFiltrele = menuIkonFiltrele;
+
+window.menuIkonSec = function(ikon) {
+  const val = ikon || '';
+  const input = document.getElementById('ymo-ikon');
+  if (input) input.value = val;
+  const secili = document.getElementById('ymo-ikon-secili');
+  if (secili) secili.textContent = val || '—';
+  document.querySelectorAll('[data-menu-ikon]').forEach(btn => {
+    btn.classList.toggle('aktif', btn.dataset.menuIkon === val);
+  });
+};
+
+window.menuIkonTemizle = function() {
+  menuIkonSec('');
+};
+
+function menuIkonPanelOlustur(secili = '') {
+  const butonlar = MENU_IKON_PAKETI.map(g => `
+    <div style="grid-column:1/-1;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gri-metin);margin:.2rem 0 .15rem">${esc(g.grup)}</div>
+    ${g.ikonlar.map(ik => `
+      <button type="button"
+        data-menu-ikon="${esc(ik)}"
+        data-menu-ikon-grup="${esc(g.grup)}"
+        class="menu-ikon-btn${ik === secili ? ' aktif' : ''}"
+        onclick="menuIkonSec('${esc(ik)}')"
+        title="${esc(g.grup)} · ${esc(ik)}">${esc(ik)}</button>
+    `).join('')}
+  `).join('');
+  return `
+    <div class="menu-ikon-panel" style="border:1px solid var(--kumtasi);border-radius:var(--r-sm);padding:.7rem;background:var(--krem)">
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem">
+        <input id="ymo-ikon-arama" class="menu-yeni-input" style="flex:1;min-width:180px" placeholder="İkon ara..." oninput="menuIkonFiltrele(this.value)">
+        <input type="hidden" id="ymo-ikon" value="${esc(secili || '')}">
+        <div style="font-size:.78rem;color:var(--gri-metin)">Seçili: <strong id="ymo-ikon-secili">${secili ? esc(secili) : '—'}</strong></div>
+        <button class="btn btn-ntr btn-sm" type="button" onclick="menuIkonTemizle()">Temizle</button>
+      </div>
+      <div id="ymo-ikon-liste" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:.35rem;max-height:190px;overflow:auto">
+        ${butonlar}
+      </div>
+    </div>`;
+}
+
+function menuHedefSec(tip, value, label) {
+  const hidden = document.getElementById('ymo-hedef-value');
+  const seciliEtiket = document.getElementById('ymo-hedef-secili-label');
+  if (hidden) hidden.value = value || '';
+  if (seciliEtiket) seciliEtiket.textContent = label || '—';
+  document.querySelectorAll('[data-menu-hedef]').forEach(btn => {
+    btn.classList.toggle('aktif', btn.dataset.menuHedef === String(value || ''));
+  });
+  menuHedefFiltrele(document.getElementById('ymo-hedef-arama')?.value || '');
+}
+window.menuHedefSec = menuHedefSec;
+
+function menuHedefFiltrele(q = '') {
+  const arama = String(q || '').trim().toLowerCase();
+  document.querySelectorAll('[data-menu-hedef]').forEach(btn => {
+    const metin = `${btn.dataset.menuHedefLabel} ${btn.dataset.menuHedefTip}`.toLowerCase();
+    btn.style.display = !arama || metin.includes(arama) ? '' : 'none';
+  });
+}
+window.menuHedefFiltrele = menuHedefFiltrele;
+
+function menuHedefPanelOlustur(tip = 'sayfa', secili = '') {
+  const kaynak = tip === 'sayfa'
+    ? (_menuOgeSecenekler.sayfalar || []).map(s => ({
+        value: String(s.id),
+        baslik: s.baslik,
+        alt: `/sayfa/${s.slug}`,
+        tip: 'sayfa',
+      }))
+    : tip === 'blog'
+      ? (_menuOgeSecenekler.bloglar || []).map(b => ({
+          value: String(b.slug || b.id),
+          baslik: b.baslik,
+          alt: b.slug || String(b.id),
+          tip: 'blog',
+        }))
+      : (_menuOgeSecenekler.portfoyler || []).map(p => ({
+          value: String(p.id),
+          baslik: p.baslik,
+          alt: `#${p.id}`,
+          tip: 'portfoy',
+        }));
+
+  const selected = kaynak.find(k => String(k.value) === String(secili)) || null;
+  const seciliEtiket = selected ? `${selected.baslik} · ${selected.alt}` : '—';
+  const rowlar = kaynak.length
+    ? kaynak.map(k => `
+        <button type="button"
+          data-menu-hedef="${esc(k.value)}"
+          data-menu-hedef-label="${esc(k.baslik)} ${esc(k.alt)}"
+          data-menu-hedef-tip="${esc(k.tip)}"
+          class="menu-hedef-kart${String(k.value) === String(secili) ? ' aktif' : ''}"
+          onclick="menuHedefSec('${esc(k.tip)}','${esc(k.value)}','${esc(k.baslik)} · ${esc(k.alt)}')">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
+            <strong style="font-size:.86rem;word-break:break-word">${esc(k.baslik)}</strong>
+            <span style="font-size:.7rem;color:var(--gri-metin);flex-shrink:0">${esc(k.alt)}</span>
+          </div>
+        </button>
+      `).join('')
+    : `<div class="bos-durum" style="margin:0;padding:1rem"><div class="bos-ikon">📭</div><h3>Liste boş</h3><p>Önce içerik oluşturun.</p></div>`;
+
+  return `
+    <div class="menu-hedef-panel" style="border:1px solid var(--kumtasi);border-radius:var(--r-sm);padding:.7rem;background:var(--krem)">
+      <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem">
+        <input id="ymo-hedef-arama" class="menu-yeni-input" style="flex:1;min-width:180px" placeholder="Ara..." oninput="menuHedefFiltrele(this.value)">
+        <div style="font-size:.78rem;color:var(--gri-metin)">Seçili: <strong id="ymo-hedef-secili-label">${esc(seciliEtiket)}</strong></div>
+        <input type="hidden" id="ymo-hedef-value" value="${esc(secili || '')}">
+      </div>
+      <div id="ymo-hedef-liste" style="display:grid;gap:.45rem;max-height:220px;overflow:auto">
+        ${rowlar}
+      </div>
+    </div>`;
 }
 
 function menuSablonGorsel(sablon, index) {
@@ -3740,11 +3852,11 @@ async function adminMenuOgelr(menuId, menuSlug) {
   // ── Hızlı Ekle ──────────────────────────────────────────────────────────
   html += '<div class="menu-oge-ekle-bar">';
   html += '<input id="ymo-baslik" placeholder="Başlık (örn: İletişim)" class="menu-yeni-input" style="flex:1;min-width:120px">';
-  html += '<input id="ymo-ikon" placeholder="ikon (opsiyonel)" class="menu-yeni-input" style="width:140px;min-width:140px">';
-  html += '<select id="ymo-tip" class="menu-yeni-select" style="width:140px;min-width:140px" onchange="menuOgeHedefAlanGuncelle(this.value)">';
+  html += '<div id="ymo-ikon-alan" style="min-width:280px;flex:1">' + menuIkonPanelOlustur('') + '</div>';
+  html += '<select id="ymo-tip" class="menu-yeni-select" style="width:160px;min-width:160px" onchange="menuOgeHedefAlanGuncelle(this.value)">';
   html += '<option value="ozel">Özel URL</option><option value="sayfa">CMS Sayfa</option><option value="blog">Blog Yazısı</option><option value="portfoy">Portföy</option>';
   html += '</select>';
-  html += '<div id="ymo-hedef-alan" style="flex:1;min-width:220px"></div>';
+  html += '<div id="ymo-hedef-alan" style="flex:1;min-width:260px"></div>';
   html += `<select id="ymo-parent" class="menu-yeni-select" style="max-width:120px"><option value="">— Üst Düzey —</option>`;
   if (ogeler) ogeler.forEach(o => {
     html += `<option value="${o.id}">${esc(o.baslik)}</option>`;
@@ -3755,7 +3867,7 @@ async function adminMenuOgelr(menuId, menuSlug) {
   html += `<button id="ymo-kaydet-btn" class="btn btn-kirm btn-sm" onclick="menuOgeEkle(${menuId})">+ Ekle</button>`;
   html += `<button id="ymo-iptal-btn" class="btn btn-ntr btn-sm" onclick="menuOgeDuzenlemeIptal(${menuId})" style="display:none">İptal</button>`;
   html += '</div>';
-  html += '<div style="font-size:.75rem;color:var(--gri-metin);margin-top:.5rem">İpucu: İletişim sayfası için <code>CMS Sayfa</code> seçip <code>iletisim</code> sayfasını seçin. Blog ve portföy için ilgili kayıtları seçin.</div>';
+  html += '<div style="font-size:.75rem;color:var(--gri-metin);margin-top:.5rem">İpucu: CMS sayfa, blog ve portföy seçimleri aşağıdaki iç listeden yapılır. İkonu üstteki paketlerden seçin.</div>';
 
   if (ogeler && ogeler.length) {
     html += '<div class="menu-oge-liste">';
@@ -3776,6 +3888,7 @@ async function adminMenuOgelr(menuId, menuSlug) {
 
   html += '</div>'; // .menu-oge-editor
   ic.innerHTML = html;
+  menuIkonSec('');
   menuOgeHedefAlanGuncelle('ozel', '');
 }
 
@@ -3873,16 +3986,19 @@ window.menuOgeDuzenle = async function(itemId, menuId) {
     if (!item) return bildirim('Öğe bulunamadı','hata');
     _menuDuzenlemeId = itemId;
     document.getElementById('ymo-baslik').value = item.baslik || '';
-    document.getElementById('ymo-ikon').value = item.ikon || '';
     document.getElementById('ymo-parent').value = item.parent_id || '';
     document.getElementById('ymo-sira').value = item.sira ?? 0;
     document.getElementById('ymo-aktif').checked = !!item.aktif;
+    menuIkonSec(item.ikon || '');
 
     let tip = 'ozel';
     let secili = item.hedef_url || '';
-    if (item.hedef_page_id || item.page_slug) {
+    if (item.hedef_page_id || item.page_slug || /^\/?#?\/sayfa\//i.test(item.hedef_url || '')) {
       tip = 'sayfa';
-      secili = item.hedef_page_id || '';
+      const sayfa = (_menuOgeSecenekler.sayfalar || []).find(s =>
+        String(s.id) === String(item.hedef_page_id) || String(s.slug) === String(item.page_slug)
+      ) || (_menuOgeSecenekler.sayfalar || []).find(s => String(s.slug) === String((item.hedef_url || '').replace(/^#?\/sayfa\//i, '').split(/[?#]/)[0]));
+      secili = sayfa ? String(sayfa.id) : String(item.hedef_page_id || '');
     } else if (item.hedef_tip === 'blog' || /blog-detay/i.test(item.hedef_url || '')) {
       tip = 'blog';
       secili = (item.hedef_url || '').match(/blog-detay\/([^/?#]+)/i)?.[1] || '';
