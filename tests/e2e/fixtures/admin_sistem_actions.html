@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <!-- admin-sistem.js'in ürettiği gerçek buton pattern'leri (sabit örnekler) -->
+
+  <!-- 1) data-action + data-action-args (sistemLogYukle('error') gibi) -->
+  <button class="btn btn-sm" data-action="sistemLogYukle" data-action-args="[&quot;error&quot;]">error.log</button>
+
+  <!-- 2) data-action, argümansız (sistemTest() gibi) -->
+  <button class="btn btn-ntr btn-sm" data-action="sistemAiTanilamaIndir">⬇ İndir (JSON)</button>
+
+  <!-- 3) data-copy-text (statik metin kopyalama) -->
+  <button class="btn btn-sm btn-ntr" data-copy-text="git pull &amp;&amp; echo test" data-copy-feedback="✓" data-copy-delay="300">📋</button>
+
+  <!-- 4) data-copy-target (bir elementin textContent'ini kopyalama) -->
+  <pre id="ai-json">{"ornek": "veri"}</pre>
+  <button class="btn btn-kirm btn-sm" data-copy-target="ai-json" data-copy-feedback="✅ Kopyalandı" data-copy-delay="300">📋 Panoya Kopyala</button>
+
+  <script src="/src/ui/admin-sistem.js"></script>
+  <script>
+    // Gerçek fonksiyonlar network/DOM (#admin-ic) beklediği için test ortamında
+    // stub'luyoruz — SADECE bu 2 fonksiyonu, delegated listener'ın (data-action
+    // dispatch mekanizmasının) kendisini test ediyoruz, iş mantığını değil.
+    window.__cagrilar = [];
+    window.sistemLogYukle = function(...args) { window.__cagrilar.push({ fn: 'sistemLogYukle', args }); };
+    window.sistemAiTanilamaIndir = function(...args) { window.__cagrilar.push({ fn: 'sistemAiTanilamaIndir', args }); };
+  </script>
+</body>
+</html>

@@ -93,7 +93,7 @@ async function sistemLogYukle(tip = 'app') {
     try {
         const data = await sistemGet(`/api/sistem/log/${tip}?satir=200`);
         const icerik = data.data.icerik || '(boş)';
-        const secim = ['app', 'error', 'access', 'deploy'].map(t => `<button class="btn btn-sm ${tip === t ? 'btn-kirm' : 'btn-ntr'}" onclick="sistemLogYukle('${t}')">${t}.log</button>`).join(' ');
+        const secim = ['app', 'error', 'access', 'deploy'].map(t => `<button class="btn btn-sm ${tip === t ? 'btn-kirm' : 'btn-ntr'}" data-action="sistemLogYukle" data-action-args="[${JSON.stringify(t).replace(/"/g,'&quot;')}]">${t}.log</button>`).join(' ');
         kont.innerHTML = `<div style="margin-bottom:1rem"><h2 style="margin-bottom:0.5rem">📋 Log Görüntüle</h2><div style="display:flex;gap:0.4rem;flex-wrap:wrap">${secim}</div></div><pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:6px;font-size:0.78rem;overflow:auto;max-height:70vh;white-space:pre-wrap;word-break:break-all">${escHtml(icerik)}</pre>`;
     } catch (e) { sistemHataGoster(kont, e.message); }
 }
@@ -111,7 +111,7 @@ async function sistemKomutlar() {
                 html += `<div class="komut-satir" style="display:flex;align-items:center;gap:0.5rem;background:var(--krem);padding:0.5rem 0.75rem;border-radius:6px;border:1px solid var(--kumtasi)">
                     <span style="flex:1;font-size:0.82rem">${cmd.aciklama}</span>
                     <code style="font-size:0.75rem;background:rgba(0,0,0,0.06);padding:0.2rem 0.5rem;border-radius:4px;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(cmd.komut)}</code>
-                    <button class="btn btn-sm btn-ntr" onclick="navigator.clipboard.writeText('${escHtml(cmd.komut).replace(/'/g, "\\'")}');this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)">📋</button>
+                    <button class="btn btn-sm btn-ntr" data-copy-text="${escHtml(cmd.komut)}" data-copy-feedback="✓" data-copy-delay="1500">📋</button>
                 </div>`;
             }
             html += '</div></div>';
@@ -137,7 +137,7 @@ async function sistemTest() {
                 <pre style="font-size:0.72rem;padding:0.5rem 0.75rem;background:#1a1a2e;color:#e0e0e0;overflow:auto;max-height:400px;white-space:pre-wrap;word-break:break-all;margin:0">${escHtml(res.cikti || '(çıktı yok)')}</pre>
             </div>`;
         }
-        html += `<div style="margin-top:1rem"><button class="btn btn-ntr btn-sm" onclick="sistemTest()">🔄 Tekrar Çalıştır</button></div>`;
+        html += `<div style="margin-top:1rem"><button class="btn btn-ntr btn-sm" data-action="sistemTest">🔄 Tekrar Çalıştır</button></div>`;
         kont.innerHTML = html;
     } catch (e) { sistemHataGoster(kont, e.message); }
 }
@@ -155,7 +155,7 @@ async function sistemBakim() {
                 <div style="font-size:0.82rem;color:var(--gri-metin);flex:1">${isl.aciklama}</div>
                 <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem">
                     <span style="font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:12px;background:${isl.risk === 'düşük' ? 'var(--zeytun-a)' : 'var(--kiremit-a)'};color:${isl.risk === 'düşük' ? 'var(--zeytun)' : 'var(--kiremit-k)'}">${isl.risk}</span>
-                    <button class="btn btn-kirm btn-sm" onclick="sistemBakimCalistir('${isl.id}')">▶ Çalıştır</button>
+                    <button class="btn btn-kirm btn-sm" data-action="sistemBakimCalistir" data-action-args="[${JSON.stringify(String(isl.id)).replace(/"/g,'&quot;')}]">▶ Çalıştır</button>
                 </div>
             </div>`;
         }
@@ -188,8 +188,8 @@ async function sistemAiTanilama() {
         kont.innerHTML = `<h2 style="margin-bottom:0.5rem">🤖 AI Tanılama</h2>
             <div style="font-size:0.82rem;color:var(--gri-metin);margin-bottom:1rem">Tüm sistem bilgisi tek JSON'da. Kopyalayıp AI'ya yapıştırabilirsiniz.</div>
             <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">
-                <button class="btn btn-kirm btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('ai-json').textContent);this.textContent='✅ Kopyalandı';setTimeout(()=>this.textContent='📋 Panoya Kopyala',2000)">📋 Panoya Kopyala</button>
-                <button class="btn btn-ntr btn-sm" onclick="sistemAiTanilamaIndir()">⬇ İndir (JSON)</button>
+                <button class="btn btn-kirm btn-sm" data-copy-target="ai-json" data-copy-feedback="✅ Kopyalandı" data-copy-delay="2000">📋 Panoya Kopyala</button>
+                <button class="btn btn-ntr btn-sm" data-action="sistemAiTanilamaIndir">⬇ İndir (JSON)</button>
             </div>
             <pre id="ai-json" style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:6px;font-size:0.72rem;overflow:auto;max-height:70vh;white-space:pre-wrap;word-break:break-all">${escHtml(jsonStr)}</pre>`;
     } catch (e) { kont.innerHTML = '<div class="hata">Bağlantı hatası: ' + e.message + '</div>'; }
@@ -216,7 +216,7 @@ async function sistemKilavuz() {
             <p style="font-size:0.85rem;color:var(--gri-metin);margin-bottom:0.5rem">En son kodu production'a yayınlamak için:</p>
             <div class="komut-satir" style="display:flex;align-items:center;gap:0.5rem;background:var(--krem);padding:0.5rem 0.75rem;border-radius:6px;border:1px solid var(--kumtasi);max-width:500px">
                 <code style="font-size:0.78rem;flex:1">git pull && python3 build_release.py && sudo systemctl restart emlak-api</code>
-                <button class="btn btn-sm btn-ntr" onclick="navigator.clipboard.writeText('git pull && python3 build_release.py && sudo systemctl restart emlak-api');this.textContent='✓';setTimeout(()=>this.textContent='📋',1500)">📋</button>
+                <button class="btn btn-sm btn-ntr" data-copy-text="git pull &amp;&amp; python3 build_release.py &amp;&amp; sudo systemctl restart emlak-api" data-copy-feedback="✓" data-copy-delay="1500">📋</button>
             </div>
         </div>
 
@@ -305,3 +305,38 @@ window.sistemTest = sistemTest;
 window.sistemBakim = sistemBakim;
 
 console.log('Admin Sistem modülü yüklendi ✅');
+
+// Delegated click handler'lar — onclick="" attribute'ları yerine (CSP uyumu için)
+document.addEventListener('click', function(e) {
+    // 1) Genel fonksiyon çağrısı: data-action="fnAdi" data-action-args='[...]'
+    const actionEl = e.target.closest('[data-action]');
+    if (actionEl) {
+        const fnAdi = actionEl.getAttribute('data-action');
+        const argsRaw = actionEl.getAttribute('data-action-args');
+        let args = [];
+        if (argsRaw) {
+            try { args = JSON.parse(argsRaw); } catch { args = []; }
+        }
+        const fn = window[fnAdi];
+        if (typeof fn === 'function') fn.apply(actionEl, args);
+        return;
+    }
+
+    // 2) Panoya kopyala + geçici geri bildirim: data-copy-text="..." VEYA
+    //    data-copy-target="elementId" (o elementin textContent'ini kopyalar)
+    const copyEl = e.target.closest('[data-copy-text], [data-copy-target]');
+    if (copyEl) {
+        let metin = copyEl.getAttribute('data-copy-text');
+        if (metin === null) {
+            const hedefId = copyEl.getAttribute('data-copy-target');
+            const hedef = hedefId && document.getElementById(hedefId);
+            metin = hedef ? hedef.textContent : '';
+        }
+        navigator.clipboard.writeText(metin || '');
+        const orijinalMetin = copyEl.textContent;
+        const gosterilecek = copyEl.getAttribute('data-copy-feedback') || '✓';
+        const gecikme = parseInt(copyEl.getAttribute('data-copy-delay') || '1500', 10);
+        copyEl.textContent = gosterilecek;
+        setTimeout(() => { copyEl.textContent = orijinalMetin; }, gecikme);
+    }
+});
