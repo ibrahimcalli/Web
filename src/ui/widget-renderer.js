@@ -56,7 +56,7 @@ const WIDGET_RENDERERS = {
     </form>`,
   'cookie-banner':   (w) => `<div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
       <span>${wIcerik(w) || 'Bu site çerez kullanmaktadır.'}</span>
-      <button class="btn btn-kirm btn-sm" onclick="this.closest('[data-widget-container]').remove();document.cookie='cookie_ok=1;path=/;max-age=31536000';">Tamam</button>
+      <button class="btn btn-kirm btn-sm" data-widget-action="cerez-onayla">Tamam</button>
     </div>`,
   'social-bar':      (w, ay) => {
     const items = [];
@@ -222,4 +222,13 @@ if (typeof window !== 'undefined') {
   else renderWidgets();
   // Sayfa geçişlerinde widget'ları yeniden bağla
   window.addEventListener('hashchange', () => renderWidgets());
+
+  // Delegated click: onclick="" attribute yerine (CSP uyumu için)
+  document.addEventListener('click', function(e) {
+    const el = e.target.closest('[data-widget-action="cerez-onayla"]');
+    if (!el) return;
+    const container = el.closest('[data-widget-container]');
+    if (container) container.remove();
+    document.cookie = 'cookie_ok=1;path=/;max-age=31536000';
+  });
 }
