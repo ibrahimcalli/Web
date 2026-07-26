@@ -899,75 +899,7 @@ img{max-width:100%;height:auto}
 <script src="/src/ui/admin-sistem.js"></script>
 
 <!-- Hamburger Menü + Admin Sidebar Toggle + Tablo data-label (mevcut JS'i etkilemez) -->
-<script>
-// Hamburger toggle (mobil menü aç/kapat)
-(function() {
-  var ham = document.getElementById('nav-hamburger');
-  var panel = document.getElementById('nav-mobil-panel');
-  if (!ham || !panel) return;
-  function toggle() {
-    ham.classList.toggle('aktif');
-    panel.classList.toggle('aktif');
-    var acik = panel.classList.contains('aktif');
-    ham.setAttribute('aria-expanded', acik ? 'true' : 'false');
-  }
-  ham.addEventListener('click', toggle);
-  // Menü dışına tıklayınca kapat
-  document.addEventListener('click', function(e) {
-    if (!ham.contains(e.target) && !panel.contains(e.target)) {
-      ham.classList.remove('aktif');
-      panel.classList.remove('aktif');
-      ham.setAttribute('aria-expanded', 'false');
-    }
-  });
-  // Sayfa geçişinde kapat (mevcut sayfaGit fonksiyonu sırasında otomatik kapanmazsa diye)
-  window.navMobilKapat = function() {
-    ham.classList.remove('aktif');
-    panel.classList.remove('aktif');
-    ham.setAttribute('aria-expanded', 'false');
-  };
-})();
-
-// Admin sidebar mobil toggle (mevcut fonksiyonları bozmaz)
-// DOMContentLoaded sonrası: admin sayfasındaki sidebar için toggle butonu enjekte edilir
-document.addEventListener('DOMContentLoaded', function() {
-  // Admin sidebar varsa, mobilde aç/kapat butonu ekle
-  var sidebar = document.querySelector('.admin-sidebar');
-  if (!sidebar) return;
-  // Mobil toggle butonu ekle (sadece <=1023px görünür)
-  var tog = document.createElement('div');
-  tog.className = 'admin-mobil-tog';
-  tog.innerHTML = '☰ Yönetim Menüsü';
-  tog.setAttribute('role', 'button');
-  tog.setAttribute('tabindex', '0');
-  sidebar.parentNode.insertBefore(tog, sidebar);
-  // Sidebar'a açılır sınıf ekle
-  sidebar.classList.add('admin-mobil-panel');
-  function adminToggle() {
-    sidebar.classList.toggle('aktif');
-  }
-  tog.addEventListener('click', adminToggle);
-  tog.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); adminToggle(); }
-  });
-});
-
-// Akgilli tablo: her td'ye data-label ekle (mobilde kart için)
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('table.tablo').forEach(function(tablo) {
-    var basliklar = [];
-    tablo.querySelectorAll('thead th').forEach(function(th) {
-      basliklar.push(th.textContent.trim());
-    });
-    tablo.querySelectorAll('tbody tr').forEach(function(tr) {
-      tr.querySelectorAll('td').forEach(function(td, i) {
-        if (!td.getAttribute('data-label') && basliklar[i]) {
-          td.setAttribute('data-label', basliklar[i]);
-        }
-      });
-    });
-  });
-});
-</script>
+<!-- CSP uyumu için nav-toggle.js dosyasına taşındı, davranış aynı -->
+<script src="/src/ui/nav-toggle.js"></script>
 </body>
 </html>
