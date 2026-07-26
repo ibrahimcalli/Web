@@ -50,6 +50,15 @@ from typing import List, Optional
 # BASE_DIR: repo kökü (settings.py'nin 3 üstü)
 BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
+# ─── .env dosyasını otomatik yükle ───────────────────────────────────────────
+# Proje kökünde .env varsa, içindeki değişkenleri os.environ'a yükler.
+# .env dosyası .gitignore'da olduğu için repoya gitmez, sadece bu sunucuda kalır.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env")
+except ImportError:
+    pass  # python-dotenv kurulu değilse env değişkenleri normal shell'den okunur
+
 
 def _env_str(key: str, default: str = "") -> str:
     return os.environ.get(key, default).strip()
@@ -112,6 +121,13 @@ class Settings:
     # production'da JWT_SECRET set edildiğinden emin olun.
     if not JWT_SECRET:
         JWT_SECRET = "emlak-gizli-anahtar-2026-degistir"
+        print(
+            "\n"
+            "!!! UYARI: JWT_SECRET ortam değişkeni bulunamadı, GÜVENSİZ varsayılan\n"
+            "!!! anahtar kullanılıyor. Proje kökünde bir .env dosyası oluşturup\n"
+            "!!! JWT_SECRET=<uretilen_anahtar> satırını ekleyin.\n"
+            "!!! Anahtar üretmek için: python3 -c \"import secrets; print(secrets.token_hex(32))\"\n"
+        )
     JWT_ALGORITHM: str = _env_str("JWT_ALGORITHM", "HS256")
     JWT_EXPIRE_MINUTES: int = _env_int("JWT_EXPIRE_MINUTES", 60 * 24)
 
