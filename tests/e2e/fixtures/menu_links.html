@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+  <script>
+    // sayfaGit'i gerçek app.js yüklenmeden stub'luyoruz — çağrıları yakalamak için
+    window.__sayfaGitCagrilari = [];
+    window.sayfaGit = function(sayfa, params) {
+      window.__sayfaGitCagrilari.push({ sayfa, params });
+    };
+  </script>
+
+  <!-- renderHeaderItem'ın 'sayfa' target için ürettiği HTML (slug'da tırnak karakteri VAR — escape testini de kapsıyor) -->
+  <a href="#/sayfa/hakkimizda" class="nav-link" data-sayfa-git="sayfa" data-sayfa-params="{&quot;slug&quot;:&quot;hakkimizda&quot;}">Hakkımızda</a>
+
+  <!-- renderHeaderItem'ın 'anasayfa' target için ürettiği HTML (span, href yok) -->
+  <span class="nav-link" data-sayfa="anasayfa" data-sayfa-git="anasayfa">Anasayfa</span>
+
+  <!-- renderHeaderItem'ın 'detay' target için ürettiği HTML (id sayısal) -->
+  <a href="#/detay/42" class="nav-link" data-sayfa-git="detay" data-sayfa-params="{&quot;id&quot;:42}">İlan Detay</a>
+
+  <script type="module" src="/src/ui/menu-renderer.js"></script>
+</body>
+</html>

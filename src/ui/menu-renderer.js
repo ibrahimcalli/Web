@@ -103,6 +103,15 @@ function labelOf(item) {
   return label;
 }
 
+// onclick="sayfaGit(...)" yerine güvenli data-* attribute üretir (CSP uyumu için).
+// Delegated listener (bu dosyanın altında) tıklamayı yakalayıp sayfaGit'i çağırır.
+function sayfaGitAttrs(sayfa, params) {
+  const sayfaAttr = esc(sayfa);
+  if (params === undefined) return `data-sayfa-git="${sayfaAttr}"`;
+  const paramsJson = esc(JSON.stringify(params));
+  return `data-sayfa-git="${sayfaAttr}" data-sayfa-params="${paramsJson}"`;
+}
+
 // Header için tek öğe HTML (alt menü destekli)
 function renderHeaderItem(item, childHtml = '') {
   const label = labelOf(item);
@@ -114,26 +123,26 @@ function renderHeaderItem(item, childHtml = '') {
   // Sayfa bağlantısı: #/sayfa/<slug>
   if (target.kind === 'sayfa') {
     const slug = target.slug;
-    return `<a href="#/sayfa/${slug}" class="nav-link${aktif}" onclick="event.preventDefault();sayfaGit('sayfa',{slug:'${slug}'});">${label}</a>${childHtml}`;
+    return `<a href="#/sayfa/${slug}" class="nav-link${aktif}" ${sayfaGitAttrs('sayfa', {slug})}>${label}</a>${childHtml}`;
   }
   // Anasayfa
   if (target.kind === 'anasayfa') {
-    return `<span class="nav-link${aktif}" data-sayfa="anasayfa" onclick="sayfaGit('anasayfa')">${label}</span>${childHtml}`;
+    return `<span class="nav-link${aktif}" data-sayfa="anasayfa" ${sayfaGitAttrs('anasayfa')}>${label}</span>${childHtml}`;
   }
   if (target.kind === 'blog-detay') {
     const slug = target.slug || '';
-    return `<a href="#/blog-detay/${slug}" class="nav-link${aktif}" onclick="event.preventDefault();sayfaGit('blog-detay',{slug:'${slug}'});">${label}</a>${childHtml}`;
+    return `<a href="#/blog-detay/${slug}" class="nav-link${aktif}" ${sayfaGitAttrs('blog-detay', {slug})}>${label}</a>${childHtml}`;
   }
   if (target.kind === 'detay') {
     const id = target.id || '';
-    return `<a href="#/detay/${id}" class="nav-link${aktif}" onclick="event.preventDefault();sayfaGit('detay',{id:${id}});">${label}</a>${childHtml}`;
+    return `<a href="#/detay/${id}" class="nav-link${aktif}" ${sayfaGitAttrs('detay', {id})}>${label}</a>${childHtml}`;
   }
   // Bilinen SPA rotaları
   if (!harici) {
     const known = { 'ilanlar':'ilanlar', 'blog':'blog', 'detay':'detay' };
     const key = url.replace(/^\//, '');
     if (known[key]) {
-      return `<span class="nav-link${aktif}" data-sayfa="${known[key]}" onclick="sayfaGit('${known[key]}')">${label}</span>${childHtml}`;
+      return `<span class="nav-link${aktif}" data-sayfa="${known[key]}" ${sayfaGitAttrs(known[key])}>${label}</span>${childHtml}`;
     }
   }
   // Dış link
@@ -150,24 +159,24 @@ function renderFooterItem(item) {
   const style = 'color:rgba(255,255,255,.7);text-decoration:none;font-size:.85rem;padding:.25rem 0;display:block';
   if (target.kind === 'sayfa') {
     const slug = target.slug;
-    return `<a href="#/sayfa/${slug}" onclick="event.preventDefault();sayfaGit('sayfa',{slug:'${slug}'});" style="${style}">${label}</a>`;
+    return `<a href="#/sayfa/${slug}" ${sayfaGitAttrs('sayfa', {slug})} style="${style}">${label}</a>`;
   }
   if (target.kind === 'anasayfa') {
-    return `<a href="#" onclick="event.preventDefault();sayfaGit('anasayfa');" style="${style}">${label}</a>`;
+    return `<a href="#" ${sayfaGitAttrs('anasayfa')} style="${style}">${label}</a>`;
   }
   if (target.kind === 'blog-detay') {
     const slug = target.slug || '';
-    return `<a href="#/blog-detay/${slug}" onclick="event.preventDefault();sayfaGit('blog-detay',{slug:'${slug}'});" style="${style}">${label}</a>`;
+    return `<a href="#/blog-detay/${slug}" ${sayfaGitAttrs('blog-detay', {slug})} style="${style}">${label}</a>`;
   }
   if (target.kind === 'detay') {
     const id = target.id || '';
-    return `<a href="#/detay/${id}" onclick="event.preventDefault();sayfaGit('detay',{id:${id}});" style="${style}">${label}</a>`;
+    return `<a href="#/detay/${id}" ${sayfaGitAttrs('detay', {id})} style="${style}">${label}</a>`;
   }
   if (!harici) {
     const known = { 'ilanlar':'ilanlar', 'blog':'blog' };
     const key = url.replace(/^\//, '');
     if (known[key]) {
-      return `<a href="#" onclick="event.preventDefault();sayfaGit('${known[key]}');" style="${style}">${label}</a>`;
+      return `<a href="#" ${sayfaGitAttrs(known[key])} style="${style}">${label}</a>`;
     }
   }
   return `<a href="${encodeURI(url)}" target="_blank" rel="noopener" style="${style}">${label}</a>`;
@@ -212,4 +221,21 @@ if (typeof window !== 'undefined') {
   }
   // Sayfa geçişinde aktif öğeyi işaretle
   window.addEventListener('hashchange', () => renderMenus());
+
+  // Delegated click: onclick="sayfaGit(...)" yerine (CSP uyumu için)
+  document.addEventListener('click', function(e) {
+    const el = e.target.closest('[data-sayfa-git]');
+    if (!el) return;
+    if (el.tagName === 'A') e.preventDefault();
+    const sayfa = el.getAttribute('data-sayfa-git');
+    const raw = el.getAttribute('data-sayfa-params');
+    let params;
+    if (raw) {
+      try { params = JSON.parse(raw); } catch { params = undefined; }
+    }
+    if (typeof window.sayfaGit === 'function') {
+      if (params !== undefined) window.sayfaGit(sayfa, params);
+      else window.sayfaGit(sayfa);
+    }
+  });
 }
