@@ -306,24 +306,16 @@ window.sistemBakim = sistemBakim;
 
 console.log('Admin Sistem modülü yüklendi ✅');
 
-// Delegated click handler'lar — onclick="" attribute'ları yerine (CSP uyumu için)
+// Delegated click handler — onclick="" attribute'ları yerine (CSP uyumu için)
+// NOT: data-action="fnAdi" dispatch'i BURADA YOK — app.js'teki genel delegated
+// listener (daAttr/data-action) tüm sayfada zaten çalışıyor ve bu dosyanın
+// window'a açtığı fonksiyonları (sistemLogYukle, sistemBakimCalistir, vb.) da
+// kapsıyor. Burada AYRICA bir data-action listener eklemek, aynı tıklamada
+// fonksiyonun 2 KEZ çağrılmasına yol açardı (gerçek bir hata olarak yakalandı,
+// bkz. tests/e2e/test_app_banner_e2e.py).
 document.addEventListener('click', function(e) {
-    // 1) Genel fonksiyon çağrısı: data-action="fnAdi" data-action-args='[...]'
-    const actionEl = e.target.closest('[data-action]');
-    if (actionEl) {
-        const fnAdi = actionEl.getAttribute('data-action');
-        const argsRaw = actionEl.getAttribute('data-action-args');
-        let args = [];
-        if (argsRaw) {
-            try { args = JSON.parse(argsRaw); } catch { args = []; }
-        }
-        const fn = window[fnAdi];
-        if (typeof fn === 'function') fn.apply(actionEl, args);
-        return;
-    }
-
-    // 2) Panoya kopyala + geçici geri bildirim: data-copy-text="..." VEYA
-    //    data-copy-target="elementId" (o elementin textContent'ini kopyalar)
+    // Panoya kopyala + geçici geri bildirim: data-copy-text="..." VEYA
+    // data-copy-target="elementId" (o elementin textContent'ini kopyalar)
     const copyEl = e.target.closest('[data-copy-text], [data-copy-target]');
     if (copyEl) {
         let metin = copyEl.getAttribute('data-copy-text');

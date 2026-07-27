@@ -143,7 +143,7 @@ async function katYukle() {
   // Footer kategoriler
   const fc = document.getElementById('footer-katlar');
   if (fc) Object.keys(kategoriler).slice(0,4).forEach(k => {
-    fc.innerHTML += `<a onclick="sayfaGit('ilanlar')" style="cursor:pointer">${k}</a>`;
+    fc.innerHTML += `<a ${daAttr('sayfaGit',['ilanlar'])} style="cursor:pointer">${k}</a>`;
   });
 }
 
@@ -1262,7 +1262,7 @@ async function adminAyarlar() {
         <div style="font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--gri-metin); margin-bottom:.75rem;">Renk Teması</div>
         <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center">
           ${[['','Kiremit (Varsayılan)','#C45C35'],['green','Zeytun Yeşil','#2D7D46'],['navy','Lacivert','#1A3C6B'],['purple','Mor','#6D28D9']].map(([v,n,c]) =>
-            `<div style="display:flex;align-items:center;gap:.4rem;cursor:pointer" onclick="temaUygula('${v}',this)">
+            `<div style="display:flex;align-items:center;gap:.4rem;cursor:pointer" ${daAttr('temaUygula',[v,'__EL__'])}>
               <div style="width:28px;height:28px;border-radius:50%;background:${c};border:3px solid ${ayarlar.renk_tema===(v||'kiremit')||(!ayarlar.renk_tema&&!v)?'var(--toprak)':'transparent'};flex-shrink:0" class="tema-renk"></div>
               <span style="font-size:.82rem">${n}</span>
             </div>`).join('')}
@@ -2245,16 +2245,6 @@ async function blogListeYukle() {
       aciklama: 'Fethiye piyasa haberleri, gayrimenkul trendleri ve yatırım önerileri.'
     });
 
-    // Etiket barı
-    const etiketBar = document.getElementById('blog-etiket-bar');
-    if (etiketBar) {
-      const tumEtiketler = [...new Set(yazılar.flatMap(y => Array.isArray(y.etiketler) ? y.etiketler : []))];
-      etiketBar.innerHTML = tumEtiketler.length
-        ? '<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'\')">Tümü</span>' +
-          tumEtiketler.map(e => `<span class="blog-etiket" style="cursor:pointer;padding:.3rem .75rem" onclick="blogEtiketFiltre(\'${e}\')">${e}</span>`).join('')
-        : '';
-    }
-
     // Ana sayfa blog şeridi
     const anaGrid = document.getElementById('ana-blog-grid');
     const anaSerit = document.getElementById('ana-blog-serit');
@@ -2264,23 +2254,15 @@ async function blogListeYukle() {
       yazılar.slice(0, 3).forEach(y => anaGrid.appendChild(blogKartOlustur(y)));
     }
 
-    // Blog liste sayfası
-    const filtreli = aktifBlogEtiket
-      ? yazılar.filter(y => (Array.isArray(y.etiketler)?y.etiketler:[]).includes(aktifBlogEtiket))
-      : yazılar;
     grid.innerHTML = '';
-    if (!filtreli.length) {
-      grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">✍️</div><h3>Henüz yazı yok</h3><p>Admin panelinden yeni yazı ekleyebilirsiniz</p></div>';
-      return;
-    }
-    filtreli.forEach(y => grid.appendChild(blogKartOlustur(y)));
+    yazılar.forEach(y => grid.appendChild(blogKartOlustur(y)));
   } catch (e) {
     grid.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Yazılar yüklenemedi</h3><p>Lütfen sayfayı yenileyin</p></div>';
   }
 }
 
 function blogEtiketFiltre(etiket) {
-  aktifBlogEtiket = etiket;
+  aktifBlogEtiket = '';
   blogListeYukle();
 }
 
@@ -2365,7 +2347,6 @@ function blogKartOlustur(yazi) {
   const el = document.createElement('div');
   el.className = 'blog-kart';
   const tarih = yazi.olusturma ? new Date(yazi.olusturma).toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' }) : '';
-  const etiketHtml = (Array.isArray(yazi.etiketler)?yazi.etiketler:[]).map(e => `<span class="blog-etiket">${e}</span>`).join('');
   el.innerHTML = `
     <div class="blog-kart-foto">
       ${yazi.kapak_resim ? `<img src="${yazi.kapak_resim}" alt="${yazi.baslik}" loading="lazy">` : '📰'}
@@ -2374,7 +2355,6 @@ function blogKartOlustur(yazi) {
       <div class="blog-kart-tarih">${tarih}${yazi.yazar ? ' · ' + yazi.yazar : ''}</div>
       <div class="blog-kart-baslik">${yazi.baslik}</div>
       <div class="blog-kart-ozet">${yazi.ozet || ''}</div>
-      <div style="margin-top:.6rem">${etiketHtml}</div>
     </div>`;
   el.onclick = () => sayfaGit('blog-detay', yazi);
   return el;
@@ -2385,10 +2365,8 @@ async function blogDetayGoster(yazi) {
   if (!ic) return;
   const d = await api.getBlogBySlugOrId(yazi.slug) || yazi;
   const tarih = d.olusturma ? new Date(d.olusturma).toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' }) : '';
-  const etiketHtml = (Array.isArray(d.etiketler)?d.etiketler:[]).map(e => `<span class="blog-etiket">${e}</span>`).join('');
   ic.innerHTML = `
     ${d.kapak_resim ? `<img src="${d.kapak_resim}" alt="${d.baslik}" style="width:100%;max-height:360px;object-fit:cover;border-radius:var(--r);margin-bottom:1.5rem">` : ''}
-    <div style="margin-bottom:.75rem">${etiketHtml}</div>
     <h1 style="font-family:'Playfair Display',serif;font-size:clamp(1.5rem,4vw,2rem);font-weight:700;margin-bottom:.5rem;line-height:1.25">${d.baslik}</h1>
     <div style="font-size:.82rem;color:var(--gri-metin);margin-bottom:1.5rem;display:flex;gap:.75rem;flex-wrap:wrap">
       <span>📅 ${tarih}</span>
@@ -2483,11 +2461,11 @@ function blogModalAc(yazi = null) {
       <div class="form-grup">
         <label class="form-etiket">İçerik</label>
         <div class="editor-araclari">
-          <button onclick="editorEkle('**','**')"><b>B</b></button>
-          <button onclick="editorEkle('_','_')"><i>I</i></button>
-          <button onclick="editorEkle('\n## ','')">H2</button>
-          <button onclick="editorEkle('\n### ','')">H3</button>
-          <button onclick="editorEkle('\n\n','')">¶</button>
+          <button ${daAttr('editorEkle',['**','**'])}><b>B</b></button>
+          <button ${daAttr('editorEkle',['_','_'])}><i>I</i></button>
+          <button ${daAttr('editorEkle',['\n## ',''])}>H2</button>
+          <button ${daAttr('editorEkle',['\n### ',''])}>H3</button>
+          <button ${daAttr('editorEkle',['\n\n',''])}>¶</button>
           <span style="width:1px;background:var(--kumtasi);align-self:stretch;margin:0 .15rem"></span>
           <button onclick="blogResimModalAc()" style="display:flex;align-items:center;gap:.3rem">🖼 Resim Ekle</button>
         </div>
@@ -2966,7 +2944,7 @@ async function adminBannerlar() {
   const boyutlar = meta.boyutlar || {};
 
   let html = `<div class="admin-baslik">Bannerlar
-    <button class="btn btn-kirm" onclick="bannerYeniModal(${JSON.stringify(konumlar).replace(/"/g,'&quot;')},${JSON.stringify(boyutlar).replace(/"/g,'&quot;')})">+ Yeni Banner</button>
+    <button class="btn btn-kirm" ${daAttr('bannerYeniModal',[konumlar,boyutlar])}>+ Yeni Banner</button>
   </div>
   <div style="font-size:.78rem;color:var(--gri-metin);margin-bottom:1rem;padding:.6rem .85rem;background:var(--krem);border-radius:var(--r-sm);border:1px solid var(--kumtasi)">
     💡 <strong>İpucu:</strong> Slayt gösterisi (dönen slider) için aynı konumda <strong>birden çok banner</strong> oluşturun. Her banner bir slayttır.
@@ -3015,12 +2993,12 @@ async function adminBannerlar() {
                 ${b.link_url ? ` · 🔗 Link var` : ''}
               </div>
               <div style="display:flex;gap:.35rem;flex-wrap:wrap">
-                <button class="btn btn-ntr btn-sm" onclick="bannerResimModal(${b.id})">📷</button>
-                <button class="btn btn-ntr btn-sm" onclick="bannerDuzenleModal(${b.id},${JSON.stringify(konumlar).replace(/"/g,'&quot;')},${JSON.stringify(boyutlar).replace(/"/g,'&quot;')})">✏</button>
-                <button class="btn btn-sm" style="background:${b.aktif?'#FEF3C7':'#D1FAE5'};color:${b.aktif?'#92400E':'#065F46'}" onclick="bannerToggle(${b.id},${b.aktif?0:1})">
+                <button class="btn btn-ntr btn-sm" ${daAttr('bannerResimModal',[b.id])}>📷</button>
+                <button class="btn btn-ntr btn-sm" ${daAttr('bannerDuzenleModal',[b.id,konumlar,boyutlar])}>✏</button>
+                <button class="btn btn-sm" style="background:${b.aktif?'#FEF3C7':'#D1FAE5'};color:${b.aktif?'#92400E':'#065F46'}" ${daAttr('bannerToggle',[b.id, b.aktif?0:1])}>
                   ${b.aktif ? '⏸ Pasif' : '▶ Aktif'}
                 </button>
-                <button class="btn btn-hat btn-sm" onclick="if(confirm('Silinsin mi?'))bannerSil(${b.id})">🗑</button>
+                <button class="btn btn-hat btn-sm" ${daAttr('bannerSil',[b.id],'Silinsin mi?')}>🗑</button>
               </div>
             </div>
           </div>`;
@@ -3452,6 +3430,15 @@ window.kayitModalAc = kayitModalAc;
 // ── CMS Admin Sayfaları ──────────────────────────────────────────────────────
 const esc = s => String(s||'').replace(/[&<>"']/g, c=>`&#${c.charCodeAt(0)};`);
 const safeJsonParse = (s, d = {}) => { try { return JSON.parse(s); } catch { return d; } };
+
+// onclick="fnAdi(arg1,arg2)" yerine güvenli data-* attribute üretir (CSP uyumu için).
+// confirmMsg verilirse, tıklamada önce confirm() sorulur (silme işlemleri gibi).
+// Kullanım: `<button ${daAttr('bannerSil',[b.id],'Silinsin mi?')}>Sil</button>`
+function daAttr(fnAdi, args, confirmMsg) {
+  const argsJson = esc(JSON.stringify(args === undefined ? [] : args));
+  const confirmPart = confirmMsg ? ` data-confirm="${esc(confirmMsg)}"` : '';
+  return `data-action="${esc(fnAdi)}" data-action-args="${argsJson}"${confirmPart}`;
+}
 
 // ─── Menü Şablonları (görsel ön tanımlı yapılar) ────────────────────────────
 
@@ -4036,14 +4023,14 @@ async function adminSayfalar() {
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const sayfalar = await api.request('/api/admin/sayfalar').catch(()=>[]);
   const SABLONLAR = ['default','landing','corporate','minimal','estate-modern','sidebar'];
-  let html = '<div class="admin-baslik">Sayfalar <button class="btn btn-kirm btn-sm" onclick="sayfaDuzenleModal()" style="margin-left:auto">+ Yeni Sayfa</button></div>';
+  let html = '<div class="admin-baslik">Sayfalar <button class="btn btn-kirm btn-sm" ' + daAttr('sayfaDuzenleModal',[]) + ' style="margin-left:auto">+ Yeni Sayfa</button></div>';
 
   // Hızlı新建 bar
   html += '<div style="margin-bottom:1rem;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--beyaz);padding:.85rem 1rem;border-radius:var(--r);border:1px solid var(--kumtasi)">';
   html += '<input id="ysf-baslik" placeholder="Sayfa başlığı" style="flex:1;min-width:180px" class="form-girdi">';
   html += '<input id="ysf-slug" placeholder="slug (boşsa otomatik)" style="width:160px" class="form-girdi">';
   html += '<select id="ysf-durum" class="form-girdi"><option value="Taslak">Taslak</option><option value="Yayınla">Yayınla</option></select>';
-  html += '<button class="btn btn-kirm" onclick="sayfaOlustur()">+ Ekle</button></div>';
+  html += '<button class="btn btn-kirm" ' + daAttr('sayfaOlustur',[]) + '>+ Ekle</button></div>';
 
   if (sayfalar && sayfalar.length) {
     html += '<div class="tablo-kont"><table class="tablo"><thead><tr><th>Başlık</th><th>Slug</th><th>Durum</th><th>Şablon</th><th>Güncelleme</th><th></th></tr></thead><tbody>';
@@ -4057,10 +4044,10 @@ async function adminSayfalar() {
         <td style="font-size:.8rem">${esc(s.sablon || 'default')}</td>
         <td style="font-size:.78rem;color:var(--gri-metin)">${(s.guncelleme||'').slice(0,10)}</td>
         <td><div class="tablo-eylemler">
-          <button class="btn btn-cik btn-sm" onclick="sayfaDuzenleModal(${s.id})" title="Düzenle">✏️</button>
-          ${s.durum === 'Yayınla' ? `<button class="btn btn-sm" style="background:#FEF3C7;color:#92400E" onclick="sayfaDurumTog(${s.id},'Taslak')" title="Taslak">⏸</button>`
-                                : `<button class="btn btn-sm" style="background:#D1FAE5;color:#065F46" onclick="sayfaDurumTog(${s.id},'Yayınla')" title="Yayınla">▶</button>`}
-          <button class="btn btn-hat btn-sm" onclick="sayfaSil(${s.id})" title="Sil">🗑️</button>
+          <button class="btn btn-cik btn-sm" ${daAttr('sayfaDuzenleModal',[s.id])} title="Düzenle">✏️</button>
+          ${s.durum === 'Yayınla' ? `<button class="btn btn-sm" style="background:#FEF3C7;color:#92400E" ${daAttr('sayfaDurumTog',[s.id,'Taslak'])} title="Taslak">⏸</button>`
+                                : `<button class="btn btn-sm" style="background:#D1FAE5;color:#065F46" ${daAttr('sayfaDurumTog',[s.id,'Yayınla'])} title="Yayınla">▶</button>`}
+          <button class="btn btn-hat btn-sm" ${daAttr('sayfaSil',[s.id])} title="Sil">🗑️</button>
         </div></td>
       </tr>`;
     });
@@ -4139,10 +4126,10 @@ window.sayfaDuzenleModal = async function(id) {
         <input class="form-girdi" id="sdf-ozet" value="${esc(s.ozet||'')}" placeholder="Listede görünecek kısa açıklama"></div>
       <div class="form-grup"><label class="form-etiket">İçerik (HTML destekler)</label>
         <div class="editor-araclari">
-          <button onclick="sayfaEditorEkle('**','**')"><b>B</b></button>
-          <button onclick="sayfaEditorEkle('&#60;h2&#62;','&#60;/h2&#62;')">H2</button>
-          <button onclick="sayfaEditorEkle('&#60;p&#62;','&#60;/p&#62;')">¶</button>
-          <button onclick="sayfaEditorEkle('&#60;a href=\'\' target=\'_blank\'&#62;','&#60;/a&#62;')">🔗</button>
+          <button ${daAttr('sayfaEditorEkle',['**','**'])}><b>B</b></button>
+          <button ${daAttr('sayfaEditorEkle',['<h2>','</h2>'])}>H2</button>
+          <button ${daAttr('sayfaEditorEkle',['<p>','</p>'])}>¶</button>
+          <button ${daAttr('sayfaEditorEkle',["<a href='' target='_blank'>",'</a>'])}>🔗</button>
         </div>
         <textarea class="blog-editor" id="sdf-icerik" rows="12" placeholder="Sayfa içeriği (HTML)…">${esc(s.icerik||'')}</textarea>
       </div>
@@ -4166,7 +4153,7 @@ window.sayfaDuzenleModal = async function(id) {
         </div>
       </details>
       <div style="display:flex;gap:.75rem;align-items:center;margin-top:.5rem">
-        <button class="btn btn-kirm btn-lg" onclick="sayfaKaydet(${id||'null'})">💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
+        <button class="btn btn-kirm btn-lg" ${daAttr('sayfaKaydet',[id||null])}>💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
         <button class="btn btn-ntr" onclick="adminSayfalar()">Vazgeç</button>
         ${!yeniMi && s.slug ? `<a href="#/sayfa/${esc(s.slug)}" target="_blank" class="btn btn-ntr btn-sm" style="text-decoration:none">👁 Önizle</a>` : ''}
       </div>
@@ -4220,7 +4207,7 @@ async function adminWidgetler() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const widgetlar = await api.request('/api/admin/widgets').catch(()=>[]);
-  let html = '<div class="admin-baslik">Widget\'lar <button class="btn btn-kirm btn-sm" onclick="widgetDuzenleModal()" style="margin-left:auto">+ Yeni Widget</button></div>';
+  let html = '<div class="admin-baslik">Widget\'lar <button class="btn btn-kirm btn-sm" ' + daAttr('widgetDuzenleModal',[]) + ' style="margin-left:auto">+ Yeni Widget</button></div>';
 
   // Widget tipleri ve konumları (widget-renderer.js ile uyumlu)
   const TIP_LISTESI = {
@@ -4267,9 +4254,9 @@ async function adminWidgetler() {
         <td style="font-size:.82rem;color:var(--gri-metin);text-align:center">${w.sira ?? 0}</td>
         <td>${w.aktif ? '✅' : '❌'}</td>
         <td><div class="tablo-eylemler">
-          <button class="btn btn-cik btn-sm" title="Düzenle" onclick="widgetDuzenleModal(${w.id})">✏️</button>
-          <button class="btn btn-sm ${w.aktif ? 'btn-cik' : 'btn-yes'}" title="${w.aktif?'Devre dışı':'Aktifleştir'}" onclick="widgetToggle(${w.id},${w.aktif ? 0 : 1})">${w.aktif ? '⏸' : '▶'}</button>
-          <button class="btn btn-hat btn-sm" title="Sil" onclick="widgetSil(${w.id})">🗑️</button>
+          <button class="btn btn-cik btn-sm" title="Düzenle" ${daAttr('widgetDuzenleModal',[w.id])}>✏️</button>
+          <button class="btn btn-sm ${w.aktif ? 'btn-cik' : 'btn-yes'}" title="${w.aktif?'Devre dışı':'Aktifleştir'}" ${daAttr('widgetToggle',[w.id, w.aktif ? 0 : 1])}>${w.aktif ? '⏸' : '▶'}</button>
+          <button class="btn btn-hat btn-sm" title="Sil" ${daAttr('widgetSil',[w.id])}>🗑️</button>
         </div></td>
       </tr>`;
     });
@@ -4372,7 +4359,7 @@ window.widgetDuzenleModal = async function(id) {
         <textarea class="blog-editor" id="wg-icerik" rows="8" placeholder="<div>Widget içeriği…</div>">${esc(icerik)}</textarea>
       </div>
       <div style="display:flex;gap:.75rem;margin-top:.5rem">
-        <button class="btn btn-kirm btn-lg" onclick="widgetKaydet(${id||'null'})">💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
+        <button class="btn btn-kirm btn-lg" ${daAttr('widgetKaydet',[id||null])}>💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
         <button class="btn btn-ntr" onclick="adminWidgetler()">Vazgeç</button>
       </div>
     </div>`;
@@ -4599,7 +4586,7 @@ async function adminTema() {
   html += '<div class="tema-palet-grid">';
   for (const p of TEMA_PALETLERI) {
     const a = paletId === p.id;
-    html += `<div class="tema-palet-kart${a?' aktif':''}" data-palet="${esc(p.id)}" onclick="temaPaletSec('${esc(p.id)}')">
+    html += `<div class="tema-palet-kart${a?' aktif':''}" data-palet="${esc(p.id)}" ${daAttr('temaPaletSec',[p.id])}>
       <div class="tema-palet-renkler">${p.renkler.map(r => `<span style="background:${r}"></span>`).join('')}</div>
       <div class="tema-palet-ad">${esc(p.ad)}</div>
       ${a ? '<div class="tema-palet-check">✓</div>' : ''}
@@ -4647,7 +4634,7 @@ async function adminTema() {
       <div class="tema-stil-aciklama">${esc(sec.aciklama)}</div>
       <div class="tema-stil-secenekler">`;
     for (const [sk, sv] of Object.entries(sec.secim)) {
-      html += `<div class="tema-stil-chip${m===sk?' aktif':''}" data-stil="${esc(sk)}" onclick="temaStilSec('${esc(k)}','${esc(sk)}')">${esc(sv)}</div>`;
+      html += `<div class="tema-stil-chip${m===sk?' aktif':''}" data-stil="${esc(sk)}" ${daAttr('temaStilSec',[k,sk])}>${esc(sv)}</div>`;
     }
     html += '</div></div>';
   }
@@ -4664,8 +4651,8 @@ async function adminTema() {
 
   // ── 7) Kaydet / Sıfırla butonları ─────────────────────────────────────
   html += '<div class="tema-aksiyon-bar">';
-  html += '<button class="btn btn-kirm btn-lg tema-btn-kaydet" onclick="temaKaydet()">💾 Tema Kaydet</button>';
-  html += '<button class="btn btn-ntr btn-lg" onclick="temaSifirla()">↺ Sıfırla</button>';
+  html += '<button class="btn btn-kirm btn-lg tema-btn-kaydet" ' + daAttr('temaKaydet',[]) + '>💾 Tema Kaydet</button>';
+  html += '<button class="btn btn-ntr btn-lg" ' + daAttr('temaSifirla',[]) + '>↺ Sıfırla</button>';
   html += '</div>';
 
   html += '</div>'; // .tema-editor
@@ -4706,7 +4693,7 @@ async function adminSablonlar() {
       html += `<div style="background:var(--beyaz);border-radius:var(--r);padding:1rem;border:2px solid ${isActive ? 'var(--kiremit)' : 'var(--kumtasi)'}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
           <div><strong>${esc(t.ad)}</strong> <code style="font-size:.75em">${esc(t.klasor)}</code></div>
-          ${isActive ? '<span style="background:var(--kiremit);color:#fff;padding:2px 10px;border-radius:20px;font-size:.7rem">AKTİF</span>' : `<button class="btn btn-cik btn-sm" onclick="sablonAktiflestir(${t.id})" style="font-size:.7rem">Aktifleştir</button>`}
+          ${isActive ? '<span style="background:var(--kiremit);color:#fff;padding:2px 10px;border-radius:20px;font-size:.7rem">AKTİF</span>' : `<button class="btn btn-cik btn-sm" ${daAttr('sablonAktiflestir',[t.id])} style="font-size:.7rem">Aktifleştir</button>`}
         </div>
         <div style="font-size:.82rem;color:var(--gri-metin);margin-bottom:.5rem">${esc(t.aciklama)}</div>
         <div style="border-top:1px solid var(--kumtasi);padding-top:.5rem">
@@ -4735,10 +4722,10 @@ async function adminSablonlar() {
         <td>${b.sira}</td>
         <td><code>${esc(b.section_key)}</code></td>
         <td>${esc(b.baslik || '')}</td>
-        <td><span class="toggle-slider" style="${b.aktif !== false ? 'background:var(--kiremit)' : ''}" onclick="sablonBolumAktifToggle(${b.id}, ${!(b.aktif !== false)})"></span></td>
+        <td><span class="toggle-slider" style="${b.aktif !== false ? 'background:var(--kiremit)' : ''}" ${daAttr('sablonBolumAktifToggle',[b.id, !(b.aktif !== false)])}></span></td>
         <td style="font-size:.8em">${esc(a.animasyon || '—')}</td>
         <td style="font-size:.8em">${esc(a.padding || '—')}</td>
-        <td><button class="btn btn-cik btn-sm" onclick="sablonBolumDuzenle(${b.id})">⚙️</button></td>
+        <td><button class="btn btn-cik btn-sm" ${daAttr('sablonBolumDuzenle',[b.id])}>⚙️</button></td>
       </tr>`;
     });
     html += '</tbody></table></div>';
@@ -4749,8 +4736,8 @@ async function adminSablonlar() {
       html += `<div style="background:var(--kumtasi);padding:6px 12px;border-radius:8px;font-size:.85rem;display:flex;align-items:center;gap:6px">
         <span>${i + 1}</span>
         <code style="font-size:.75em">${esc(b.section_key)}</code>
-        ${i > 0 ? `<button class="btn btn-gri" onclick="sablonBolumTasi(${b.id},${bolumler[i-1].id})" style="padding:2px 8px;font-size:.7rem">↑</button>` : ''}
-        ${i < bolumler.length - 1 ? `<button class="btn btn-gri" onclick="sablonBolumTasi(${b.id},${bolumler[i+1].id})" style="padding:2px 8px;font-size:.7rem">↓</button>` : ''}
+        ${i > 0 ? `<button class="btn btn-gri" ${daAttr('sablonBolumTasi',[b.id,bolumler[i-1].id])} style="padding:2px 8px;font-size:.7rem">↑</button>` : ''}
+        ${i < bolumler.length - 1 ? `<button class="btn btn-gri" ${daAttr('sablonBolumTasi',[b.id,bolumler[i+1].id])} style="padding:2px 8px;font-size:.7rem">↓</button>` : ''}
       </div>`;
     });
     html += '</div>';
@@ -4830,7 +4817,7 @@ window.sablonBolumDuzenle = async function(id) {
         </details>
       </div>
       <div style="display:flex;gap:8px;margin-top:1rem">
-        <button class="btn btn-kirm" onclick="sablonBolumKaydet(${id})">💾 Kaydet</button>
+        <button class="btn btn-kirm" ${daAttr('sablonBolumKaydet',[id])}>💾 Kaydet</button>
         <button class="btn btn-ntr" onclick="document.getElementById('bolum-modal').remove()">İptal</button>
       </div>
     </div>
@@ -4909,7 +4896,7 @@ async function adminWizard() {
     <label>Firma Adı <input id="wf-ad" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="Firma Adı"></label>
     <label>E-Posta <input id="wf-email" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="info@firma.com"></label>
     <label>Telefon <input id="wf-tel" class="inp" style="width:100%;margin-bottom:.8rem" placeholder="+90 555 000 00 00"></label>
-    <button class="btn btn-kirm" onclick="wizardAdim1()">Devam →</button></div>`;
+    <button class="btn btn-kirm" data-action="wizardAdim1">Devam →</button></div>`;
 }
 
 async function wizardAdim1() {
@@ -4935,7 +4922,7 @@ async function wizardAdim1() {
       <div class="wizard-adimlar"><span class="wizard-adim">1</span><span class="wizard-adim aktif">2</span><span class="wizard-adim">3</span><span>…</span><span class="wizard-adim">10</span></div></div>
       <div class="wizard-grid">`;
     (sektorler || []).forEach(s => {
-      html += `<div class="wizard-kart" onclick="wizardAdim2('${s.sector}')">
+      html += `<div class="wizard-kart" data-action="wizardAdim2" data-action-args="${esc(JSON.stringify([s.sector]))}">
         <div class="wizard-ikon">${sektorIkon(s.sector)}</div>
         <div class="wizard-label">${esc(s.label)}</div>
         <div class="wizard-acik">${s.templates.length} template</div>
@@ -4986,7 +4973,7 @@ async function wizardAdim2(sector) {
     <div class="wizard-grid">`;
   templates.forEach(t => {
     const label = tplLabels[t] || t;
-    html += `<div class="wizard-kart" onclick="wizardAdim3('${t}')">
+    html += `<div class="wizard-kart" data-action="wizardAdim3" data-action-args="${esc(JSON.stringify([t]))}">
       <div class="wizard-label">${esc(label)}</div>
     </div>`;
   });
@@ -5009,8 +4996,8 @@ async function wizardAdim3(template) {
     <div class="wizard-palettes">`;
   (palettes || []).forEach(p => {
     const c = p.colors || {};
-    const escJson = esc(JSON.stringify(p));
-    html += `<div class="wizard-palet-kart" onclick="wizardAdim4('${escJson}')">
+    const actionArgs = esc(JSON.stringify([p]));
+    html += `<div class="wizard-palet-kart" data-action="wizardAdim4" data-action-args="${actionArgs}">
       <div class="wizard-palet-renkler">
         <span style="background:${c.ana || '#ccc'}"></span>
         <span style="background:${c.arka || '#fff'}"></span>
@@ -5035,8 +5022,8 @@ async function wizardAdim4(paletteArg) {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = `<div class="admin-baslik">✨ Adım 5/10 — Menüler</div>
     <p>Menüler otomatik oluşturulsun mu?</p>
-    <button class="btn btn-kirm" onclick="wizardAdim5(true)">Evet, Oluştur</button>
-    <button class="btn btn-cik" onclick="wizardAdim5(false)">Sonra Ben Eklerim</button>`;
+    <button class="btn btn-kirm" data-action="wizardAdim5" data-action-args="[true]">Evet, Oluştur</button>
+    <button class="btn btn-cik" data-action="wizardAdim5" data-action-args="[false]">Sonra Ben Eklerim</button>`;
 }
 
 async function wizardAdim5(auto) {
@@ -5047,8 +5034,8 @@ async function wizardAdim5(auto) {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = `<div class="admin-baslik">✨ Adım 6/10 — Sayfalar</div>
     <p>Sayfalar otomatik oluşturulsun mu?</p>
-    <button class="btn btn-kirm" onclick="wizardAdim6(true)">Evet, Oluştur</button>
-    <button class="btn btn-cik" onclick="wizardAdim6(false)">Sonra Ben Eklerim</button>`;
+    <button class="btn btn-kirm" data-action="wizardAdim6" data-action-args="[true]">Evet, Oluştur</button>
+    <button class="btn btn-cik" data-action="wizardAdim6" data-action-args="[false]">Sonra Ben Eklerim</button>`;
 }
 
 async function wizardAdim6(auto) {
@@ -5064,7 +5051,7 @@ async function wizardAdim6(auto) {
     <label><input type="checkbox" id="ww-tel" checked> Telefon</label><br>
     <label><input type="checkbox" id="ww-ig"> Instagram</label><br>
     <label><input type="checkbox" id="ww-cb"> Çerez Bildirimi</label><br>
-    <button class="btn btn-kirm" onclick="wizardAdim7()" style="margin-top:1rem">Devam</button>`;
+    <button class="btn btn-kirm" data-action="wizardAdim7" style="margin-top:1rem">Devam</button>`;
 }
 
 async function wizardAdim7() {
@@ -5082,8 +5069,8 @@ async function wizardAdim7() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = `<div class="admin-baslik">✨ Adım 8/10 — Forum</div>
     <p>Forum kullanmak istiyor musunuz?</p>
-    <button class="btn btn-kirm" onclick="wizardAdim8(true)">Evet</button>
-    <button class="btn btn-cik" onclick="wizardAdim8(false)">Hayır</button>`;
+    <button class="btn btn-kirm" data-action="wizardAdim8" data-action-args="[true]">Evet</button>
+    <button class="btn btn-cik" data-action="wizardAdim8" data-action-args="[false]">Hayır</button>`;
 }
 
 async function wizardAdim8(aktif) {
@@ -5094,7 +5081,7 @@ async function wizardAdim8(aktif) {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = `<div class="admin-baslik">✨ Adım 9/10 — SEO</div>
     <p>SEO ayarları otomatik oluşturulsun mu?</p>
-    <button class="btn btn-kirm" onclick="wizardAdim9()">Evet, Oluştur</button>`;
+    <button class="btn btn-kirm" data-action="wizardAdim9">Evet, Oluştur</button>`;
 }
 
 async function wizardAdim9() {
@@ -5111,7 +5098,7 @@ async function wizardAdim9() {
     <label><input type="checkbox" id="dm-portfoy" checked> Portföy</label><br>
     <label><input type="checkbox" id="dm-forum"> Forum</label><br>
     <label><input type="checkbox" id="dm-referans" checked> Referanslar</label><br>
-    <button class="btn btn-kirm" onclick="wizardAdim10()" style="margin-top:1rem">Devam</button>`;
+    <button class="btn btn-kirm" data-action="wizardAdim10" style="margin-top:1rem">Devam</button>`;
 }
 
 async function wizardAdim10() {
@@ -5127,7 +5114,7 @@ async function wizardAdim10() {
   const ic = document.getElementById('admin-ic');
   ic.innerHTML = `<div class="admin-baslik">✨ Tüm Adımlar Tamamlandı</div>
     <p style="margin:1rem 0">Siteyi oluşturmak için butona tıklayın.</p>
-    <button class="btn btn-kirm" onclick="wizardSon()" style="font-size:1.2rem;padding:1rem 2rem">🚀 Siteyi Oluştur</button>`;
+    <button class="btn btn-kirm" data-action="wizardSon" style="font-size:1.2rem;padding:1rem 2rem">🚀 Siteyi Oluştur</button>`;
 }
 
 async function wizardSon() {
@@ -5196,10 +5183,10 @@ async function adminSaaS() {
   const ic = document.getElementById('admin-ic');
   let html = `<div class="admin-baslik">☁️ SaaS Yönetimi</div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
-      <button class="btn btn-kirm" onclick="saasTenant()">🏢 Multi-Tenant</button>
-      <button class="btn btn-kirm" onclick="saasBackup()">💾 Yedekleme</button>
-      <button class="btn btn-kirm" onclick="saasUpdate()">🔄 Güncelleme</button>
-      <button class="btn btn-kirm" onclick="saasApi()">🔌 API Marketplace</button>
+      <button class="btn btn-kirm" ${daAttr('saasTenant',[])}>🏢 Multi-Tenant</button>
+      <button class="btn btn-kirm" ${daAttr('saasBackup',[])}>💾 Yedekleme</button>
+      <button class="btn btn-kirm" ${daAttr('saasUpdate',[])}>🔄 Güncelleme</button>
+      <button class="btn btn-kirm" ${daAttr('saasApi',[])}>🔌 API Marketplace</button>
     </div>
     <div id="saas-ic" style="margin-top:1rem">
       <p style="color:var(--gri-metin)">Bir modül seçin.</p>
@@ -5215,7 +5202,7 @@ async function saasTenant() {
     const list = await api.request('/api/admin/saas/tenant');
     let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h3 style="margin:0">🏢 Multi-Tenant Domainler</h3>
-      <button class="btn btn-kirm" onclick="saasTenantEkle()">+ Yeni Domain</button>
+      <button class="btn btn-kirm" ${daAttr('saasTenantEkle',[])}>+ Yeni Domain</button>
     </div>`;
     if (!list || !list.length) {
       html += '<div class="bos-durum"><p>Henüz domain eklenmemiş.</p></div>';
@@ -5226,7 +5213,7 @@ async function saasTenant() {
           <td>${esc(t.domain)}</td>
           <td>${esc(t.firma_adi)}</td>
           <td>${esc(t.paket || '-')}</td>
-          <td><button class="btn btn-hat btn-sm" onclick="saasTenantSil(${t.id})">🗑</button></td>
+          <td><button class="btn btn-hat btn-sm" ${daAttr('saasTenantSil',[t.id])}>🗑</button></td>
         </tr>`;
       });
       html += '</table>';
@@ -5264,7 +5251,7 @@ async function saasBackup() {
     const list = await api.request('/api/admin/saas/backup');
     let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h3 style="margin:0">💾 Yedeklemeler</h3>
-      <button class="btn btn-kirm" onclick="saasBackupOlustur()">+ Yeni Yedek</button>
+      <button class="btn btn-kirm" ${daAttr('saasBackupOlustur',[])}>+ Yeni Yedek</button>
     </div>`;
     if (!list || !list.length) {
       html += '<div class="bos-durum"><p>Henüz yedek alınmamış.</p></div>';
@@ -5278,8 +5265,8 @@ async function saasBackup() {
           <td>${esc(b.tur)}</td>
           <td>${(b.olusturma || '').slice(0, 19)}</td>
           <td>
-            <button class="btn btn-ntr btn-sm" onclick="saasBackupRestore(${b.id})">🔄</button>
-            <button class="btn btn-hat btn-sm" onclick="saasBackupSil(${b.id})">🗑</button>
+            <button class="btn btn-ntr btn-sm" ${daAttr('saasBackupRestore',[b.id])}>🔄</button>
+            <button class="btn btn-hat btn-sm" ${daAttr('saasBackupSil',[b.id])}>🗑</button>
           </td>
         </tr>`;
       });
@@ -5326,7 +5313,7 @@ async function saasUpdate() {
     const d = r?.durum || {};
     let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h3 style="margin:0">🔄 Güncelleme</h3>
-      <button class="btn btn-kirm" onclick="saasUpdateYap()">Güncelle</button>
+      <button class="btn btn-kirm" ${daAttr('saasUpdateYap',[])}>Güncelle</button>
     </div>
     <div style="background:var(--krem);border-radius:var(--r-sm);padding:1rem;margin-bottom:1rem">
       <div><strong>Versiyon:</strong> ${esc(v.current_version || '-')}</div>
@@ -5383,9 +5370,9 @@ async function saasApi() {
           ${apiKey ? '· 🔑 Var' : '· Anahtar Yok'}
         </div>
         <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.5rem">
-          <button class="btn btn-ntr btn-sm" onclick="saasApiDuzenle('${s.key}','${esc(s.ad)}')">✏</button>
-          <button class="btn btn-sm" style="background:${aktif ? '#FEF3C7' : '#D1FAE5'}" onclick="saasApiToggle('${s.key}')">${aktif ? 'Pasif' : 'Aktif'}</button>
-          <button class="btn btn-ntr btn-sm" onclick="saasApiTest('${s.key}')">🔍 Test</button>
+          <button class="btn btn-ntr btn-sm" ${daAttr('saasApiDuzenle',[s.key, esc(s.ad)])}>✏</button>
+          <button class="btn btn-sm" style="background:${aktif ? '#FEF3C7' : '#D1FAE5'}" ${daAttr('saasApiToggle',[s.key])}>${aktif ? 'Pasif' : 'Aktif'}</button>
+          <button class="btn btn-ntr btn-sm" ${daAttr('saasApiTest',[s.key])}>🔍 Test</button>
         </div>
       </div>`;
     });
@@ -5508,6 +5495,25 @@ window.bindApiUi({
     kullanici = null;
     if (typeof authGuncelle === "function") authGuncelle();
   }
+});
+
+// Delegated click: onclick="fnAdi(...)" yerine data-action (CSP uyumu için).
+// daAttr() ile üretilen butonları yakalar. data-confirm varsa önce onaylatır.
+document.addEventListener('click', function(e) {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const confirmMsg = el.getAttribute('data-confirm');
+  if (confirmMsg && !confirm(confirmMsg)) return;
+  const fnAdi = el.getAttribute('data-action');
+  const argsRaw = el.getAttribute('data-action-args');
+  let args = [];
+  if (argsRaw) {
+    try { args = JSON.parse(argsRaw); } catch { args = []; }
+  }
+  // '__EL__' sentinel'i tıklanan elementin kendisiyle değiştir (örn. temaUygula(tema, el))
+  args = args.map(a => a === '__EL__' ? el : a);
+  const fn = window[fnAdi];
+  if (typeof fn === 'function') fn.apply(el, args);
 });
 
 syncTokenFromApi();
