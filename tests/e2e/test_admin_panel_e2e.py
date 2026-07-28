@@ -684,6 +684,228 @@ def test_appsaas_sayfa_editor_ekle_tek_tirnakli_html(live_server):
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# BÖLÜM 7+ — YENİ TESTLER BURADAN SONRA EKLENİR
-# (bir sonraki grup: ilan/portföy, blog, admin menü, kullanıcı, profil/ayarlar)
+# BÖLÜM 7 — app.js: ilan/portföy grubu (paylaşım, düzenle, harita, favori)
+# ═══════════════════════════════════════════════════════════════════════
+ILAN_STUB_JS = """
+() => {
+  window.__cagrilar = [];
+  window.ilanPaylas = (...args) => window.__cagrilar.push({ fn: 'ilanPaylas', args });
+  window.haritaIlanAc = (...args) => window.__cagrilar.push({ fn: 'haritaIlanAc', args });
+  window.gFotoDegis = (el, url) => window.__cagrilar.push({
+    fn: 'gFotoDegis', elIsElement: el instanceof HTMLElement, elId: el && el.id, url
+  });
+  window.favToggle = (id, baslik, btn) => window.__cagrilar.push({
+    fn: 'favToggle', id, baslik, btnIsElement: btn instanceof HTMLElement, btnId: btn && btn.id
+  });
+}
+"""
+
+ILAN_INJECT_BUTTONS_JS = r"""
+() => {
+  const div = document.createElement('div');
+  div.id = 'test-ilan-butonlari';
+  div.innerHTML = `
+    <button data-action="ilanPaylas" id="btn-ilan-paylas">Paylaş</button>
+    <button data-action="haritaIlanAc" data-action-args="[99]">Haritada Aç</button>
+    <div id="foto-thumb" style="width:40px;height:40px;background:#ccc" data-action="gFotoDegis" data-action-args="[&quot;__EL__&quot;,&quot;https://example.com/foto.jpg&quot;]"></div>
+    <button id="fav-btn" data-action="favToggle" data-action-args="[15,&quot;Deniz Manzaralı Villa (O'Hara Sk.)&quot;,&quot;__EL__&quot;]">♡</button>
+  `;
+  document.body.appendChild(div);
+  // Başlıkta tek tırnak İÇEREN bir değeri, eski koddaki manuel .replace(/'/g,...)
+  // yerine JSON.stringify ile güvenle taşıdığımızı kanıtlamak için gerçekçi bir
+  // örnek kullanıyoruz (yukarıdaki O'Hara Sk. değeri).
+  document.getElementById('btn-ilan-paylas').setAttribute(
+    'data-action-args',
+    JSON.stringify(['wa', 42, "Satılık Ev (Sahibinden'e Yakın)", '2.500.000 TL'])
+  );
+}
+"""
+
+
+def _ilan_sayfa_ac(browser, live_server):
+    context = browser.new_context()
+    page = context.new_page()
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+    hatalar = []
+    page.on("pageerror", lambda exc: hatalar.append(str(exc)))
+    page.goto(f"{live_server}/static/index.html")
+    page.wait_for_selector("#giris-btn", timeout=10000)
+    page.evaluate(ILAN_STUB_JS)
+    page.evaluate(ILAN_INJECT_BUTTONS_JS)
+    return context, page, hatalar
+
+
+def test_ilan_paylas_tek_tirnakli_baslik_dogru_tasinir(live_server):
+    """Eski kod .replace(/'/g,"\\'") ile elle escape ediyordu — daAttr() bunu
+    JSON.stringify ile otomatik ve güvenli yapıyor. Başlıkta tek tırnak VE
+    parantez olan gerçekçi bir örnekle doğruluyoruz."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="ilanPaylas"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{
+            "fn": "ilanPaylas",
+            "args": ["wa", 42, "Satılık Ev (Sahibinden'e Yakın)", "2.500.000 TL"],
+        }], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_ilan_harita_ac_id_argumani(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="haritaIlanAc"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "haritaIlanAc", "args": [99]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_ilan_gfoto_degis_el_ilk_argumanda(live_server):
+    """gFotoDegis(this, url) — __EL__ sentinel BİRİNCİ argümanda (temaUygula'dan
+    farklı olarak); sıra doğru korunmalı."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+
+        page.click('#foto-thumb')
+        page.wait_for_timeout(150)
+        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+        assert cagri["fn"] == "gFotoDegis"
+        assert cagri["elIsElement"] is True
+        assert cagri["elId"] == "foto-thumb"
+        assert cagri["url"] == "https://example.com/foto.jpg"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_ilan_fav_toggle_el_ucuncu_argumanda(live_server):
+    """favToggle(id, baslik, this) — __EL__ sentinel ÜÇÜNCÜ argümanda."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+
+        page.click('#fav-btn')
+        page.wait_for_timeout(150)
+        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+        assert cagri["fn"] == "favToggle"
+        assert cagri["id"] == 15
+        assert cagri["btnIsElement"] is True
+        assert cagri["btnId"] == "fav-btn"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BÖLÜM 8 — app.js: blog yönetimi grubu
+# ═══════════════════════════════════════════════════════════════════════
+BLOG_STUB_JS = """
+() => {
+  window.__cagrilar = [];
+  window.blogDuzenle = (...args) => window.__cagrilar.push({ fn: 'blogDuzenle', args });
+  window.blogDurumDegis = (...args) => window.__cagrilar.push({ fn: 'blogDurumDegis', args });
+  window.blogSilAdmin = (...args) => window.__cagrilar.push({ fn: 'blogSilAdmin', args });
+}
+"""
+
+BLOG_INJECT_BUTTONS_JS = """
+() => {
+  const div = document.createElement('div');
+  div.id = 'test-blog-butonlari';
+  div.innerHTML = `
+    <button data-action="blogDuzenle" data-action-args="[11]">✏</button>
+    <button data-action="blogDurumDegis" data-action-args="[11,&quot;Taslak&quot;]">⏸</button>
+    <button data-action="blogSilAdmin" data-action-args="[11]" data-confirm="Yazı silinsin mi?">🗑</button>
+  `;
+  document.body.appendChild(div);
+}
+"""
+
+
+def _blog_sayfa_ac(browser, live_server):
+    context = browser.new_context()
+    page = context.new_page()
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+    hatalar = []
+    page.on("pageerror", lambda exc: hatalar.append(str(exc)))
+    page.goto(f"{live_server}/static/index.html")
+    page.wait_for_selector("#giris-btn", timeout=10000)
+    page.evaluate(BLOG_STUB_JS)
+    page.evaluate(BLOG_INJECT_BUTTONS_JS)
+    return context, page, hatalar
+
+
+def test_blog_duzenle_id_argumani(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="blogDuzenle"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "blogDuzenle", "args": [11]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_blog_durum_degis_string_argumani(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="blogDurumDegis"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "blogDurumDegis", "args": [11, "Taslak"]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_blog_sil_admin_confirm_reddedilirse_cagrilmaz(live_server):
+    """Regresyon: blogSilAdmin kendi içinde confirm() ÇAĞIRMIYOR — bu yüzden
+    buton tarafında data-confirm OLMALI. Reddedilince çağrılmamalı."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+        page.on("dialog", lambda d: d.dismiss())
+
+        page.click('[data-action="blogSilAdmin"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_blog_sil_admin_confirm_kabul_edilirse_cagrilir(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+        page.on("dialog", lambda d: d.accept())
+
+        page.click('[data-action="blogSilAdmin"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "blogSilAdmin", "args": [11]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BÖLÜM 9+ — YENİ TESTLER BURADAN SONRA EKLENİR
+# (bir sonraki grup: admin menü yönetimi, kullanıcı, profil/ayarlar)
 # ═══════════════════════════════════════════════════════════════════════

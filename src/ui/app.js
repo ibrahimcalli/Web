@@ -423,7 +423,7 @@ async function detayGoster(ilan) {
     : `<div class="galeri-ana-bos">🏠</div>`;
   const thumbler = resimler.length > 1
     ? resimler.map((r,i) =>
-        `<div class="galeri-thumb${i===0?' aktif':''}" onclick="gFotoDegis(this,'${r}')">
+        `<div class="galeri-thumb${i===0?' aktif':''}" ${daAttr('gFotoDegis',['__EL__',r])}>
           <img src="${r}" loading="lazy">
         </div>`).join('') : '';
 
@@ -442,13 +442,13 @@ async function detayGoster(ilan) {
   const adminBant = isAdmin ? `
     <div class="admin-arac-bant">
       <span>⚙ Admin</span>
-      <button class="btn btn-kirm btn-sm" onclick="ilanDuzenle(${d.id})">✏ Düzenle</button>
+      <button class="btn btn-kirm btn-sm" ${daAttr('ilanDuzenle',[d.id])}>✏ Düzenle</button>
       <select class="form-girdi" style="width:auto;padding:.3rem .6rem;font-size:.78rem" onchange="durumDegistir(${d.id},this.value)">
         <option value="">Durum…</option>
         ${['Aktif','Taslak','Pasif','Satıldı','Kiralandı'].map(s=>`<option value="${s}"${d.durum===s?' selected':''}>${s}</option>`).join('')}
       </select>
-      <button class="btn btn-ntr btn-sm" onclick="pdfIndir(${d.id})">📄 PDF Broşür</button>
-      <button class="btn btn-ntr btn-sm" onclick="fiyatAnaliziGoster(${d.id})">📊 Fiyat Analizi</button>
+      <button class="btn btn-ntr btn-sm" ${daAttr('pdfIndir',[d.id])}>📄 PDF Broşür</button>
+      <button class="btn btn-ntr btn-sm" ${daAttr('fiyatAnaliziGoster',[d.id])}>📊 Fiyat Analizi</button>
       <button class="btn btn-hat btn-sm" onclick="if(confirm('Silinsin mi?'))ilanSilDetay(${d.id})">🗑 Sil</button>
     </div>
     <div id="fiyat-analiz-kutu" style="display:none;margin-bottom:1.25rem"></div>` : '';
@@ -485,7 +485,7 @@ async function detayGoster(ilan) {
           </div>
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
             <h1 class="detay-baslik" style="margin-bottom:0">${d.baslik}</h1>
-            <button onclick="favToggle(${d.id},'${d.baslik.replace(/'/g,"\'")}',this)"
+            <button ${daAttr('favToggle',[d.id,d.baslik,'__EL__'])}
               style="flex-shrink:0;padding:.4rem .85rem;border-radius:6px;border:1.5px solid var(--kumtasi);background:var(--krem);cursor:pointer;font-size:.8rem;font-weight:600;transition:.15s;white-space:nowrap"
               id="detay-fav-btn">
               ${favKontrol(d.id) ? '❤ Favoride' : '♡ Favoriye Ekle'}
@@ -507,19 +507,19 @@ async function detayGoster(ilan) {
 
           <!-- Paylaşım barı -->
           <div class="paylasim-bar">
-            <button class="paylasim-btn pb-wa" onclick="ilanPaylas('wa',${d.id},'${d.baslik.replace(/'/g,"\'")}','${d.fiyat||''}')">
+            <button class="paylasim-btn pb-wa" ${daAttr('ilanPaylas',['wa',d.id,d.baslik,d.fiyat||''])}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.374 0 0 5.373 0 12c0 2.126.556 4.122 1.523 5.855L.057 24l6.305-1.538A11.955 11.955 0 0 0 12 24c6.626 0 12-5.373 12-12S18.626 0 12 0zm0 22c-1.885 0-3.65-.51-5.17-1.402l-.371-.22-3.843.937.977-3.75-.242-.385A9.946 9.946 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
               WhatsApp
             </button>
-            <button class="paylasim-btn pb-fb" onclick="ilanPaylas('fb',${d.id},'${d.baslik.replace(/'/g,"\'")}','${d.fiyat||''}')">
+            <button class="paylasim-btn pb-fb" ${daAttr('ilanPaylas',['fb',d.id,d.baslik,d.fiyat||''])}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               Facebook
             </button>
-            <button class="paylasim-btn pb-tw" onclick="ilanPaylas('tw',${d.id},'${d.baslik.replace(/'/g,"\'")}','${d.fiyat||''}')">
+            <button class="paylasim-btn pb-tw" ${daAttr('ilanPaylas',['tw',d.id,d.baslik,d.fiyat||''])}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.26 5.633zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
               X
             </button>
-            <button class="paylasim-btn pb-kop" onclick="ilanPaylas('kop',${d.id},'${d.baslik.replace(/'/g,"\'")}','${d.fiyat||''}')">
+            <button class="paylasim-btn pb-kop" ${daAttr('ilanPaylas',['kop',d.id,d.baslik,d.fiyat||''])}>
               🔗 Linki Kopyala
             </button>
           </div>
@@ -564,7 +564,7 @@ async function detayGoster(ilan) {
         <div class="panel-kart">
           <h3>Bilgi Talep Edin</h3>
           <p>Bu mülk hakkında sizi bilgilendirelim</p>
-          <button class="btn btn-kirm btn-blok btn-lg" onclick="iletisimAc(${d.id})">
+          <button class="btn btn-kirm btn-blok btn-lg" ${daAttr('iletisimAc',[d.id])}>
             📬 İletişime Geçin
           </button>
           <div class="panel-iletisim-satirlar" data-tip="site">
@@ -959,7 +959,7 @@ async function adminPortfoyler() {
         <td style="font-weight:600; font-size:.9rem; color:var(--toprak)">${p.fiyat||'–'}</td>
         <td><span class="durum-pill dp-${p.durum}">${p.durum}</span></td>
         <td><div class="tablo-eylemler">
-          <button class="btn btn-ntr btn-sm" onclick="ilanDuzenle(${p.id})">✏</button>
+          <button class="btn btn-ntr btn-sm" ${daAttr('ilanDuzenle',[p.id])}>✏</button>
           <button class="btn btn-sm" style="background:${p.durum==='Aktif'?'#FEF3C7;color:#92400E':'#D1FAE5;color:#065F46'}" onclick="durumDegistir(${p.id},'${p.durum==='Aktif'?'Taslak':'Aktif'}')">${p.durum==='Aktif'?'⏸':'▶'}</button>
           <button class="btn btn-hat btn-sm" onclick="if(confirm('Silinsin mi?'))ilanSilAdmin(${p.id})">🗑</button>
         </div></td>
@@ -2034,7 +2034,7 @@ async function karsGoster() {
       </table>
     </div>
     <div style="display:flex;gap:.75rem;margin-top:1.25rem">
-      ${gecerli.map(d => `<button class="btn btn-kirm btn-sm" onclick="haritaIlanAc(${d.id})">→ ${d.baslik.substring(0,20)}…</button>`).join('')}
+      ${gecerli.map(d => `<button class="btn btn-kirm btn-sm" ${daAttr('haritaIlanAc',[d.id])}>→ ${d.baslik.substring(0,20)}…</button>`).join('')}
       <button class="btn btn-ntr btn-sm" onclick="karsSifirla();sayfaGit('ilanlar')">← Listeye Dön</button>
     </div>`;
 }
@@ -2143,7 +2143,7 @@ async function haritaYukle() {
         <div class="harita-popup-baslik">${i.baslik}</div>
         <div class="harita-popup-fiyat">${i.fiyat||'Fiyat sorunuz'} ${i.para_birimi||'TL'}</div>
         <div style="font-size:.78rem;color:#888;margin-bottom:.4rem">📍 ${[i.mahalle,i.ilce].filter(Boolean).join(' / ')}</div>
-        <div class="harita-popup-detay" onclick="haritaIlanAc(${popupId})">Detaya git →</div>
+        <div class="harita-popup-detay" ${daAttr('haritaIlanAc',[popupId])}>Detaya git →</div>
       </div>
     `, { maxWidth: 220 });
 
@@ -2375,8 +2375,8 @@ async function blogDetayGoster(yazi) {
     <div class="blog-detay-icerik">${blogIcerikRender(d.icerik||'')}</div>
     <div style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--kumtasi);display:flex;gap:.5rem;flex-wrap:wrap">
       <span style="font-size:.82rem;color:var(--gri-metin)">Paylaş:</span>
-      <button class="paylasim-btn pb-wa" style="font-size:.75rem;padding:.3rem .7rem" onclick="ilanPaylas('wa',0,'${d.baslik.replace(/'/g,"\'")}','')">WhatsApp</button>
-      <button class="paylasim-btn pb-fb" style="font-size:.75rem;padding:.3rem .7rem" onclick="ilanPaylas('fb',0,'${d.baslik.replace(/'/g,"\'")}','')">Facebook</button>
+      <button class="paylasim-btn pb-wa" style="font-size:.75rem;padding:.3rem .7rem" ${daAttr('ilanPaylas',['wa',0,d.baslik,''])}>WhatsApp</button>
+      <button class="paylasim-btn pb-fb" style="font-size:.75rem;padding:.3rem .7rem" ${daAttr('ilanPaylas',['fb',0,d.baslik,''])}>Facebook</button>
     </div>`;
 
   seoGuncelle({
@@ -2405,7 +2405,7 @@ async function adminBlog() {
     }
 
     let html = `<div class="admin-baslik">Blog / Haberler
-      <button class="btn btn-kirm" onclick="blogModalAc()">+ Yeni Yazı</button>
+      <button class="btn btn-kirm" ${daAttr('blogModalAc',[])}>+ Yeni Yazı</button>
     </div>`;
 
     if (!yazılar.length) {
@@ -2423,12 +2423,12 @@ async function adminBlog() {
           <td style="font-size:.78rem;color:var(--gri-metin)">${tarih}</td>
           <td style="font-size:.82rem">${y.yazar||'–'}</td>
           <td><div class="tablo-eylemler">
-            <button class="btn btn-ntr btn-sm" onclick="blogDuzenle(${y.id})">✏</button>
+            <button class="btn btn-ntr btn-sm" ${daAttr('blogDuzenle',[y.id])}>✏</button>
             <button class="btn btn-sm" style="background:${y.durum==='Yayında'?'#FEF3C7;color:#92400E':'#D1FAE5;color:#065F46'}"
-              onclick="blogDurumDegis(${y.id},'${y.durum==='Yayında'?'Taslak':'Yayında'}')">
+              ${daAttr('blogDurumDegis',[y.id, y.durum==='Yayında'?'Taslak':'Yayında'])}>
               ${y.durum==='Yayında'?'⏸':'▶'}
             </button>
-            <button class="btn btn-hat btn-sm" onclick="if(confirm('Yazı silinsin mi?'))blogSilAdmin(${y.id})">🗑</button>
+            <button class="btn btn-hat btn-sm" ${daAttr('blogSilAdmin',[y.id],'Yazı silinsin mi?')}>🗑</button>
           </div></td>
         </tr>`;
       });
@@ -2467,7 +2467,7 @@ function blogModalAc(yazi = null) {
           <button ${daAttr('editorEkle',['\n### ',''])}>H3</button>
           <button ${daAttr('editorEkle',['\n\n',''])}>¶</button>
           <span style="width:1px;background:var(--kumtasi);align-self:stretch;margin:0 .15rem"></span>
-          <button onclick="blogResimModalAc()" style="display:flex;align-items:center;gap:.3rem">🖼 Resim Ekle</button>
+          <button ${daAttr('blogResimModalAc',[])} style="display:flex;align-items:center;gap:.3rem">🖼 Resim Ekle</button>
         </div>
         <div class="editor-toolbar-girdi">
           <textarea class="blog-editor" id="blog-icerik">${yazi?.icerik||''}</textarea>
@@ -2494,7 +2494,7 @@ function blogModalAc(yazi = null) {
         </select></div>
 
       <div style="display:flex;gap:.75rem">
-        <button class="btn btn-kirm btn-lg" onclick="blogKaydet()">💾 ${yazi ? 'Güncelle' : 'Kaydet'}</button>
+        <button class="btn btn-kirm btn-lg" ${daAttr('blogKaydet',[])}>💾 ${yazi ? 'Güncelle' : 'Kaydet'}</button>
         <button class="btn btn-ntr" onclick="adminBlog()">Vazgeç</button>
       </div>
     </div>`;
@@ -2649,7 +2649,7 @@ async function fiyatAnaliziGoster(id) {
 
   const benzerSatirlari = d.en_yakin_3.map(b => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--kumtasi);font-size:.85rem">
-      <span style="cursor:pointer;color:var(--kiremit)" onclick="haritaIlanAc(${b.id})">${b.baslik.substring(0,32)}${b.baslik.length>32?'…':''}</span>
+      <span style="cursor:pointer;color:var(--kiremit)" ${daAttr('haritaIlanAc',[b.id])}>${b.baslik.substring(0,32)}${b.baslik.length>32?'…':''}</span>
       <span style="font-weight:600">${b.m2_fiyat.toLocaleString('tr-TR')} TL/m²</span>
     </div>`).join('');
 
