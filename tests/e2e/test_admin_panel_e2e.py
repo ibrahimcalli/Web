@@ -906,6 +906,198 @@ def test_blog_sil_admin_confirm_kabul_edilirse_cagrilir(live_server):
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# BÖLÜM 9+ — YENİ TESTLER BURADAN SONRA EKLENİR
-# (bir sonraki grup: admin menü yönetimi, kullanıcı, profil/ayarlar)
+# BÖLÜM 9 — app.js: admin menü yönetimi grubu
+# ═══════════════════════════════════════════════════════════════════════
+MENUYON_STUB_JS = """
+() => {
+  window.__cagrilar = [];
+  window.menuOgeTasi = (...args) => window.__cagrilar.push({ fn: 'menuOgeTasi', args });
+  window.menuSil = (...args) => window.__cagrilar.push({ fn: 'menuSil', args });
+  window.menuHedefSec = (...args) => window.__cagrilar.push({ fn: 'menuHedefSec', args });
+  window.adminMenuOgelr = (...args) => window.__cagrilar.push({ fn: 'adminMenuOgelr', args });
+}
+"""
+
+MENUYON_INJECT_BUTTONS_JS = """
+() => {
+  const div = document.createElement('div');
+  div.id = 'test-menuyon-butonlari';
+  div.innerHTML = `
+    <button data-action="menuOgeTasi" data-action-args="[5,2,-1]">↑</button>
+    <button data-action="menuSil" data-action-args="[2]" data-confirm="Bu menü silinsin mi? (içindeki tüm öğeler de silinir)">🗑️</button>
+    <button data-action="menuHedefSec" data-action-args="[&quot;sayfa&quot;,&quot;hakkimizda&quot;,&quot;Hakkımızda · sayfa&quot;]">Seç</button>
+    <button data-action="adminMenuOgelr" data-action-args="[2,&quot;ana-menu&quot;]">📋 Öğeleri Düzenle</button>
+  `;
+  document.body.appendChild(div);
+}
+"""
+
+
+def _menuyon_sayfa_ac(browser, live_server):
+    context = browser.new_context()
+    page = context.new_page()
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+    hatalar = []
+    page.on("pageerror", lambda exc: hatalar.append(str(exc)))
+    page.goto(f"{live_server}/static/index.html")
+    page.wait_for_selector("#giris-btn", timeout=10000)
+    page.evaluate(MENUYON_STUB_JS)
+    page.evaluate(MENUYON_INJECT_BUTTONS_JS)
+    return context, page, hatalar
+
+
+def test_menuyon_oge_tasi_uc_argumanli(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="menuOgeTasi"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "menuOgeTasi", "args": [5, 2, -1]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_menuyon_sil_confirm_reddedilirse_cagrilmaz(live_server):
+    """Regresyon: menuSil kendi içinde de confirm() çağırıyor. Buton tarafında
+    AYRICA data-confirm ekleyip çift onay hatası yapmadığımızı doğruluyoruz —
+    burada tek confirm (bizim test dialog handler'ımız) reddedince hiç
+    çağrılmamalı."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+        page.on("dialog", lambda d: d.dismiss())
+
+        page.click('[data-action="menuSil"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_menuyon_hedef_sec_uc_string_argumani(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="menuHedefSec"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{
+            "fn": "menuHedefSec",
+            "args": ["sayfa", "hakkimizda", "Hakkımızda · sayfa"],
+        }], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_menuyon_admin_menu_ogelr_id_ve_slug(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="adminMenuOgelr"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "adminMenuOgelr", "args": [2, "ana-menu"]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BÖLÜM 10 — app.js: kullanıcı yönetimi + profil/ayarlar grupları
+# ═══════════════════════════════════════════════════════════════════════
+KULLANICI_STUB_JS = """
+() => {
+  window.__cagrilar = [];
+  window.kullaniciOnayla = (...args) => window.__cagrilar.push({ fn: 'kullaniciOnayla', args });
+  window.profilKaydet = (...args) => window.__cagrilar.push({ fn: 'profilKaydet', args });
+  window.heroFontSec = (el) => window.__cagrilar.push({
+    fn: 'heroFontSec', elIsElement: el instanceof HTMLElement, font: el && el.dataset.font
+  });
+}
+"""
+
+KULLANICI_INJECT_BUTTONS_JS = """
+() => {
+  const div = document.createElement('div');
+  div.id = 'test-kullanici-butonlari';
+  div.innerHTML = `
+    <button data-action="kullaniciOnayla" data-action-args="[8]">✓ Onayla</button>
+    <button data-action="profilKaydet">💾 Profili Güncelle</button>
+    <div id="font-secim" data-font="Playfair Display" data-action="heroFontSec" data-action-args="[&quot;__EL__&quot;]" style="width:80px;height:20px">Playfair</div>
+  `;
+  document.body.appendChild(div);
+}
+"""
+
+
+def _kullanici_sayfa_ac(browser, live_server):
+    context = browser.new_context()
+    page = context.new_page()
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+    hatalar = []
+    page.on("pageerror", lambda exc: hatalar.append(str(exc)))
+    page.goto(f"{live_server}/static/index.html")
+    page.wait_for_selector("#giris-btn", timeout=10000)
+    page.evaluate(KULLANICI_STUB_JS)
+    page.evaluate(KULLANICI_INJECT_BUTTONS_JS)
+    return context, page, hatalar
+
+
+def test_kullanici_onayla_id_argumani(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="kullaniciOnayla"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "kullaniciOnayla", "args": [8]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_profil_kaydet_argumansiz(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="profilKaydet"]')
+        page.wait_for_timeout(150)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "profilKaydet", "args": []}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_hero_font_sec_el_tek_argumanda(live_server):
+    """heroFontSec(this) — __EL__ sentinel TEK argüman olarak; elementin
+    kendi data-font attribute'una fonksiyon içinde erişilebilmeli."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
+
+        page.click('#font-secim')
+        page.wait_for_timeout(150)
+        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+        assert cagri["fn"] == "heroFontSec"
+        assert cagri["elIsElement"] is True
+        assert cagri["font"] == "Playfair Display"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BÖLÜM 11+ — YENİ TESTLER BURADAN SONRA EKLENİR
+# (kalan grup: slider, karşılaştırma, duyuru, adminSayfa nav, geriGit vb.)
 # ═══════════════════════════════════════════════════════════════════════

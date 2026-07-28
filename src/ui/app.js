@@ -1130,7 +1130,7 @@ async function adminKullanicilar() {
   // Bekleyen onay sayısı
   const bekleyenler = kullanicilar.filter(k => k.id > 1 && !k.onayli);
   let html = `<div class="admin-baslik">Kullanıcılar
-    <button class="btn btn-kirm" onclick="kullaniciEkle()">+ Kullanıcı Ekle</button>
+    <button class="btn btn-kirm" ${daAttr('kullaniciEkle',[])}>+ Kullanıcı Ekle</button>
   </div>`;
 
   if (bekleyenler.length > 0) {
@@ -1156,8 +1156,8 @@ async function adminKullanicilar() {
       <td>
         <span style="display:inline-flex;padding:.18rem .6rem;border-radius:20px;font-size:.72rem;font-weight:600;background:${onayBg};color:${onayRenk}">${onayMetin}</span>
         <div style="margin-top:.3rem;display:flex;gap:.3rem">
-          ${k.id > 1 && !onay ? `<button class="btn btn-zey btn-sm" onclick="kullaniciOnayla(${k.id})">✓ Onayla</button>` : ''}
-          ${k.id > 1 && onay  ? `<button class="btn btn-ntr btn-sm" onclick="kullaniciOnayKaldir(${k.id})">Onayı Kaldır</button>` : ''}
+          ${k.id > 1 && !onay ? `<button class="btn btn-zey btn-sm" ${daAttr('kullaniciOnayla',[k.id])}>✓ Onayla</button>` : ''}
+          ${k.id > 1 && onay  ? `<button class="btn btn-ntr btn-sm" ${daAttr('kullaniciOnayKaldir',[k.id])}>Onayı Kaldır</button>` : ''}
         </div>
       </td>
       <td style="font-size:.75rem;color:var(--gri-metin)">${(k.olusturma||'').substring(0,10)}</td>
@@ -1236,7 +1236,7 @@ async function adminAyarlar() {
                 📂 Logo Seç
                 <input type="file" id="logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="logoYukle(event)">
               </label>
-              <button class="btn btn-sm" style="background:#FEE2E2;color:#991B1B" onclick="logoSil()" id="logo-sil-btn" style="display:none">🗑 Kaldır</button>
+              <button class="btn btn-sm" style="background:#FEE2E2;color:#991B1B" ${daAttr('logoSil',[])} id="logo-sil-btn" style="display:none">🗑 Kaldır</button>
             </div>
           </div>
         </div>
@@ -1310,7 +1310,7 @@ async function adminAyarlar() {
           <label class="form-etiket">API Anahtarı</label>
           <input class="form-girdi" type="password" id="ay-ai_api_key" value="${ayarlar.ai_api_key||''}" placeholder="sk-...">
         </div>
-        <button class="btn btn-ntr btn-sm" onclick="aiAyarlariKaydet()">💾 AI Ayarlarını Kaydet</button>
+        <button class="btn btn-ntr btn-sm" ${daAttr('aiAyarlariKaydet',[])}>💾 AI Ayarlarını Kaydet</button>
       </div>
 
       <!-- Hero Bölümü -->
@@ -1376,7 +1376,7 @@ async function adminAyarlar() {
           <input type="hidden" id="ay-hero_font" value="${esc(ayarlar.hero_font||'Playfair Display')}">
           <div id="ay-hero-font-grd" style="display:flex;flex-wrap:wrap;gap:.35rem">
             ${(() => { const sf = ayarlar.hero_font || 'Playfair Display';
-              return HERO_FONTS.map(f => `<div onclick="heroFontSec(this)" data-font="${esc(f)}" style="
+              return HERO_FONTS.map(f => `<div ${daAttr('heroFontSec',['__EL__'])} data-font="${esc(f)}" style="
                 cursor:pointer;padding:.35rem .55rem;border-radius:var(--r-sm);
                 border:2px solid ${f===sf?'var(--kiremit)':'var(--kumtasi)'};
                 background:${f===sf?'rgba(196,92,53,.08)':'transparent'};
@@ -1408,7 +1408,7 @@ async function adminAyarlar() {
         </div>
       </div>
 
-      <button class="btn btn-kirm btn-lg" onclick="ayarlariKaydet()">💾 Ayarları Kaydet</button>
+      <button class="btn btn-kirm btn-lg" ${daAttr('ayarlariKaydet',[])}>💾 Ayarları Kaydet</button>
     </div>`;
   // Logo önizlemeyi doldur
   if (ayarlar.logo_url) setTimeout(() => logoOnizlemeGuncelle(ayarlar.logo_url), 50);
@@ -1509,7 +1509,7 @@ async function adminHesabim() {
               <span class="btn btn-ntr btn-sm">📷 Fotoğraf Seç</span>
               <input type="file" id="profil-resim-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="profilResmiYukle(event)">
             </label>
-            ${ben.profil_resmi ? `<button class="btn btn-sm" style="color:var(--gri-metin);margin-left:.4rem" onclick="profilResmiSil()">✕ Kaldır</button>` : ''}
+            ${ben.profil_resmi ? `<button class="btn btn-sm" style="color:var(--gri-metin);margin-left:.4rem" ${daAttr('profilResmiSil',[])}>✕ Kaldır</button>` : ''}
           </div>
         </div>
 
@@ -1524,7 +1524,7 @@ async function adminHesabim() {
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;">
           <span style="font-size:.78rem;background:var(--zeytun-a);color:var(--zeytun);padding:.2rem .6rem;border-radius:4px;font-weight:600;">${ben.rol}</span>
         </div>
-        <button class="btn btn-kirm" onclick="profilKaydet()">💾 Profili Güncelle</button>
+        <button class="btn btn-kirm" ${daAttr('profilKaydet',[])}>💾 Profili Güncelle</button>
       </div>
 
       <!-- Şifre Değiştir -->
@@ -1543,7 +1543,7 @@ async function adminHesabim() {
           <label class="form-etiket z">Yeni Şifre (Tekrar)</label>
           <input class="form-girdi" id="sifre-tekrar" type="password" placeholder="••••••••" autocomplete="new-password">
         </div>
-        <button class="btn btn-kirm" onclick="sifreDegistir()">🔑 Şifreyi Güncelle</button>
+        <button class="btn btn-kirm" ${daAttr('sifreDegistir',[])}>🔑 Şifreyi Güncelle</button>
       </div>
 
       <!-- Güvenlik notu -->
@@ -3587,7 +3587,7 @@ function menuIkonPanelOlustur(secili = '') {
         data-menu-ikon="${esc(ik)}"
         data-menu-ikon-grup="${esc(g.grup)}"
         class="menu-ikon-btn${ik === secili ? ' aktif' : ''}"
-        onclick="menuIkonSec('${esc(ik)}')"
+        ${daAttr('menuIkonSec',[ik])}
         title="${esc(g.grup)} · ${esc(ik)}">${esc(ik)}</button>
     `).join('')}
   `).join('');
@@ -3597,7 +3597,7 @@ function menuIkonPanelOlustur(secili = '') {
         <input id="ymo-ikon-arama" class="menu-yeni-input" style="flex:1;min-width:180px" placeholder="İkon ara..." oninput="menuIkonFiltrele(this.value)">
         <input type="hidden" id="ymo-ikon" value="${esc(secili || '')}">
         <div style="font-size:.78rem;color:var(--gri-metin)">Seçili: <strong id="ymo-ikon-secili">${secili ? esc(secili) : '—'}</strong></div>
-        <button class="btn btn-ntr btn-sm" type="button" onclick="menuIkonTemizle()">Temizle</button>
+        <button class="btn btn-ntr btn-sm" type="button" ${daAttr('menuIkonTemizle',[])}>Temizle</button>
       </div>
       <div id="ymo-ikon-liste" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:.35rem;max-height:190px;overflow:auto">
         ${butonlar}
@@ -3657,7 +3657,7 @@ function menuHedefPanelOlustur(tip = 'sayfa', secili = '') {
           data-menu-hedef-label="${esc(k.baslik)} ${esc(k.alt)}"
           data-menu-hedef-tip="${esc(k.tip)}"
           class="menu-hedef-kart${String(k.value) === String(secili) ? ' aktif' : ''}"
-          onclick="menuHedefSec('${esc(k.tip)}','${esc(k.value)}','${esc(k.baslik)} · ${esc(k.alt)}')">
+          ${daAttr('menuHedefSec',[k.tip,k.value,`${k.baslik} · ${k.alt}`])}>
           <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem">
             <strong style="font-size:.86rem;word-break:break-word">${esc(k.baslik)}</strong>
             <span style="font-size:.7rem;color:var(--gri-metin);flex-shrink:0">${esc(k.alt)}</span>
@@ -3680,7 +3680,7 @@ function menuHedefPanelOlustur(tip = 'sayfa', secili = '') {
 }
 
 function menuSablonGorsel(sablon, index) {
-  return `<div class="menu-sablon-kart" onclick="menuSablonUygula(${index})">
+  return `<div class="menu-sablon-kart" ${daAttr('menuSablonUygula',[index])}>
     <div class="menu-sablon-ikon">${esc(sablon.ikon)}</div>
     <div class="menu-sablon-ad">${esc(sablon.ad)}</div>
     <div class="menu-sablon-aciklama">${esc(sablon.aciklama)}</div>
@@ -3754,9 +3754,9 @@ async function adminMenuler() {
           <label class="menu-toggle-label"><input type="checkbox"${m.aktif?' checked':''} onchange="menuAktifToggle(${m.id},this.checked)"><span class="menu-toggle-kut"></span></label>
         </div>
         <div class="menu-kart-alt">
-          <button class="btn btn-sm btn-ntr" onclick="adminMenuOgelr(${m.id},'${esc(m.slug)}')">📋 Öğeleri Düzenle</button>
-          <button class="btn btn-sm btn-cik" onclick="menuAdDuzenle(${m.id},'${esc(m.ad)}')">✏️ Ad</button>
-          <button class="btn btn-sm btn-hat" onclick="menuSil(${m.id})">🗑️</button>
+          <button class="btn btn-sm btn-ntr" ${daAttr('adminMenuOgelr',[m.id,m.slug])}>📋 Öğeleri Düzenle</button>
+          <button class="btn btn-sm btn-cik" ${daAttr('menuAdDuzenle',[m.id,m.ad])}>✏️ Ad</button>
+          <button class="btn btn-sm btn-hat" ${daAttr('menuSil',[m.id])}>🗑️</button>
         </div>
       </div>`;
     }
@@ -3771,7 +3771,7 @@ async function adminMenuler() {
   html += '<input id="ymn-ad" placeholder="Menü adı (örn: Ana Menü)" class="menu-yeni-input">';
   html += '<input id="ymn-slug" placeholder="slug (ana-menu)" class="menu-yeni-input">';
   html += '<select id="ymn-lok" class="menu-yeni-select"><option value="header">🏠 Header</option><option value="footer">📌 Footer</option><option value="sidebar">📂 Sidebar</option></select>';
-  html += '<button class="btn btn-kirm" onclick="menuOlustur()">Oluştur</button>';
+  html += '<button class="btn btn-kirm" ' + daAttr('menuOlustur',[]) + '>Oluştur</button>';
   html += '</div></div>';
 
   html += '</div></div>'; // .tema-bolum / .menu-editor
@@ -3834,7 +3834,7 @@ async function adminMenuOgelr(menuId, menuSlug) {
   menuOgeSecenekleriKaydet({ sayfalar, bloglar, portfoyler });
 
   let html = '<div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">';
-  html += `<button class="btn btn-sm btn-ntr" onclick="adminMenuler()" style="font-size:.8rem">← Menüler</button>`;
+  html += `<button class="btn btn-sm btn-ntr" ${daAttr('adminMenuler',[])} style="font-size:.8rem">← Menüler</button>`;
   html += `<span>📋 ${esc(menuSlug)} — Öğeler</span></div>`;
   html += '<div class="menu-oge-editor">';
 
@@ -3853,8 +3853,8 @@ async function adminMenuOgelr(menuId, menuSlug) {
   html += '</select>';
   html += '<input id="ymo-sira" type="number" class="menu-yeni-input" style="width:90px;min-width:90px" value="0" min="0" title="Sıra">';
   html += '<label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;white-space:nowrap"><input type="checkbox" id="ymo-aktif" checked> Aktif</label>';
-  html += `<button id="ymo-kaydet-btn" class="btn btn-kirm btn-sm" onclick="menuOgeEkle(${menuId})">+ Ekle</button>`;
-  html += `<button id="ymo-iptal-btn" class="btn btn-ntr btn-sm" onclick="menuOgeDuzenlemeIptal(${menuId})" style="display:none">İptal</button>`;
+  html += `<button id="ymo-kaydet-btn" class="btn btn-kirm btn-sm" ${daAttr('menuOgeEkle',[menuId])}>+ Ekle</button>`;
+  html += `<button id="ymo-iptal-btn" class="btn btn-ntr btn-sm" ${daAttr('menuOgeDuzenlemeIptal',[menuId])} style="display:none">İptal</button>`;
   html += '</div>';
   html += '<div style="font-size:.75rem;color:var(--gri-metin);margin-top:.5rem">İpucu: CMS sayfa, blog ve portföy seçimleri aşağıdaki iç listeden yapılır. İkonu üstteki paketlerden seçin.</div>';
 
@@ -3888,8 +3888,8 @@ function menuOgeKart(o, menuId, alt = false) {
     : (o.hedef_tip === 'blog' ? (o.hedef_url || 'blog-detay') : (o.hedef_tip === 'portfoy' ? (o.hedef_url || 'detay') : (o.hedef_url || o.hedef_tip || '—')));
   return `<div class="menu-oge-kart${alt?' menu-oge-alt':''}">
     <div class="menu-oge-kart-sira">
-      <button class="btn btn-sm btn-ntr" onclick="menuOgeTasi(${o.id},${menuId},-1)" title="Yukarı">↑</button>
-      <button class="btn btn-sm btn-ntr" onclick="menuOgeTasi(${o.id},${menuId},1)" title="Aşağı">↓</button>
+      <button class="btn btn-sm btn-ntr" ${daAttr('menuOgeTasi',[o.id,menuId,-1])} title="Yukarı">↑</button>
+      <button class="btn btn-sm btn-ntr" ${daAttr('menuOgeTasi',[o.id,menuId,1])} title="Aşağı">↓</button>
     </div>
     <div class="menu-oge-kart-ic">
       <div class="menu-oge-kart-ikon">${lokIkon}</div>
@@ -3900,8 +3900,8 @@ function menuOgeKart(o, menuId, alt = false) {
     </div>
     <label class="menu-toggle-label"><input type="checkbox"${o.aktif?' checked':''} onchange="menuOgeAktifToggle(${o.id},${menuId},this.checked)"><span class="menu-toggle-kut"></span></label>
     <div class="menu-oge-kart-aks">
-      <button class="btn btn-sm btn-cik" onclick="menuOgeDuzenle(${o.id},${menuId})">✏️</button>
-      <button class="btn btn-sm btn-hat" onclick="menuOgeSil(${menuId},${o.id})">🗑️</button>
+      <button class="btn btn-sm btn-cik" ${daAttr('menuOgeDuzenle',[o.id,menuId])}>✏️</button>
+      <button class="btn btn-sm btn-hat" ${daAttr('menuOgeSil',[menuId,o.id])}>🗑️</button>
     </div>
   </div>`;
 }
