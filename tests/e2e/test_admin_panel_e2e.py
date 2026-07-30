@@ -11,6 +11,11 @@ bölümün kendi STUB_JS / INJECT_BUTTONS_JS / yardımcı fonksiyonları vardır
 (isim çakışmasını önlemek için bölüm öneki taşırlar). Test fonksiyon
 adları da bölüm önekiyle başlar (örn. test_appbanner_..., test_menu_...).
 
+ZAMANLAMA NOTU: Sabit page.wait_for_timeout(N) yerine mümkün olduğunca
+_bekle_kosul() ile POLLING kullanılır — böylece testler yavaş/yüklü
+makinelerde de (sabit süre yetmediği için) yanlışlıkla başarısız olmaz,
+koşul ne zaman gerçekleşirse o an devam eder (timeout'a kadar).
+
 Çalıştırma:
     python3 -m pytest tests/e2e/test_admin_panel_e2e.py -v
 """
@@ -33,6 +38,17 @@ def _sw_devre_disi_birak_init_script():
             configurable: true
         });
     """
+
+
+def _bekle_kosul(page, js_kosul, timeout=8000, mesaj=""):
+    """Sabit page.wait_for_timeout(N) yerine: js_kosul (string, JS ifadesi)
+    true dönene kadar POLLING ile bekler. Yavaş/yüklü makinelerde sabit
+    süre yetmediği için testlerin yanlışlıkla kırılmasını önler — koşul
+    ne zaman sağlanırsa o an devam eder, en fazla timeout kadar bekler."""
+    try:
+        page.wait_for_function(js_kosul, timeout=timeout)
+    except Exception as e:
+        raise AssertionError(f"{mesaj or 'Koşul zaman aşımına uğradı'}: {js_kosul!r} ({e})")
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -71,7 +87,7 @@ def test_widget_cerez_banner_kapat_ve_cookie_set_edilir(live_server):
             "Banner render edilmedi"
 
         page.click('[data-widget-action="cerez-onayla"]')
-        page.wait_for_timeout(300)
+        page.wait_for_timeout(700)
 
         assert page.locator('[data-widget-container="footer-1"]').count() == 0, \
             "Banner tıklamadan sonra kaybolmadı (container.remove() çalışmadı)"
@@ -118,7 +134,7 @@ def test_menu_sayfa_link_preventDefault_ve_dogru_parametre(live_server):
 
         url_once = page.url
         page.click('[data-sayfa-git="sayfa"]')
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(600)
 
         assert page.url == url_once, "Link tıklanınca sayfa yönlendi (preventDefault çalışmadı)"
 
@@ -137,7 +153,7 @@ def test_menu_anasayfa_span_calisir(live_server):
         page.wait_for_selector('[data-sayfa-git="anasayfa"]', timeout=5000)
 
         page.click('[data-sayfa-git="anasayfa"]')
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(600)
 
         cagrilar = page.evaluate("window.__sayfaGitCagrilari")
         anasayfa_cagri = next((c for c in cagrilar if c["sayfa"] == "anasayfa"), None)
@@ -155,7 +171,7 @@ def test_menu_sayisal_id_parametresi_dogru_tipte_gelir(live_server):
         page.wait_for_selector('[data-sayfa-git="detay"]', timeout=5000)
 
         page.click('[data-sayfa-git="detay"]')
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(600)
 
         cagrilar = page.evaluate("window.__sayfaGitCagrilari")
         detay_cagri = next((c for c in cagrilar if c["sayfa"] == "detay"), None)
@@ -212,7 +228,7 @@ def test_adminsistem_data_action_argumanli_cagri(live_server):
         context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
         page.click('[data-action="sistemLogYukle"]')
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(600)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "sistemLogYukle", "args": ["error"]}], f"Yanlış çağrı: {cagrilar}"
@@ -227,7 +243,7 @@ def test_adminsistem_data_action_argumansiz_cagri(live_server):
         context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
         page.click('[data-action="sistemAiTanilamaIndir"]')
-        page.wait_for_timeout(200)
+        page.wait_for_timeout(600)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "sistemAiTanilamaIndir", "args": []}], f"Yanlış çağrı: {cagrilar}"
@@ -245,15 +261,21 @@ def test_adminsistem_data_copy_text_statik_metin_kopyalar(live_server):
         assert btn.text_content() == "📋"
 
         btn.click()
-        page.wait_for_timeout(100)
-        assert btn.text_content() == "✓", "Tıklama sonrası geri bildirim metni görünmedi"
+        _bekle_kosul(
+            page,
+            "document.querySelector('[data-copy-text]')?.textContent === '✓'",
+            mesaj="Tıklama sonrası geri bildirim metni görünmedi",
+        )
 
         panoya_kopyalanan = page.evaluate("navigator.clipboard.readText()")
         assert panoya_kopyalanan == "git pull && echo test", \
             f"Panoya yanlış metin kopyalandı: {panoya_kopyalanan!r}"
 
-        page.wait_for_timeout(400)
-        assert btn.text_content() == "📋", "Geri bildirim süresi sonunda eski metne dönmedi"
+        _bekle_kosul(
+            page,
+            "document.querySelector('[data-copy-text]')?.textContent === '📋'",
+            mesaj="Geri bildirim süresi sonunda eski metne dönmedi",
+        )
 
         assert not hatalar, f"JS hatası: {hatalar}"
         context.close()
@@ -266,7 +288,11 @@ def test_adminsistem_data_copy_target_element_icerigini_kopyalar(live_server):
         context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
         page.click('[data-copy-target="ai-json"]')
-        page.wait_for_timeout(100)
+        _bekle_kosul(
+            page,
+            "document.querySelector('[data-copy-target=\\\"ai-json\\\"]')?.textContent !== '📋 Panoya Kopyala'",
+            mesaj="Kopyalama sonrası buton geri bildirimi görünmedi",
+        )
 
         panoya_kopyalanan = page.evaluate("navigator.clipboard.readText()")
         assert panoya_kopyalanan == '{"ornek": "veri"}', \
@@ -331,7 +357,7 @@ def test_appdaattr_argumansiz_cagri(live_server):
         context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
         page.click('[data-action="wizardAdim1"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "wizardAdim1", "args": []}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -345,7 +371,7 @@ def test_appdaattr_string_argumanli_cagri(live_server):
         context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
         page.click('[data-action="wizardAdim2"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "wizardAdim2", "args": ["emlak"]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -359,7 +385,7 @@ def test_appdaattr_el_sentinel_tiklanan_elementi_gecirir(live_server):
         context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
         page.click('#tema-yesil')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
         assert cagri["fn"] == "temaUygula"
         assert cagri["tema"] == "green"
@@ -378,7 +404,7 @@ def test_appdaattr_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server):
 
         onceki = page.evaluate("window.__cagrilar.length")
         page.click('[data-action="bannerSilTest"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         sonraki = page.evaluate("window.__cagrilar.length")
 
         assert sonraki == onceki, "confirm() reddedildiği halde fonksiyon çağrıldı!"
@@ -394,7 +420,7 @@ def test_appdaattr_confirm_kabul_edilirse_fonksiyon_cagrilir(live_server):
         page.on("dialog", lambda d: d.accept())
 
         page.click('[data-action="bannerSilTest"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "bannerSilTest", "args": []}], \
             f"confirm() kabul edildiği halde beklenmedik çağrı listesi: {cagrilar}"
@@ -409,7 +435,7 @@ def test_appdaattr_null_argumani_dogru_tasinir(live_server):
         context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
         page.click('[data-action="widgetKaydetTest"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
         assert cagri == {"fn": "widgetKaydetTest", "args": [None]}, f"Beklenmedik: {cagri}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -429,7 +455,7 @@ def test_appdaattr_listener_tek_sefer_tetiklenir(live_server):
         context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
         page.click('[data-action="wizardAdim1"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert len(cagrilar) == 1, \
             f"wizardAdim1 tam olarak 1 kez çağrılmalıydı, {len(cagrilar)} kez çağrıldı: {cagrilar}"
@@ -486,7 +512,7 @@ def test_appbanner_argumansiz_json_objeler_dogru_iletilir(live_server):
         page, hatalar = _banner_sayfa_ac(browser, live_server)
 
         page.click('[data-action="bannerYeniModal"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{
@@ -503,7 +529,7 @@ def test_appbanner_id_ve_toggle_degeri_dogru_tipte_gelir(live_server):
         page, hatalar = _banner_sayfa_ac(browser, live_server)
 
         page.click('[data-action="bannerToggle"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "bannerToggle", "args": [7, 0]}], f"Yanlış çağrı: {cagrilar}"
@@ -518,7 +544,7 @@ def test_appbanner_confirm_onaylanirsa_fonksiyon_cagrilir(live_server):
 
         page.on("dialog", lambda d: d.accept())
         page.click('[data-action="bannerSil"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "bannerSil", "args": [7]}], f"Yanlış çağrı: {cagrilar}"
@@ -533,7 +559,7 @@ def test_appbanner_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server):
 
         page.on("dialog", lambda d: d.dismiss())
         page.click('[data-action="bannerSil"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [], f"Confirm reddedilmesine rağmen çağrıldı: {cagrilar}"
@@ -548,7 +574,7 @@ def test_appbanner_ic_ice_json_arguman_dogru_iletilir(live_server):
         page, hatalar = _banner_sayfa_ac(browser, live_server)
 
         page.click('[data-action="bannerDuzenleModal"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{
@@ -614,7 +640,7 @@ def test_appsaas_saas_tenant_sil_confirm_kabul(live_server):
         page.on("dialog", lambda d: d.accept())
 
         page.click('[data-action="saasTenantSil"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "saasTenantSil", "args": [5]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -628,7 +654,7 @@ def test_appsaas_sayfa_kaydet_null_id(live_server):
         context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
         page.click('[data-action="sayfaKaydet"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "sayfaKaydet", "args": [None]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -642,7 +668,7 @@ def test_appsaas_sablon_bolum_tasi_iki_id(live_server):
         context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
         page.click('[data-action="sablonBolumTasi"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "sablonBolumTasi", "args": [3, 7]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -656,7 +682,7 @@ def test_appsaas_editor_ekle_cok_satirli_string(live_server):
         context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
         page.click('[data-action="editorEkle"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "editorEkle", "args": ["\n## ", ""]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -672,7 +698,7 @@ def test_appsaas_sayfa_editor_ekle_tek_tirnakli_html(live_server):
         context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
         page.click('[data-action="sayfaEditorEkle"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{
             "fn": "sayfaEditorEkle",
@@ -744,7 +770,7 @@ def test_ilan_paylas_tek_tirnakli_baslik_dogru_tasinir(live_server):
         context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
         page.click('[data-action="ilanPaylas"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{
             "fn": "ilanPaylas",
@@ -761,7 +787,7 @@ def test_ilan_harita_ac_id_argumani(live_server):
         context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
         page.click('[data-action="haritaIlanAc"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "haritaIlanAc", "args": [99]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -777,7 +803,7 @@ def test_ilan_gfoto_degis_el_ilk_argumanda(live_server):
         context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
         page.click('#foto-thumb')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
         assert cagri["fn"] == "gFotoDegis"
         assert cagri["elIsElement"] is True
@@ -795,7 +821,7 @@ def test_ilan_fav_toggle_el_ucuncu_argumanda(live_server):
         context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
         page.click('#fav-btn')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
         assert cagri["fn"] == "favToggle"
         assert cagri["id"] == 15
@@ -851,7 +877,7 @@ def test_blog_duzenle_id_argumani(live_server):
         context, page, hatalar = _blog_sayfa_ac(browser, live_server)
 
         page.click('[data-action="blogDuzenle"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "blogDuzenle", "args": [11]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -865,7 +891,7 @@ def test_blog_durum_degis_string_argumani(live_server):
         context, page, hatalar = _blog_sayfa_ac(browser, live_server)
 
         page.click('[data-action="blogDurumDegis"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "blogDurumDegis", "args": [11, "Taslak"]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -882,7 +908,7 @@ def test_blog_sil_admin_confirm_reddedilirse_cagrilmaz(live_server):
         page.on("dialog", lambda d: d.dismiss())
 
         page.click('[data-action="blogSilAdmin"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -897,7 +923,7 @@ def test_blog_sil_admin_confirm_kabul_edilirse_cagrilir(live_server):
         page.on("dialog", lambda d: d.accept())
 
         page.click('[data-action="blogSilAdmin"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "blogSilAdmin", "args": [11]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -952,7 +978,7 @@ def test_menuyon_oge_tasi_uc_argumanli(live_server):
         context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
 
         page.click('[data-action="menuOgeTasi"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "menuOgeTasi", "args": [5, 2, -1]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -971,7 +997,7 @@ def test_menuyon_sil_confirm_reddedilirse_cagrilmaz(live_server):
         page.on("dialog", lambda d: d.dismiss())
 
         page.click('[data-action="menuSil"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -985,7 +1011,7 @@ def test_menuyon_hedef_sec_uc_string_argumani(live_server):
         context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
 
         page.click('[data-action="menuHedefSec"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{
             "fn": "menuHedefSec",
@@ -1002,7 +1028,7 @@ def test_menuyon_admin_menu_ogelr_id_ve_slug(live_server):
         context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
 
         page.click('[data-action="adminMenuOgelr"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "adminMenuOgelr", "args": [2, "ana-menu"]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -1057,7 +1083,7 @@ def test_kullanici_onayla_id_argumani(live_server):
         context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
 
         page.click('[data-action="kullaniciOnayla"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "kullaniciOnayla", "args": [8]}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -1071,7 +1097,7 @@ def test_profil_kaydet_argumansiz(live_server):
         context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
 
         page.click('[data-action="profilKaydet"]')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "profilKaydet", "args": []}], f"Beklenmedik: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
@@ -1087,7 +1113,7 @@ def test_hero_font_sec_el_tek_argumanda(live_server):
         context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
 
         page.click('#font-secim')
-        page.wait_for_timeout(150)
+        page.wait_for_timeout(500)
         cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
         assert cagri["fn"] == "heroFontSec"
         assert cagri["elIsElement"] is True
@@ -1098,6 +1124,230 @@ def test_hero_font_sec_el_tek_argumanda(live_server):
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# BÖLÜM 11+ — YENİ TESTLER BURADAN SONRA EKLENİR
-# (kalan grup: slider, karşılaştırma, duyuru, adminSayfa nav, geriGit vb.)
+# BÖLÜM 11 — app.js: slider, karşılaştırma, duyuru, admin nav, özel desenler
+# (bu, app.js'teki SON onclick grubudur — bu bölümden sonra app.js'te
+# hiç onclick="" attribute'u kalmamıştır)
+# ═══════════════════════════════════════════════════════════════════════
+SONGRUP_STUB_JS = """
+() => {
+  window.__cagrilar = [];
+  window.sliderGit = (...args) => window.__cagrilar.push({ fn: 'sliderGit', args });
+  window.durumDegistir = (...args) => window.__cagrilar.push({ fn: 'durumDegistir', args });
+  window.katFiltrele = (el, k) => window.__cagrilar.push({
+    fn: 'katFiltrele', elIsElement: el instanceof HTMLElement, elId: el && el.id, k
+  });
+  window.belgeFormAc = (...args) => window.__cagrilar.push({ fn: 'belgeFormAc', args });
+  // NOT: karsSifirlaVeListeyeDon KASITLI olarak stublanmıyor — app.js bir ES
+  // module olduğu için içindeki karsSifirla()/sayfaGit() çağrıları lexical
+  // scope'tan çözülür, window.X override'ları etkilemez. Bu yüzden o test
+  // gerçek fonksiyonu çalıştırıp DOM yan etkisini (sayfa-ilanlar aktif mi)
+  // kontrol ediyor.
+}
+"""
+
+SONGRUP_INJECT_BUTTONS_JS = r"""
+() => {
+  const div = document.createElement('div');
+  div.id = 'test-songrup-butonlari';
+  div.innerHTML = `
+    <button data-action="sliderGit" data-action-args="[&quot;anasayfa&quot;,-1]">‹</button>
+    <button id="kars-donus-btn" data-action="karsSifirlaVeListeyeDon">← Listeye Dön</button>
+    <button data-action="durumDegistir" data-action-args="[7,&quot;Taslak&quot;]">⏸</button>
+    <div id="kat-tumu" data-kat="" data-action="katFiltrele" data-action-args="[&quot;__EL__&quot;,&quot;&quot;]" style="width:60px;height:20px">Tümü</div>
+    <div id="drop-zone-test" data-action="belgeInputAc" style="width:60px;height:20px"></div>
+    <div id="modal-zemin-test" data-backdrop-close="modal-zemin-test" style="width:100px;height:100px">
+      <div id="modal-icerik-test" style="width:50px;height:50px">İçerik</div>
+    </div>
+  `;
+  document.body.appendChild(div);
+  // Gerçek karsSifirlaVeListeyeDon fonksiyonunu, iki alt-çağrıyı (karsSifirla +
+  // sayfaGit) yaptığını doğrulamak için ÇAĞIRMASINA izin veriyoruz (stub değil).
+}
+"""
+
+
+def _songrup_sayfa_ac(browser, live_server):
+    context = browser.new_context()
+    page = context.new_page()
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+    hatalar = []
+    page.on("pageerror", lambda exc: hatalar.append(str(exc)))
+    page.goto(f"{live_server}/static/index.html")
+    page.wait_for_selector("#giris-btn", timeout=10000)
+    page.evaluate(SONGRUP_STUB_JS)
+    page.evaluate(SONGRUP_INJECT_BUTTONS_JS)
+    return context, page, hatalar
+
+
+def test_songrup_slider_git_negatif_yon(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="sliderGit"]')
+        page.wait_for_timeout(500)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "sliderGit", "args": ["anasayfa", -1]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_kars_sifirla_ve_listeye_don_iki_cagri_yapar(live_server):
+    """Regresyon: eskiden onclick="karsSifirla();sayfaGit('ilanlar')" tek
+    attribute'ta İKİ ayrı fonksiyon çağırıyordu. Artık karsSifirlaVeListeyeDon()
+    adlı BİRLEŞİK bir fonksiyon bu ikisini sırayla çağırıyor.
+
+    NOT: app.js bir ES module olduğu için window.karsSifirla = stub ataması,
+    karsSifirlaVeListeyeDon'un İÇİNDEKİ lexical-scope çağrısını etkilemez
+    (modüllerde üst-seviye fonksiyon bildirimleri window'a otomatik
+    bağlanmaz). Bu yüzden burada stub yerine GERÇEK yan etkileri
+    (DOM state değişimi) doğruluyoruz."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        page.click('#kars-donus-btn')
+        page.wait_for_timeout(700)
+
+        # sayfaGit('ilanlar') çalıştıysa: #sayfa-ilanlar 'aktif' sınıfını almalı
+        ilanlar_aktif = page.evaluate(
+            "document.getElementById('sayfa-ilanlar')?.classList.contains('aktif')"
+        )
+        assert ilanlar_aktif is True, "sayfaGit('ilanlar') çalışmadı (sayfa-ilanlar aktif değil)"
+
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_durum_degistir_id_ve_yeni_durum(live_server):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        page.click('[data-action="durumDegistir"]')
+        page.wait_for_timeout(500)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{"fn": "durumDegistir", "args": [7, "Taslak"]}], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_dinamik_fonksiyon_adi_katFiltrele(live_server):
+    """katYukle()'de fonksiyon adı bir DEĞİŞKENDEN (tiklama) geliyordu
+    (onclick="${tiklama}(this,'')"). daAttr(tiklama, [...]) ile de aynı
+    şekilde çalıştığını doğruluyoruz."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        page.click('#kat-tumu')
+        page.wait_for_timeout(500)
+        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+        assert cagri["fn"] == "katFiltrele"
+        assert cagri["elIsElement"] is True
+        assert cagri["elId"] == "kat-tumu"
+        assert cagri["k"] == ""
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_belge_input_ac_gizli_input_tetikler(live_server):
+    """onclick="document.getElementById('belge-input').click()" yerine
+    window.belgeInputAc() yardımcı fonksiyonu — gerçek dosya input'unun
+    tıklanmasını tetiklediğini (gizli file input) doğruluyoruz."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        # Gerçek belge-input elementini ekleyip tıklamayı yakalıyoruz
+        page.evaluate("""() => {
+            const inp = document.createElement('input');
+            inp.type = 'file';
+            inp.id = 'belge-input';
+            inp.style.display = 'none';
+            window.__belgeInputTiklandi = false;
+            inp.addEventListener('click', (e) => { e.preventDefault(); window.__belgeInputTiklandi = true; });
+            document.body.appendChild(inp);
+        }""")
+
+        page.click('#drop-zone-test')
+        page.wait_for_timeout(500)
+        tiklandi = page.evaluate("window.__belgeInputTiklandi")
+        assert tiklandi is True, "belge-input'a tıklama tetiklenmedi"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_modal_backdrop_dogrudan_tiklamada_kapanir(live_server):
+    """data-backdrop-close: zemine DOĞRUDAN tıklanınca element kaldırılmalı."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        # Zeminin boş bir köşesine tıkla (içerik kutusunun DIŞINDA — içerik
+        # varsayılan block akışında üst-sol köşede (0,0)-(50,50) durduğu için
+        # zeminin sağ-alt köşesine tıklıyoruz)
+        page.click('#modal-zemin-test', position={"x": 90, "y": 90})
+        page.wait_for_timeout(500)
+        assert page.locator('#modal-zemin-test').count() == 0, \
+            "Zemine doğrudan tıklanınca modal kapanmadı"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_modal_backdrop_icerige_tiklamada_kapanmaz(live_server):
+    """data-backdrop-close: modal İÇERİĞİNE tıklanınca (bubble ile zemine
+    ulaşsa bile) KAPANMAMALI — bu yüzden closest() değil, doğrudan e.target
+    kontrolü kullanıyoruz."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        page.click('#modal-icerik-test')
+        page.wait_for_timeout(500)
+        assert page.locator('#modal-zemin-test').count() == 1, \
+            "İçeriğe tıklanınca modal yanlışlıkla kapandı"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+def test_songrup_belge_form_ac_obje_argumani(live_server):
+    """belgeFormAc(veri) — eskiden onclick='...JSON.stringify(d).replace(/'/g,"&#39;")...'
+    gibi kırılgan manuel escape kullanıyordu. daAttr() artık objeyi doğrudan
+    JSON.stringify ile güvenle taşıyor — tırnak içeren bir değerle doğruluyoruz."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+
+        page.evaluate("""() => {
+            const div = document.createElement('div');
+            div.innerHTML = `<button id="belge-form-btn" data-action="belgeFormAc" style="width:60px;height:20px">Aç</button>`;
+            document.body.appendChild(div);
+            const veri = { portfoy: { baslik: "Ev (Sahibinden'e Yakın)", id: 5 } };
+            document.getElementById('belge-form-btn').setAttribute('data-action-args', JSON.stringify([veri]));
+        }""")
+
+        page.click('#belge-form-btn')
+        page.wait_for_timeout(500)
+        cagrilar = page.evaluate("window.__cagrilar")
+        assert cagrilar == [{
+            "fn": "belgeFormAc",
+            "args": [{"portfoy": {"baslik": "Ev (Sahibinden'e Yakın)", "id": 5}}],
+        }], f"Beklenmedik: {cagrilar}"
+        assert not hatalar, f"JS hatası: {hatalar}"
+        context.close()
+        browser.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# NOT: app.js'teki onclick="" → data-action geçişi bu bölümle TAMAMLANDI.
+# Kalan iş: index.html (85) + widget-renderer.js (1) + menu-renderer.js (2)
+# + admin-sistem.js (1) içindeki KALAN onclick attribute'ları (varsa).
 # ═══════════════════════════════════════════════════════════════════════
