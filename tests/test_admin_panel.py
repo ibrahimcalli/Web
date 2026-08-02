@@ -11,10 +11,12 @@ APP_JS = ROOT / "src" / "ui" / "app.js"
 
 def test_admin_sidebar_contains_new_modules():
     html = INDEX_HTML.read_text(encoding="utf-8")
-    assert "adminSayfa('wizard')" in html
-    assert "adminSayfa('marketplace')" in html
-    assert "adminSayfa('saas')" in html
-    assert "adminSayfa('sistem-test')" in html
+    # CSP uyumu için onclick="adminSayfa('X')" yerine data-action="adminSayfa"
+    # data-action-args="[&quot;X&quot;]" kullanılıyor (bkz. deploy/security-headers.conf).
+    assert 'data-action="adminSayfa" data-action-args="[&quot;wizard&quot;]"' in html
+    assert 'data-action="adminSayfa" data-action-args="[&quot;marketplace&quot;]"' in html
+    assert 'data-action="adminSayfa" data-action-args="[&quot;saas&quot;]"' in html
+    assert 'data-action="adminSayfa" data-action-args="[&quot;sistem-test&quot;]"' in html
     assert "Site Sihirbazı" in html
     assert "Marketplace" in html
     assert "SaaS" in html

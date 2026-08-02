@@ -83,14 +83,9 @@ p {
   <div class="icon" aria-hidden="true">📡</div>
   <h1>İnternet Bağlantınız Yok</h1>
   <p>Şu anda çevrimdışısınız. İnternet bağlantınızı kontrol edin ve tekrar deneyin.</p>
-  <button class="btn" onclick="window.location.reload()">🔄 Tekrar Dene</button>
+  <button class="btn" id="tekrar-dene-btn">🔄 Tekrar Dene</button>
   <a href="/" class="btn btn-secondary">Ana Sayfa</a>
 </main>
-<script>
-// Online olunca otomatik yönlendir
-window.addEventListener('online', () => {
-  window.location.href = '/';
-});
-</script>
+<script src="/static/offline.js"></script>
 </body>
 </html>

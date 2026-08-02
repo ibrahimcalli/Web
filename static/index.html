@@ -55,7 +55,8 @@
 <link rel="dns-prefetch" href="//fonts.gstatic.com">
 
 <!-- Google Fonts CSS (async load) -->
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link id="google-fonts-link" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" media="print">
+<script src="/src/ui/font-loader.js"></script>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
 
 <!-- Manifest PWA -->
@@ -115,7 +116,7 @@ img{max-width:100%;height:auto}
 
 <!-- ── Navbar ─────────────────────────────────────────────────────────────── -->
 <nav class="nav">
-  <div class="nav-logo" onclick="sayfaGit('anasayfa')">
+  <div class="nav-logo" data-action="sayfaGit" data-action-args="[&quot;anasayfa&quot;]">
     <div class="nav-logo-mark" id="nav-logo-mark">
       <img id="nav-logo-img" src="" alt="Logo" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:6px;padding:2px;">
       <span id="nav-logo-emoji">🏠</span>
@@ -126,15 +127,15 @@ img{max-width:100%;height:auto}
     </div>
   </div>
   <div class="nav-links">
-    <span class="nav-link aktif" data-sayfa="anasayfa" onclick="sayfaGit('anasayfa')">Ana Sayfa</span>
-    <span class="nav-link" data-sayfa="ilanlar" onclick="sayfaGit('ilanlar')">İlanlar</span>
-    <span class="nav-link" data-sayfa="blog" onclick="sayfaGit('blog')">Haberler</span>
+    <span class="nav-link aktif" data-sayfa="anasayfa" data-action="sayfaGit" data-action-args="[&quot;anasayfa&quot;]">Ana Sayfa</span>
+    <span class="nav-link" data-sayfa="ilanlar" data-action="sayfaGit" data-action-args="[&quot;ilanlar&quot;]">İlanlar</span>
+    <span class="nav-link" data-sayfa="blog" data-action="sayfaGit" data-action-args="[&quot;blog&quot;]">Haberler</span>
   </div>
   <div class="nav-eylemler">
-    <button class="nav-admin-btn" id="admin-btn" style="display:none" onclick="sayfaGit('admin')">⚙ Yönetim</button>
-    <button class="nav-giris-btn" id="giris-btn" onclick="sayfaGit('giris')">Giriş Yap</button>
-    <button class="nav-giris-btn" id="kayit-btn" onclick="kayitModalAc()" style="background:var(--zeytun);margin-left:.25rem">Üye Ol</button>
-    <button class="nav-cikis-btn" id="cikis-btn" style="display:none" onclick="cikisYap()">Çıkış</button>
+    <button class="nav-admin-btn" id="admin-btn" style="display:none" data-action="sayfaGit" data-action-args="[&quot;admin&quot;]">⚙ Yönetim</button>
+    <button class="nav-giris-btn" id="giris-btn" data-action="sayfaGit" data-action-args="[&quot;giris&quot;]">Giriş Yap</button>
+    <button class="nav-giris-btn" id="kayit-btn" data-action="kayitModalAc" style="background:var(--zeytun);margin-left:.25rem">Üye Ol</button>
+    <button class="nav-cikis-btn" id="cikis-btn" style="display:none" data-action="cikisYap">Çıkış</button>
   </div>
   <!-- Hamburger buton (mobilde görünür, <=767px) -->
   <button class="nav-hamburger" id="nav-hamburger" aria-label="Menü" aria-expanded="false">
@@ -144,12 +145,12 @@ img{max-width:100%;height:auto}
 
 <!-- Mobil menü panel (hamburger ile açılır) -->
 <div class="nav-mobil-panel" id="nav-mobil-panel">
-  <span class="nav-link aktif" data-sayfa="anasayfa" onclick="sayfaGit('anasayfa'); navMobilKapat()">Ana Sayfa</span>
-  <span class="nav-link" data-sayfa="ilanlar" onclick="sayfaGit('ilanlar'); navMobilKapat()">İlanlar</span>
-  <span class="nav-link" data-sayfa="blog" onclick="sayfaGit('blog'); navMobilKapat()">Haberler</span>
-  <button class="nav-admin-btn" id="admin-btn-mob" style="display:none" onclick="sayfaGit('admin'); navMobilKapat()">⚙ Yönetim</button>
-  <button class="nav-giris-btn nav-giris-btn-mob" id="giris-btn-mob" style="width:100%" onclick="sayfaGit('giris'); navMobilKapat()">Giriş Yap</button>
-  <button class="nav-cikis-btn nav-cikis-btn-mob" id="cikis-btn-mob" style="display:none" onclick="cikisYap(); navMobilKapat()">Çıkış</button>
+  <span class="nav-link aktif" data-sayfa="anasayfa" data-action="sayfaGitMobil" data-action-args="[&quot;anasayfa&quot;]">Ana Sayfa</span>
+  <span class="nav-link" data-sayfa="ilanlar" data-action="sayfaGitMobil" data-action-args="[&quot;ilanlar&quot;]">İlanlar</span>
+  <span class="nav-link" data-sayfa="blog" data-action="sayfaGitMobil" data-action-args="[&quot;blog&quot;]">Haberler</span>
+  <button class="nav-admin-btn" id="admin-btn-mob" style="display:none" data-action="sayfaGitMobil" data-action-args="[&quot;admin&quot;]">⚙ Yönetim</button>
+  <button class="nav-giris-btn nav-giris-btn-mob" id="giris-btn-mob" style="width:100%" data-action="sayfaGitMobil" data-action-args="[&quot;giris&quot;]">Giriş Yap</button>
+  <button class="nav-cikis-btn nav-cikis-btn-mob" id="cikis-btn-mob" style="display:none" data-action="cikisYapMobil">Çıkış</button>
 </div>
 
 <!-- Bildirimler -->
@@ -170,8 +171,8 @@ img{max-width:100%;height:auto}
       </h1>
       <p class="hero-alt" id="hero-alt-metin">Fethiye ve çevresinde satılık, kiralık ve yatırımlık gayrimenkul portföyümüzden size uygun olanı buluyoruz.</p>
       <div class="hero-arama">
-        <input class="hero-arama-input" id="hero-q" placeholder="Mahalle, ilçe veya ilan başlığı…" onkeydown="if(event.key==='Enter')heroAra()">
-        <button class="hero-arama-btn" onclick="heroAra()">Ara →</button>
+        <input class="hero-arama-input" id="hero-q" placeholder="Mahalle, ilçe veya ilan başlığı…" data-enter-action="heroAra">
+        <button class="hero-arama-btn" data-action="heroAra">Ara →</button>
       </div>
       <div class="hero-istatlar" id="hero-istatlar">
         <div>
@@ -196,7 +197,7 @@ img{max-width:100%;height:auto}
   <!-- Kategori bant -->
   <div class="kat-bant">
     <div class="kat-bant-ic" id="ana-kat-bant">
-      <div class="kat-chip aktif" data-kat="" onclick="katFiltrele(this,'')">🏘 Tümü</div>
+      <div class="kat-chip aktif" data-kat="" data-action="katFiltrele" data-action-args="[&quot;__EL__&quot;,&quot;&quot;]">🏘 Tümü</div>
     </div>
   </div>
 
@@ -207,7 +208,7 @@ img{max-width:100%;height:auto}
   <div class="seksiyonlar" style="margin-top:1.5rem">
     <div class="bant-baslik">
       <h2>Güncel Portföy</h2>
-      <span class="bant-tumu" onclick="sayfaGit('ilanlar')">Tümünü gör →</span>
+      <span class="bant-tumu" data-action="sayfaGit" data-action-args="[&quot;ilanlar&quot;]">Tümünü gör →</span>
     </div>
     <div class="ilan-grid" id="ana-grid">
       <div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>
@@ -219,7 +220,7 @@ img{max-width:100%;height:auto}
     <div class="seksiyonlar">
       <div class="bant-baslik">
         <h2>Fethiye Gayrimenkul Haberleri</h2>
-        <span class="bant-tumu" onclick="sayfaGit('blog')">Tüm yazılar →</span>
+        <span class="bant-tumu" data-action="sayfaGit" data-action-args="[&quot;blog&quot;]">Tüm yazılar →</span>
       </div>
       <div class="blog-grid" id="ana-blog-grid"></div>
     </div>
@@ -232,16 +233,16 @@ img{max-width:100%;height:auto}
   <div class="kars-bant" id="kars-bant">
     <span style="font-size:.75rem;font-weight:700;letter-spacing:.04em;opacity:.7;white-space:nowrap;text-transform:uppercase">⚖ Karşılaştır</span>
     <div class="kars-bant-ilanlari" id="kars-listesi"></div>
-    <button class="btn btn-kirm btn-sm" onclick="karsGoster()" style="white-space:nowrap;flex-shrink:0">Karşılaştır →</button>
-    <button class="kars-temizle" onclick="karsSifirla()">✕ Temizle</button>
+    <button class="btn btn-kirm btn-sm" data-action="karsGoster" style="white-space:nowrap;flex-shrink:0">Karşılaştır →</button>
+    <button class="kars-temizle" data-action="karsSifirla">✕ Temizle</button>
   </div>
 
   <!-- Favori bandı -->
   <div class="fav-bant" id="fav-bant">
     <span style="font-size:.85rem">❤ <strong id="fav-sayi">0</strong> favori ilan</span>
     &nbsp;·&nbsp;
-    <a onclick="sadeceFavGoster()">Favorileri göster</a>
-    <a class="fav-temizle" onclick="favSifirla()">✕ Temizle</a>
+    <a data-action="sadeceFavGoster">Favorileri göster</a>
+    <a class="fav-temizle" data-action="favSifirla">✕ Temizle</a>
   </div>
 
   <!-- Banner alanı — anasayfa alt -->
@@ -277,14 +278,12 @@ img{max-width:100%;height:auto}
 </div>
 
 <!-- WhatsApp Sabit Butonu -->
-<a id="wa-btn" href="#" target="_blank" rel="noopener"
+<a id="wa-btn" href="#" target="_blank" rel="noopener" class="wa-btn-hover"
    style="display:none;position:fixed;bottom:1.25rem;right:1.25rem;z-index:98;
    width:52px;height:52px;border-radius:50%;background:#25D366;color:#fff;
    font-size:1.6rem;align-items:center;justify-content:center;
    box-shadow:0 4px 16px rgba(37,211,102,.45);
    transition:transform .2s,box-shadow .2s;text-decoration:none;"
-   onmouseover="this.style.transform='scale(1.1)'"
-   onmouseout="this.style.transform=''"
    aria-label="WhatsApp ile iletişime geçin">
   <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -296,7 +295,7 @@ img{max-width:100%;height:auto}
   <!-- Kategori bant (kopya) -->
   <div class="kat-bant">
     <div class="kat-bant-ic" id="ilan-kat-bant">
-      <div class="kat-chip aktif" data-kat="" onclick="katFiltrelIlan(this,'')">🏘 Tümü</div>
+      <div class="kat-chip aktif" data-kat="" data-action="katFiltrelIlan" data-action-args="[&quot;__EL__&quot;,&quot;&quot;]">🏘 Tümü</div>
     </div>
   </div>
 
@@ -311,15 +310,15 @@ img{max-width:100%;height:auto}
       <span class="bolum-sayi" id="ilan-sayi"></span>
     </div>
     <div class="arama-filtre-bar">
-      <input class="filtre-input" id="ilan-q" placeholder="🔍 Ara…" oninput="aramaBekle()" style="min-width:200px; flex:1; max-width:320px">
-      <select class="filtre-select" id="filtre-alt" onchange="ilanYukle()">
+      <input class="filtre-input" id="ilan-q" placeholder="🔍 Ara…" data-input-action="aramaBekle" style="min-width:200px; flex:1; max-width:320px">
+      <select class="filtre-select" id="filtre-alt" data-change-action="ilanYukle">
         <option value="">Alt kategori</option>
       </select>
-      <button class="btn btn-ntr btn-sm" onclick="gelismisFiltreToogle()" id="gf-toggle-btn">⚙ Filtrele</button>
-      <button class="filtre-sifirla" onclick="filtreleriSifirla()" id="filtre-sifirla-btn" style="display:none">✕ Sıfırla</button>
+      <button class="btn btn-ntr btn-sm" data-action="gelismisFiltreToogle" id="gf-toggle-btn">⚙ Filtrele</button>
+      <button class="filtre-sifirla" data-action="filtreleriSifirla" id="filtre-sifirla-btn" style="display:none">✕ Sıfırla</button>
       <div class="gorunum-gecer" style="margin-left:auto">
-        <button class="gg-btn aktif" id="gg-grid" onclick="gorunumDegis('grid')">▦ Liste</button>
-        <button class="gg-btn" id="gg-harita" onclick="gorunumDegis('harita')">🗺 Harita</button>
+        <button class="gg-btn aktif" id="gg-grid" data-action="gorunumDegis" data-action-args="[&quot;grid&quot;]">▦ Liste</button>
+        <button class="gg-btn" id="gg-harita" data-action="gorunumDegis" data-action-args="[&quot;harita&quot;]">🗺 Harita</button>
       </div>
     </div>
 
@@ -328,23 +327,23 @@ img{max-width:100%;height:auto}
       <div class="filtre-satiri">
         <div class="filtre-grubu">
           <label>Min Fiyat (TL)</label>
-          <input class="filtre-input" id="gf-fiyat-min" type="number" placeholder="500.000" oninput="aramaBekle()" style="min-width:0">
+          <input class="filtre-input" id="gf-fiyat-min" type="number" placeholder="500.000" data-input-action="aramaBekle" style="min-width:0">
         </div>
         <div class="filtre-grubu">
           <label>Max Fiyat (TL)</label>
-          <input class="filtre-input" id="gf-fiyat-max" type="number" placeholder="10.000.000" oninput="aramaBekle()" style="min-width:0">
+          <input class="filtre-input" id="gf-fiyat-max" type="number" placeholder="10.000.000" data-input-action="aramaBekle" style="min-width:0">
         </div>
         <div class="filtre-grubu">
           <label>Min m²</label>
-          <input class="filtre-input" id="gf-m2-min" type="number" placeholder="50" oninput="aramaBekle()" style="min-width:0">
+          <input class="filtre-input" id="gf-m2-min" type="number" placeholder="50" data-input-action="aramaBekle" style="min-width:0">
         </div>
         <div class="filtre-grubu">
           <label>Max m²</label>
-          <input class="filtre-input" id="gf-m2-max" type="number" placeholder="500" oninput="aramaBekle()" style="min-width:0">
+          <input class="filtre-input" id="gf-m2-max" type="number" placeholder="500" data-input-action="aramaBekle" style="min-width:0">
         </div>
         <div class="filtre-grubu">
           <label>Oda Sayısı</label>
-          <select class="filtre-select" id="gf-oda" onchange="ilanYukle()" style="min-width:0">
+          <select class="filtre-select" id="gf-oda" data-change-action="ilanYukle" style="min-width:0">
             <option value="">Tümü</option>
             <option>1+0</option><option>1+1</option><option>2+1</option>
             <option>3+1</option><option>3+2</option><option>4+1</option>
@@ -353,7 +352,7 @@ img{max-width:100%;height:auto}
         </div>
         <div class="filtre-grubu">
           <label>Para Birimi</label>
-          <select class="filtre-select" id="gf-para" onchange="ilanYukle()" style="min-width:0">
+          <select class="filtre-select" id="gf-para" data-change-action="ilanYukle" style="min-width:0">
             <option value="">Tümü</option>
             <option>TL</option><option>EUR</option><option>USD</option>
           </select>
@@ -373,7 +372,7 @@ img{max-width:100%;height:auto}
 <!-- ════════════════ DETAY ════════════════ -->
 <div class="sayfa" id="sayfa-detay">
   <div class="detay-kont">
-    <div class="detay-geri" onclick="geriGit()">← Geri dön</div>
+    <div class="detay-geri" data-action="geriGit">← Geri dön</div>
     <div id="detay-ic"></div>
   </div>
 </div>
@@ -397,7 +396,7 @@ img{max-width:100%;height:auto}
 <!-- ════════════════ BLOG DETAY ════════════════ -->
 <div class="sayfa" id="sayfa-blog-detay">
   <div style="max-width:860px; margin:0 auto; padding:2rem clamp(1rem,4vw,2.5rem)">
-    <div class="detay-geri" onclick="sayfaGit('blog')">← Haberlere Dön</div>
+    <div class="detay-geri" data-action="sayfaGit" data-action-args="[&quot;blog&quot;]">← Haberlere Dön</div>
     <div id="blog-detay-ic"></div>
   </div>
 </div>
@@ -405,7 +404,7 @@ img{max-width:100%;height:auto}
 <!-- ════════════════ SAYFA (CMS Pages) ════════════════ -->
 <div class="sayfa" id="sayfa-sayfa">
   <div style="max-width:860px; margin:0 auto; padding:2rem clamp(1rem,4vw,2.5rem)">
-    <div class="detay-geri" onclick="sayfaGit('anasayfa')">← Ana Sayfa</div>
+    <div class="detay-geri" data-action="sayfaGit" data-action-args="[&quot;anasayfa&quot;]">← Ana Sayfa</div>
     <article id="sayfa-icerik-ic"><div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div></article>
   </div>
 </div>
@@ -421,15 +420,15 @@ img{max-width:100%;height:auto}
       </div>
       <div class="form-grup">
         <label class="form-etiket">E-posta</label>
-        <input class="form-girdi" type="email" id="g-email" placeholder="bilgi@portfoygayrimenkul.com.tr" onkeydown="if(event.key==='Enter')girisYap()">
+        <input class="form-girdi" type="email" id="g-email" placeholder="bilgi@portfoygayrimenkul.com.tr" data-enter-action="girisYap">
       </div>
       <div class="form-grup">
         <label class="form-etiket">Şifre</label>
-        <input class="form-girdi" type="password" id="g-sifre" placeholder="••••••••" onkeydown="if(event.key==='Enter')girisYap()">
+        <input class="form-girdi" type="password" id="g-sifre" placeholder="••••••••" data-enter-action="girisYap">
       </div>
-      <button class="btn btn-kirm btn-blok btn-lg" onclick="girisYap()" style="margin-top:.25rem">Giriş Yap →</button>
+      <button class="btn btn-kirm btn-blok btn-lg" data-action="girisYap" style="margin-top:.25rem">Giriş Yap →</button>
       <div style="text-align:center;margin-top:1rem">
-        <button onclick="sifreSifirlaModalAc()" style="background:none;border:none;font-size:.78rem;color:var(--kiremit);cursor:pointer;text-decoration:underline">
+        <button data-action="sifreSifirlaModalAc" style="background:none;border:none;font-size:.78rem;color:var(--kiremit);cursor:pointer;text-decoration:underline">
           Şifremi Unuttum
         </button>
       </div>
@@ -446,33 +445,33 @@ img{max-width:100%;height:auto}
         <div style="font-weight:600; font-size:.95rem;" id="admin-ad">Admin</div>
       </div>
       <div class="sidebar-sect" style="margin-top:1rem;">PORTFÖY</div>
-      <div class="sidebar-item aktif" onclick="adminSayfa('portfoyler')"><span class="sidebar-ikon">🏠</span> Portföyler</div>
-      <div class="sidebar-item" onclick="adminSayfa('yeni')"><span class="sidebar-ikon">➕</span> Yeni Portföy</div>
-      <div class="sidebar-item" onclick="adminSayfa('belge')"><span class="sidebar-ikon">📄</span> Belge Yükle</div>
+      <div class="sidebar-item aktif" data-action="adminSayfa" data-action-args="[&quot;portfoyler&quot;]"><span class="sidebar-ikon">🏠</span> Portföyler</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;yeni&quot;]"><span class="sidebar-ikon">➕</span> Yeni Portföy</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;belge&quot;]"><span class="sidebar-ikon">📄</span> Belge Yükle</div>
       <div class="sidebar-sect" style="margin-top:1rem;">YÖNETİM</div>
-      <div class="sidebar-item" onclick="adminSayfa('bannerlar')"><span class="sidebar-ikon">🖼</span> Bannerlar</div>
-      <div class="sidebar-item" onclick="adminSayfa('blog')"><span class="sidebar-ikon">✍️</span> Blog / Haberler</div>
-      <div class="sidebar-item" onclick="adminSayfa('istekler')"><span class="sidebar-ikon">📬</span> Müşteri İstekleri</div>
-      <div class="sidebar-item" onclick="adminSayfa('kullanicilar')"><span class="sidebar-ikon">👥</span> Kullanıcılar</div>
-      <div class="sidebar-item" onclick="adminSayfa('ayarlar')"><span class="sidebar-ikon">⚙️</span> Site Ayarları</div>
-      <div class="sidebar-item" onclick="adminSayfa('hesabim')"><span class="sidebar-ikon">🔑</span> Hesabım</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;bannerlar&quot;]"><span class="sidebar-ikon">🖼</span> Bannerlar</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;blog&quot;]"><span class="sidebar-ikon">✍️</span> Blog / Haberler</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;istekler&quot;]"><span class="sidebar-ikon">📬</span> Müşteri İstekleri</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;kullanicilar&quot;]"><span class="sidebar-ikon">👥</span> Kullanıcılar</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;ayarlar&quot;]"><span class="sidebar-ikon">⚙️</span> Site Ayarları</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;hesabim&quot;]"><span class="sidebar-ikon">🔑</span> Hesabım</div>
       <div class="sidebar-sect" style="margin-top:1rem;">CMS</div>
-      <div class="sidebar-item" onclick="adminSayfa('menuler')"><span class="sidebar-ikon">📋</span> Menüler</div>
-      <div class="sidebar-item" onclick="adminSayfa('sayfalar')"><span class="sidebar-ikon">📄</span> Sayfalar</div>
-      <div class="sidebar-item" onclick="adminSayfa('widgetler')"><span class="sidebar-ikon">🧩</span> Widget'lar</div>
-      <div class="sidebar-item" onclick="adminSayfa('tema')"><span class="sidebar-ikon">🎨</span> Tema</div>
-      <div class="sidebar-item" onclick="adminSayfa('sablonlar')"><span class="sidebar-ikon">📐</span> Şablonlar</div>
-      <div class="sidebar-item" onclick="adminSayfa('wizard')"><span class="sidebar-ikon">✨</span> Site Sihirbazı</div>
-      <div class="sidebar-item" onclick="adminSayfa('marketplace')"><span class="sidebar-ikon">🏪</span> Marketplace</div>
-      <div class="sidebar-item" onclick="adminSayfa('saas')"><span class="sidebar-ikon">☁️</span> SaaS</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;menuler&quot;]"><span class="sidebar-ikon">📋</span> Menüler</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sayfalar&quot;]"><span class="sidebar-ikon">📄</span> Sayfalar</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;widgetler&quot;]"><span class="sidebar-ikon">🧩</span> Widget'lar</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;tema&quot;]"><span class="sidebar-ikon">🎨</span> Tema</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sablonlar&quot;]"><span class="sidebar-ikon">📐</span> Şablonlar</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;wizard&quot;]"><span class="sidebar-ikon">✨</span> Site Sihirbazı</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;marketplace&quot;]"><span class="sidebar-ikon">🏪</span> Marketplace</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;saas&quot;]"><span class="sidebar-ikon">☁️</span> SaaS</div>
       <div class="sidebar-sect" style="margin-top:1rem;">SİSTEM</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-durum')"><span class="sidebar-ikon">📊</span> Durum</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-log')"><span class="sidebar-ikon">📋</span> Log</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-test')"><span class="sidebar-ikon">🧪</span> System Test</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-komutlar')"><span class="sidebar-ikon">📝</span> Commands</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-bakim')"><span class="sidebar-ikon">🔧</span> Bakım</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-kilavuz')"><span class="sidebar-ikon">📖</span> Kılavuz</div>
-      <div class="sidebar-item" onclick="adminSayfa('sistem-ai')"><span class="sidebar-ikon">🤖</span> AI Tanılama</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-durum&quot;]"><span class="sidebar-ikon">📊</span> Durum</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-log&quot;]"><span class="sidebar-ikon">📋</span> Log</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-test&quot;]"><span class="sidebar-ikon">🧪</span> System Test</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-komutlar&quot;]"><span class="sidebar-ikon">📝</span> Commands</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-bakim&quot;]"><span class="sidebar-ikon">🔧</span> Bakım</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-kilavuz&quot;]"><span class="sidebar-ikon">📖</span> Kılavuz</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;sistem-ai&quot;]"><span class="sidebar-ikon">🤖</span> AI Tanılama</div>
     </aside>
     <main class="admin-icerik" id="admin-ic">
       <div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>
@@ -481,11 +480,11 @@ img{max-width:100%;height:auto}
 </div>
 
 <!-- ════════════════ PORTFÖY MODAL ════════════════ -->
-<div class="modal-zemin" id="portfoy-modal" style="display:none" onclick="if(event.target===this)modalKapat()">
+<div class="modal-zemin" id="portfoy-modal" style="display:none" data-backdrop-hide="portfoy-modal">
   <div class="modal">
     <div class="modal-baslik">
       <h2 id="modal-baslik">Yeni Portföy</h2>
-      <button class="modal-kapat" onclick="modalKapat()">✕</button>
+      <button class="modal-kapat" data-action="modalKapat">✕</button>
     </div>
     <div class="modal-govde">
 
@@ -495,13 +494,13 @@ img{max-width:100%;height:auto}
         <div class="form-uclu">
           <div class="form-grup" style="margin-bottom:0">
             <label class="form-etiket z">Ana Kategori</label>
-            <select class="form-girdi" id="f-ana" onchange="anaKatDegisti()">
+            <select class="form-girdi" id="f-ana" data-change-action="anaKatDegisti">
               <option value="">Seçin…</option>
             </select>
           </div>
           <div class="form-grup" style="margin-bottom:0">
             <label class="form-etiket z">Alt Kategori</label>
-            <select class="form-girdi" id="f-alt" onchange="altKatDegisti()">
+            <select class="form-girdi" id="f-alt" data-change-action="altKatDegisti">
               <option value="">Önce ana</option>
             </select>
           </div>
@@ -631,7 +630,7 @@ img{max-width:100%;height:auto}
         <div class="resim-grid" id="resim-grid">
           <label class="resim-ekle-btn">
             <span>📷</span><span>Ekle</span>
-            <input type="file" id="resim-input" accept="image/*" multiple style="display:none" onchange="resimYukle(event)">
+            <input type="file" id="resim-input" accept="image/*" multiple style="display:none" data-change-action="resimYukle" data-change-args='["__EVENT__"]'>
           </label>
         </div>
       </div>
@@ -649,27 +648,27 @@ img{max-width:100%;height:auto}
       </div>
     </div>
     <div class="modal-ayak">
-      <button class="btn btn-ntr" onclick="modalKapat()">Vazgeç</button>
-      <button class="btn btn-kirm" id="modal-kaydet" onclick="portfoyKaydet()">💾 Kaydet</button>
+      <button class="btn btn-ntr" data-action="modalKapat">Vazgeç</button>
+      <button class="btn btn-kirm" id="modal-kaydet" data-action="portfoyKaydet">💾 Kaydet</button>
     </div>
   </div>
 </div>
 
 <!-- ════════════════ BLOG RESİM EKLEME MODAL ════════════════ -->
-<div class="modal-zemin" id="blog-resim-modal" style="display:none" onclick="if(event.target===this)document.getElementById('blog-resim-modal').style.display='none'">
+<div class="modal-zemin" id="blog-resim-modal" style="display:none" data-backdrop-hide="blog-resim-modal">
   <div class="modal" style="max-width:520px">
     <div class="modal-baslik">
       <h2>🖼 İçeriğe Resim Ekle</h2>
-      <button class="modal-kapat" onclick="document.getElementById('blog-resim-modal').style.display='none'">✕</button>
+      <button class="modal-kapat" data-action="modalGizle" data-action-args="[&quot;blog-resim-modal&quot;]">✕</button>
     </div>
     <div class="modal-govde">
-      <div class="drop-zone" id="blog-resim-drop" onclick="document.getElementById('blog-resim-input').click()" style="padding:1.75rem">
+      <div class="drop-zone" id="blog-resim-drop" data-action="blogResimInputAc" style="padding:1.75rem">
         <div class="drop-zone-ikon" style="font-size:2rem">📷</div>
         <div class="drop-zone-metin">
           <strong>Tıklayın veya sürükleyin</strong><br>
           <span style="font-size:.78rem">jpg · png · webp · Maks. 12MB</span>
         </div>
-        <input type="file" id="blog-resim-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="blogResimSecildi(event)">
+        <input type="file" id="blog-resim-input" accept="image/jpeg,image/png,image/webp" style="display:none" data-change-action="blogResimSecildi" data-change-args='["__EVENT__"]'>
       </div>
 
       <div id="blog-resim-onizleme-kont" style="display:none;margin-top:1.25rem">
@@ -712,18 +711,18 @@ img{max-width:100%;height:auto}
       </div>
     </div>
     <div class="modal-ayak">
-      <button class="btn btn-ntr" onclick="document.getElementById('blog-resim-modal').style.display='none'">İptal</button>
-      <button class="btn btn-kirm" id="blog-resim-ekle-btn" onclick="blogResimIcerigeEkle()" disabled>İçeriğe Ekle</button>
+      <button class="btn btn-ntr" data-action="modalGizle" data-action-args="[&quot;blog-resim-modal&quot;]">İptal</button>
+      <button class="btn btn-kirm" id="blog-resim-ekle-btn" data-action="blogResimIcerigeEkle" disabled>İçeriğe Ekle</button>
     </div>
   </div>
 </div>
 
 <!-- ════════════════ KAYIT MODAL ════════════════ -->
-<div class="modal-zemin" id="kayit-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal-zemin" id="kayit-modal" style="display:none" data-backdrop-hide="kayit-modal">
   <div class="modal" style="max-width:440px">
     <div class="modal-baslik">
       <h2>Üye Ol</h2>
-      <button class="modal-kapat" onclick="document.getElementById('kayit-modal').style.display='none'">✕</button>
+      <button class="modal-kapat" data-action="modalGizle" data-action-args="[&quot;kayit-modal&quot;]">✕</button>
     </div>
     <div class="modal-govde">
       <div style="font-size:.82rem;color:var(--gri-metin);margin-bottom:1rem;padding:.6rem .85rem;background:var(--krem);border-radius:6px;border-left:2px solid var(--kumtasi)">
@@ -751,19 +750,19 @@ img{max-width:100%;height:auto}
       <div id="kayit-hata" style="display:none;color:var(--danger);font-size:.82rem;margin-top:.5rem"></div>
     </div>
     <div class="modal-ayak">
-      <button class="btn btn-ntr" onclick="document.getElementById('kayit-modal').style.display='none'">İptal</button>
-      <button class="btn btn-zey" onclick="kayitYap()">Üye Ol →</button>
+      <button class="btn btn-ntr" data-action="modalGizle" data-action-args="[&quot;kayit-modal&quot;]">İptal</button>
+      <button class="btn btn-zey" data-action="kayitYap">Üye Ol →</button>
     </div>
   </div>
 </div>
 
 
 <!-- ════ ŞİFRE SIFIRLAMA MODAL ════ -->
-<div class="modal-zemin" id="sifre-sifirlama-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal-zemin" id="sifre-sifirlama-modal" style="display:none" data-backdrop-hide="sifre-sifirlama-modal">
   <div class="modal" style="max-width:420px">
     <div class="modal-baslik">
       <h2>🔑 Şifre Sıfırlama</h2>
-      <button class="modal-kapat" onclick="document.getElementById('sifre-sifirlama-modal').style.display='none'">✕</button>
+      <button class="modal-kapat" data-action="modalGizle" data-action-args="[&quot;sifre-sifirlama-modal&quot;]">✕</button>
     </div>
     <div class="modal-govde">
 
@@ -776,9 +775,9 @@ img{max-width:100%;height:auto}
         <div class="form-grup">
           <label class="form-etiket z">E-posta</label>
           <input class="form-girdi" id="ssm-email" type="email" placeholder="bilgi@portfoygayrimenkul.com.tr"
-                 onkeydown="if(event.key==='Enter')sifreSifirlaBaslat()">
+                 data-enter-action="sifreSifirlaBaslat">
         </div>
-        <button class="btn btn-kirm btn-blok" onclick="sifreSifirlaBaslat()">Token Gönder →</button>
+        <button class="btn btn-kirm btn-blok" data-action="sifreSifirlaBaslat">Token Gönder →</button>
         <div style="margin-top:1rem;padding:.75rem;background:var(--kiremit-a);border-radius:var(--r-sm);font-size:.78rem;color:var(--kiremit-k)">
           💡 Token sunucu terminaline yazılır — e-posta gönderilmez. Sunucuya erişiminiz yoksa
           terminalde şu komutu çalıştırın:<br>
@@ -800,15 +799,15 @@ img{max-width:100%;height:auto}
         <div class="form-grup">
           <label class="form-etiket z">Yeni Şifre</label>
           <input class="form-girdi" id="ssm-yeni" type="password" placeholder="En az 8 karakter"
-                 onkeydown="if(event.key==='Enter')sifreSifirlaTogele()">
+                 data-enter-action="sifreSifirlaTogele">
         </div>
         <div class="form-grup">
           <label class="form-etiket z">Yeni Şifre (Tekrar)</label>
           <input class="form-girdi" id="ssm-tekrar" type="password"
-                 onkeydown="if(event.key==='Enter')sifreSifirlaTogele()">
+                 data-enter-action="sifreSifirlaTogele">
         </div>
-        <button class="btn btn-kirm btn-blok" onclick="sifreSifirlaTogele()">✓ Şifreyi Güncelle</button>
-        <button onclick="document.getElementById('ssm-adim1').style.display='';document.getElementById('ssm-adim2').style.display='none'"
+        <button class="btn btn-kirm btn-blok" data-action="sifreSifirlaTogele">✓ Şifreyi Güncelle</button>
+        <button data-action="ssmAdim1eDon"
                 style="width:100%;text-align:center;margin-top:.5rem;background:none;border:none;font-size:.78rem;color:var(--gri-metin);cursor:pointer">
           ← Geri
         </button>
@@ -820,28 +819,28 @@ img{max-width:100%;height:auto}
 
 
 <!-- ════════════════ BANNER MODAL ════════════════ -->
-<div class="modal-zemin" id="banner-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal-zemin" id="banner-modal" style="display:none" data-backdrop-hide="banner-modal">
   <div class="modal" style="max-width:600px">
     <div class="modal-baslik">
       <h2 id="banner-modal-baslik">Yeni Banner</h2>
-      <button class="modal-kapat" onclick="document.getElementById('banner-modal').style.display='none'">✕</button>
+      <button class="modal-kapat" data-action="modalGizle" data-action-args="[&quot;banner-modal&quot;]">✕</button>
     </div>
     <div class="modal-govde" id="banner-modal-govde">
       <!-- JS ile doldurulur -->
     </div>
     <div class="modal-ayak" id="banner-modal-ayak">
-      <button class="btn btn-ntr" onclick="document.getElementById('banner-modal').style.display='none'">Vazgeç</button>
-      <button class="btn btn-kirm" id="banner-kaydet-btn" onclick="bannerKaydet()">💾 Kaydet</button>
+      <button class="btn btn-ntr" data-action="modalGizle" data-action-args="[&quot;banner-modal&quot;]">Vazgeç</button>
+      <button class="btn btn-kirm" id="banner-kaydet-btn" data-action="bannerKaydet">💾 Kaydet</button>
     </div>
   </div>
 </div>
 
 <!-- ════════════════ İLETİŞİM MODAL ════════════════ -->
-<div class="modal-zemin" id="iletisim-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div class="modal-zemin" id="iletisim-modal" style="display:none" data-backdrop-hide="iletisim-modal">
   <div class="modal" style="max-width:440px">
     <div class="modal-baslik">
       <h2>Bilgi Talep Edin</h2>
-      <button class="modal-kapat" onclick="document.getElementById('iletisim-modal').style.display='none'">✕</button>
+      <button class="modal-kapat" data-action="modalGizle" data-action-args="[&quot;iletisim-modal&quot;]">✕</button>
     </div>
     <div class="modal-govde">
       <input type="hidden" id="istek-pid">
@@ -865,8 +864,8 @@ img{max-width:100%;height:auto}
       </div>
     </div>
     <div class="modal-ayak">
-      <button class="btn btn-ntr" onclick="document.getElementById('iletisim-modal').style.display='none'">İptal</button>
-      <button class="btn btn-kirm" onclick="istekGonder()">📨 Gönder</button>
+      <button class="btn btn-ntr" data-action="modalGizle" data-action-args="[&quot;iletisim-modal&quot;]">İptal</button>
+      <button class="btn btn-kirm" data-action="istekGonder">📨 Gönder</button>
     </div>
   </div>
 </div>
@@ -875,13 +874,13 @@ img{max-width:100%;height:auto}
 
 
 <div class="mobil-tab">
-  <div class="mobil-tab-item aktif" id="tab-ana" onclick="sayfaGit('anasayfa')">
+  <div class="mobil-tab-item aktif" id="tab-ana" data-action="sayfaGit" data-action-args="[&quot;anasayfa&quot;]">
     <span class="mobil-tab-ikon">🏠</span>Ana Sayfa
   </div>
-  <div class="mobil-tab-item" id="tab-ilan" onclick="sayfaGit('ilanlar')">
+  <div class="mobil-tab-item" id="tab-ilan" data-action="sayfaGit" data-action-args="[&quot;ilanlar&quot;]">
     <span class="mobil-tab-ikon">🔍</span>İlanlar
   </div>
-  <div class="mobil-tab-item" id="tab-admin" style="display:none" onclick="sayfaGit('admin')">
+  <div class="mobil-tab-item" id="tab-admin" style="display:none" data-action="sayfaGit" data-action-args="[&quot;admin&quot;]">
     <span class="mobil-tab-ikon">⚙</span>Yönetim
   </div>
 </div>

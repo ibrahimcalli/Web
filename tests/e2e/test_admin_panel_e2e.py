@@ -40,7 +40,7 @@ def _sw_devre_disi_birak_init_script():
     """
 
 
-def _bekle_kosul(page, js_kosul, timeout=8000, mesaj=""):
+def _bekle_kosul(page, js_kosul, timeout=15000, mesaj=""):
     """Sabit page.wait_for_timeout(N) yerine: js_kosul (string, JS ifadesi)
     true dönene kadar POLLING ile bekler. Yavaş/yüklü makinelerde sabit
     süre yetmediği için testlerin yanlışlıkla kırılmasını önler — koşul
@@ -73,10 +73,9 @@ def _widget_fixture_yerlestir():
         pass
 
 
-def test_widget_cerez_banner_kapat_ve_cookie_set_edilir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+def test_widget_cerez_banner_kapat_ve_cookie_set_edilir(live_server, browser):
+    page = browser.new_page()
+    try:
         hatalar = []
         page.on("pageerror", lambda exc: hatalar.append(str(exc)))
 
@@ -98,7 +97,8 @@ def test_widget_cerez_banner_kapat_ve_cookie_set_edilir(live_server):
             "cookie_ok çerezi set edilmedi"
 
         assert not hatalar, f"Sayfada JS hatası oluştu: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -122,10 +122,9 @@ def _menu_fixture_yerlestir():
         pass
 
 
-def test_menu_sayfa_link_preventDefault_ve_dogru_parametre(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+def test_menu_sayfa_link_preventDefault_ve_dogru_parametre(live_server, browser):
+    page = browser.new_page()
+    try:
         hatalar = []
         page.on("pageerror", lambda exc: hatalar.append(str(exc)))
 
@@ -142,13 +141,13 @@ def test_menu_sayfa_link_preventDefault_ve_dogru_parametre(live_server):
         assert cagrilar == [{"sayfa": "sayfa", "params": {"slug": "hakkimizda"}}], \
             f"sayfaGit yanlış çağrıldı: {cagrilar}"
         assert not hatalar, f"Sayfada JS hatası oluştu: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
-def test_menu_anasayfa_span_calisir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+def test_menu_anasayfa_span_calisir(live_server, browser):
+    page = browser.new_page()
+    try:
         page.goto(f"{live_server}{MENU_FIXTURE_URL_PATH}")
         page.wait_for_selector('[data-sayfa-git="anasayfa"]', timeout=5000)
 
@@ -160,13 +159,13 @@ def test_menu_anasayfa_span_calisir(live_server):
         assert anasayfa_cagri is not None, f"anasayfa çağrısı bulunamadı: {cagrilar}"
         assert anasayfa_cagri["params"] is None, \
             f"anasayfa çağrısında params olmamalıydı: {anasayfa_cagri}"
-        browser.close()
+    finally:
+        page.close()
 
 
-def test_menu_sayisal_id_parametresi_dogru_tipte_gelir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page()
+def test_menu_sayisal_id_parametresi_dogru_tipte_gelir(live_server, browser):
+    page = browser.new_page()
+    try:
         page.goto(f"{live_server}{MENU_FIXTURE_URL_PATH}")
         page.wait_for_selector('[data-sayfa-git="detay"]', timeout=5000)
 
@@ -178,7 +177,8 @@ def test_menu_sayisal_id_parametresi_dogru_tipte_gelir(live_server):
         assert detay_cagri is not None, f"detay çağrısı bulunamadı: {cagrilar}"
         assert detay_cagri["params"]["id"] == 42, \
             f"id sayısal (42) olmalıydı, geldi: {detay_cagri['params']['id']!r}"
-        browser.close()
+    finally:
+        page.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -222,85 +222,73 @@ def _admin_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_adminsistem_data_action_argumanli_cagri(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _admin_sayfa_ac(browser, live_server)
+def test_adminsistem_data_action_argumanli_cagri(live_server, browser):
+    context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="sistemLogYukle"]')
-        page.wait_for_timeout(600)
+    page.click('[data-action="sistemLogYukle"]')
+    page.wait_for_timeout(600)
 
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "sistemLogYukle", "args": ["error"]}], f"Yanlış çağrı: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "sistemLogYukle", "args": ["error"]}], f"Yanlış çağrı: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_adminsistem_data_action_argumansiz_cagri(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _admin_sayfa_ac(browser, live_server)
+def test_adminsistem_data_action_argumansiz_cagri(live_server, browser):
+    context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="sistemAiTanilamaIndir"]')
-        page.wait_for_timeout(600)
+    page.click('[data-action="sistemAiTanilamaIndir"]')
+    page.wait_for_timeout(600)
 
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "sistemAiTanilamaIndir", "args": []}], f"Yanlış çağrı: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "sistemAiTanilamaIndir", "args": []}], f"Yanlış çağrı: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_adminsistem_data_copy_text_statik_metin_kopyalar(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _admin_sayfa_ac(browser, live_server)
+def test_adminsistem_data_copy_text_statik_metin_kopyalar(live_server, browser):
+    context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
-        btn = page.locator('[data-copy-text]')
-        assert btn.text_content() == "📋"
+    btn = page.locator('[data-copy-text]')
+    assert btn.text_content() == "📋"
 
-        btn.click()
-        _bekle_kosul(
-            page,
-            "document.querySelector('[data-copy-text]')?.textContent === '✓'",
-            mesaj="Tıklama sonrası geri bildirim metni görünmedi",
-        )
+    btn.click()
+    _bekle_kosul(
+        page,
+        "document.querySelector('[data-copy-text]')?.textContent === '✓'",
+        mesaj="Tıklama sonrası geri bildirim metni görünmedi",
+    )
 
-        panoya_kopyalanan = page.evaluate("navigator.clipboard.readText()")
-        assert panoya_kopyalanan == "git pull && echo test", \
-            f"Panoya yanlış metin kopyalandı: {panoya_kopyalanan!r}"
+    panoya_kopyalanan = page.evaluate("navigator.clipboard.readText()")
+    assert panoya_kopyalanan == "git pull && echo test", \
+        f"Panoya yanlış metin kopyalandı: {panoya_kopyalanan!r}"
 
-        _bekle_kosul(
-            page,
-            "document.querySelector('[data-copy-text]')?.textContent === '📋'",
-            mesaj="Geri bildirim süresi sonunda eski metne dönmedi",
-        )
+    _bekle_kosul(
+        page,
+        "document.querySelector('[data-copy-text]')?.textContent === '📋'",
+        mesaj="Geri bildirim süresi sonunda eski metne dönmedi",
+    )
 
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_adminsistem_data_copy_target_element_icerigini_kopyalar(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _admin_sayfa_ac(browser, live_server)
+def test_adminsistem_data_copy_target_element_icerigini_kopyalar(live_server, browser):
+    context, page, hatalar = _admin_sayfa_ac(browser, live_server)
 
-        page.click('[data-copy-target="ai-json"]')
-        _bekle_kosul(
-            page,
-            "document.querySelector('[data-copy-target=\\\"ai-json\\\"]')?.textContent !== '📋 Panoya Kopyala'",
-            mesaj="Kopyalama sonrası buton geri bildirimi görünmedi",
-        )
+    page.click('[data-copy-target="ai-json"]')
+    _bekle_kosul(
+        page,
+        "document.querySelector('[data-copy-target=\\\"ai-json\\\"]')?.textContent !== '📋 Panoya Kopyala'",
+        mesaj="Kopyalama sonrası buton geri bildirimi görünmedi",
+    )
 
-        panoya_kopyalanan = page.evaluate("navigator.clipboard.readText()")
-        assert panoya_kopyalanan == '{"ornek": "veri"}', \
-            f"Panoya yanlış içerik kopyalandı: {panoya_kopyalanan!r}"
+    panoya_kopyalanan = page.evaluate("navigator.clipboard.readText()")
+    assert panoya_kopyalanan == '{"ornek": "veri"}', \
+        f"Panoya yanlış içerik kopyalandı: {panoya_kopyalanan!r}"
 
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -351,117 +339,96 @@ def _daattr_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_appdaattr_argumansiz_cagri(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+def test_appdaattr_argumansiz_cagri(live_server, browser):
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="wizardAdim1"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "wizardAdim1", "args": []}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="wizardAdim1"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "wizardAdim1", "args": []}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appdaattr_string_argumanli_cagri(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+def test_appdaattr_string_argumanli_cagri(live_server, browser):
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="wizardAdim2"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "wizardAdim2", "args": ["emlak"]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="wizardAdim2"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "wizardAdim2", "args": ["emlak"]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appdaattr_el_sentinel_tiklanan_elementi_gecirir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+def test_appdaattr_el_sentinel_tiklanan_elementi_gecirir(live_server, browser):
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
-        page.click('#tema-yesil')
-        page.wait_for_timeout(500)
-        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
-        assert cagri["fn"] == "temaUygula"
-        assert cagri["tema"] == "green"
-        assert cagri["elIsButton"] is True, "İkinci argüman gerçek bir DOM elementi olmalıydı"
-        assert cagri["elId"] == "tema-yesil", "Tıklanan elementin kendisi geçmeliydi"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#tema-yesil')
+    page.wait_for_timeout(500)
+    cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+    assert cagri["fn"] == "temaUygula"
+    assert cagri["tema"] == "green"
+    assert cagri["elIsButton"] is True, "İkinci argüman gerçek bir DOM elementi olmalıydı"
+    assert cagri["elId"] == "tema-yesil", "Tıklanan elementin kendisi geçmeliydi"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appdaattr_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
-        page.on("dialog", lambda d: d.dismiss())
+def test_appdaattr_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server, browser):
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+    page.on("dialog", lambda d: d.dismiss())
 
-        onceki = page.evaluate("window.__cagrilar.length")
-        page.click('[data-action="bannerSilTest"]')
-        page.wait_for_timeout(500)
-        sonraki = page.evaluate("window.__cagrilar.length")
+    onceki = page.evaluate("window.__cagrilar.length")
+    page.click('[data-action="bannerSilTest"]')
+    page.wait_for_timeout(500)
+    sonraki = page.evaluate("window.__cagrilar.length")
 
-        assert sonraki == onceki, "confirm() reddedildiği halde fonksiyon çağrıldı!"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    assert sonraki == onceki, "confirm() reddedildiği halde fonksiyon çağrıldı!"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appdaattr_confirm_kabul_edilirse_fonksiyon_cagrilir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
-        page.on("dialog", lambda d: d.accept())
+def test_appdaattr_confirm_kabul_edilirse_fonksiyon_cagrilir(live_server, browser):
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+    page.on("dialog", lambda d: d.accept())
 
-        page.click('[data-action="bannerSilTest"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "bannerSilTest", "args": []}], \
-            f"confirm() kabul edildiği halde beklenmedik çağrı listesi: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="bannerSilTest"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "bannerSilTest", "args": []}], \
+        f"confirm() kabul edildiği halde beklenmedik çağrı listesi: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appdaattr_null_argumani_dogru_tasinir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+def test_appdaattr_null_argumani_dogru_tasinir(live_server, browser):
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="widgetKaydetTest"]')
-        page.wait_for_timeout(500)
-        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
-        assert cagri == {"fn": "widgetKaydetTest", "args": [None]}, f"Beklenmedik: {cagri}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="widgetKaydetTest"]')
+    page.wait_for_timeout(500)
+    cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+    assert cagri == {"fn": "widgetKaydetTest", "args": [None]}, f"Beklenmedik: {cagri}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appdaattr_listener_tek_sefer_tetiklenir(live_server):
+def test_appdaattr_listener_tek_sefer_tetiklenir(live_server, browser):
     """
     Regresyon: admin-sistem.js'in KENDİ data-action listener'ı app.js'inkiyle
     çakışıp aynı tıklamada fonksiyonu 2 KEZ çağırıyordu. Bu hata yakalanıp
     admin-sistem.js'ten çakışan listener kaldırıldı. Bu test bunu kalıcı
     olarak korur.
     """
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
+    context, page, hatalar = _daattr_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="wizardAdim1"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert len(cagrilar) == 1, \
-            f"wizardAdim1 tam olarak 1 kez çağrılmalıydı, {len(cagrilar)} kez çağrıldı: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="wizardAdim1"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert len(cagrilar) == 1, \
+        f"wizardAdim1 tam olarak 1 kez çağrılmalıydı, {len(cagrilar)} kez çağrıldı: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -506,11 +473,9 @@ def _banner_sayfa_ac(browser, live_server):
     return page, hatalar
 
 
-def test_appbanner_argumansiz_json_objeler_dogru_iletilir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page, hatalar = _banner_sayfa_ac(browser, live_server)
-
+def test_appbanner_argumansiz_json_objeler_dogru_iletilir(live_server, browser):
+    page, hatalar = _banner_sayfa_ac(browser, live_server)
+    try:
         page.click('[data-action="bannerYeniModal"]')
         page.wait_for_timeout(500)
 
@@ -520,28 +485,26 @@ def test_appbanner_argumansiz_json_objeler_dogru_iletilir(live_server):
             "args": [{"anasayfa-top": "Anasayfa Üst"}, {"buyuk": "Büyük"}],
         }], f"Yanlış çağrı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
-def test_appbanner_id_ve_toggle_degeri_dogru_tipte_gelir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page, hatalar = _banner_sayfa_ac(browser, live_server)
-
+def test_appbanner_id_ve_toggle_degeri_dogru_tipte_gelir(live_server, browser):
+    page, hatalar = _banner_sayfa_ac(browser, live_server)
+    try:
         page.click('[data-action="bannerToggle"]')
         page.wait_for_timeout(500)
 
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "bannerToggle", "args": [7, 0]}], f"Yanlış çağrı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
-def test_appbanner_confirm_onaylanirsa_fonksiyon_cagrilir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page, hatalar = _banner_sayfa_ac(browser, live_server)
-
+def test_appbanner_confirm_onaylanirsa_fonksiyon_cagrilir(live_server, browser):
+    page, hatalar = _banner_sayfa_ac(browser, live_server)
+    try:
         page.on("dialog", lambda d: d.accept())
         page.click('[data-action="bannerSil"]')
         page.wait_for_timeout(500)
@@ -549,14 +512,13 @@ def test_appbanner_confirm_onaylanirsa_fonksiyon_cagrilir(live_server):
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [{"fn": "bannerSil", "args": [7]}], f"Yanlış çağrı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
-def test_appbanner_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page, hatalar = _banner_sayfa_ac(browser, live_server)
-
+def test_appbanner_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server, browser):
+    page, hatalar = _banner_sayfa_ac(browser, live_server)
+    try:
         page.on("dialog", lambda d: d.dismiss())
         page.click('[data-action="bannerSil"]')
         page.wait_for_timeout(500)
@@ -564,15 +526,14 @@ def test_appbanner_confirm_reddedilirse_fonksiyon_cagrilmaz(live_server):
         cagrilar = page.evaluate("window.__cagrilar")
         assert cagrilar == [], f"Confirm reddedilmesine rağmen çağrıldı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
-def test_appbanner_ic_ice_json_arguman_dogru_iletilir(live_server):
+def test_appbanner_ic_ice_json_arguman_dogru_iletilir(live_server, browser):
     """bannerDuzenleModal(id, konumlar, boyutlar) — 3 karışık tipte argüman."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page, hatalar = _banner_sayfa_ac(browser, live_server)
-
+    page, hatalar = _banner_sayfa_ac(browser, live_server)
+    try:
         page.click('[data-action="bannerDuzenleModal"]')
         page.wait_for_timeout(500)
 
@@ -582,7 +543,8 @@ def test_appbanner_ic_ice_json_arguman_dogru_iletilir(live_server):
             "args": [7, {"anasayfa-top": "Anasayfa Üst"}, {"buyuk": "Büyük"}],
         }], f"Yanlış çağrı: {cagrilar}"
         assert not hatalar, f"JS hatası: {hatalar}"
-        browser.close()
+    finally:
+        page.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -633,80 +595,65 @@ def _saas_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_appsaas_saas_tenant_sil_confirm_kabul(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _saas_sayfa_ac(browser, live_server)
-        page.on("dialog", lambda d: d.accept())
+def test_appsaas_saas_tenant_sil_confirm_kabul(live_server, browser):
+    context, page, hatalar = _saas_sayfa_ac(browser, live_server)
+    page.on("dialog", lambda d: d.accept())
 
-        page.click('[data-action="saasTenantSil"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "saasTenantSil", "args": [5]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="saasTenantSil"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "saasTenantSil", "args": [5]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appsaas_sayfa_kaydet_null_id(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _saas_sayfa_ac(browser, live_server)
+def test_appsaas_sayfa_kaydet_null_id(live_server, browser):
+    context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="sayfaKaydet"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "sayfaKaydet", "args": [None]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="sayfaKaydet"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "sayfaKaydet", "args": [None]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appsaas_sablon_bolum_tasi_iki_id(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _saas_sayfa_ac(browser, live_server)
+def test_appsaas_sablon_bolum_tasi_iki_id(live_server, browser):
+    context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="sablonBolumTasi"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "sablonBolumTasi", "args": [3, 7]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="sablonBolumTasi"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "sablonBolumTasi", "args": [3, 7]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appsaas_editor_ekle_cok_satirli_string(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _saas_sayfa_ac(browser, live_server)
+def test_appsaas_editor_ekle_cok_satirli_string(live_server, browser):
+    context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="editorEkle"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "editorEkle", "args": ["\n## ", ""]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="editorEkle"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "editorEkle", "args": ["\n## ", ""]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_appsaas_sayfa_editor_ekle_tek_tirnakli_html(live_server):
+def test_appsaas_sayfa_editor_ekle_tek_tirnakli_html(live_server, browser):
     """Tek tırnak İÇEREN bir HTML string (<a href='' ...>) doğru taşınmalı — bu, orijinal
     kodda kırılgan manuel escape'e ihtiyaç duyan tam senaryo."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _saas_sayfa_ac(browser, live_server)
+    context, page, hatalar = _saas_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="sayfaEditorEkle"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{
-            "fn": "sayfaEditorEkle",
-            "args": ["<a href='' target='_blank'>", "</a>"],
-        }], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="sayfaEditorEkle"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{
+        "fn": "sayfaEditorEkle",
+        "args": ["<a href='' target='_blank'>", "</a>"],
+    }], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -761,75 +708,63 @@ def _ilan_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_ilan_paylas_tek_tirnakli_baslik_dogru_tasinir(live_server):
+def test_ilan_paylas_tek_tirnakli_baslik_dogru_tasinir(live_server, browser):
     """Eski kod .replace(/'/g,"\\'") ile elle escape ediyordu — daAttr() bunu
     JSON.stringify ile otomatik ve güvenli yapıyor. Başlıkta tek tırnak VE
     parantez olan gerçekçi bir örnekle doğruluyoruz."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+    context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="ilanPaylas"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{
-            "fn": "ilanPaylas",
-            "args": ["wa", 42, "Satılık Ev (Sahibinden'e Yakın)", "2.500.000 TL"],
-        }], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="ilanPaylas"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{
+        "fn": "ilanPaylas",
+        "args": ["wa", 42, "Satılık Ev (Sahibinden'e Yakın)", "2.500.000 TL"],
+    }], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_ilan_harita_ac_id_argumani(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+def test_ilan_harita_ac_id_argumani(live_server, browser):
+    context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="haritaIlanAc"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "haritaIlanAc", "args": [99]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="haritaIlanAc"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "haritaIlanAc", "args": [99]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_ilan_gfoto_degis_el_ilk_argumanda(live_server):
+def test_ilan_gfoto_degis_el_ilk_argumanda(live_server, browser):
     """gFotoDegis(this, url) — __EL__ sentinel BİRİNCİ argümanda (temaUygula'dan
     farklı olarak); sıra doğru korunmalı."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+    context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
-        page.click('#foto-thumb')
-        page.wait_for_timeout(500)
-        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
-        assert cagri["fn"] == "gFotoDegis"
-        assert cagri["elIsElement"] is True
-        assert cagri["elId"] == "foto-thumb"
-        assert cagri["url"] == "https://example.com/foto.jpg"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#foto-thumb')
+    page.wait_for_timeout(500)
+    cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+    assert cagri["fn"] == "gFotoDegis"
+    assert cagri["elIsElement"] is True
+    assert cagri["elId"] == "foto-thumb"
+    assert cagri["url"] == "https://example.com/foto.jpg"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_ilan_fav_toggle_el_ucuncu_argumanda(live_server):
+def test_ilan_fav_toggle_el_ucuncu_argumanda(live_server, browser):
     """favToggle(id, baslik, this) — __EL__ sentinel ÜÇÜNCÜ argümanda."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
+    context, page, hatalar = _ilan_sayfa_ac(browser, live_server)
 
-        page.click('#fav-btn')
-        page.wait_for_timeout(500)
-        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
-        assert cagri["fn"] == "favToggle"
-        assert cagri["id"] == 15
-        assert cagri["btnIsElement"] is True
-        assert cagri["btnId"] == "fav-btn"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#fav-btn')
+    page.wait_for_timeout(500)
+    cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+    assert cagri["fn"] == "favToggle"
+    assert cagri["id"] == 15
+    assert cagri["btnIsElement"] is True
+    assert cagri["btnId"] == "fav-btn"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -871,64 +806,52 @@ def _blog_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_blog_duzenle_id_argumani(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+def test_blog_duzenle_id_argumani(live_server, browser):
+    context, page, hatalar = _blog_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="blogDuzenle"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "blogDuzenle", "args": [11]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="blogDuzenle"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "blogDuzenle", "args": [11]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_blog_durum_degis_string_argumani(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+def test_blog_durum_degis_string_argumani(live_server, browser):
+    context, page, hatalar = _blog_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="blogDurumDegis"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "blogDurumDegis", "args": [11, "Taslak"]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="blogDurumDegis"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "blogDurumDegis", "args": [11, "Taslak"]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_blog_sil_admin_confirm_reddedilirse_cagrilmaz(live_server):
+def test_blog_sil_admin_confirm_reddedilirse_cagrilmaz(live_server, browser):
     """Regresyon: blogSilAdmin kendi içinde confirm() ÇAĞIRMIYOR — bu yüzden
     buton tarafında data-confirm OLMALI. Reddedilince çağrılmamalı."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
-        page.on("dialog", lambda d: d.dismiss())
+    context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+    page.on("dialog", lambda d: d.dismiss())
 
-        page.click('[data-action="blogSilAdmin"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="blogSilAdmin"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_blog_sil_admin_confirm_kabul_edilirse_cagrilir(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _blog_sayfa_ac(browser, live_server)
-        page.on("dialog", lambda d: d.accept())
+def test_blog_sil_admin_confirm_kabul_edilirse_cagrilir(live_server, browser):
+    context, page, hatalar = _blog_sayfa_ac(browser, live_server)
+    page.on("dialog", lambda d: d.accept())
 
-        page.click('[data-action="blogSilAdmin"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "blogSilAdmin", "args": [11]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="blogSilAdmin"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "blogSilAdmin", "args": [11]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -972,68 +895,56 @@ def _menuyon_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_menuyon_oge_tasi_uc_argumanli(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+def test_menuyon_oge_tasi_uc_argumanli(live_server, browser):
+    context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="menuOgeTasi"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "menuOgeTasi", "args": [5, 2, -1]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="menuOgeTasi"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "menuOgeTasi", "args": [5, 2, -1]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_menuyon_sil_confirm_reddedilirse_cagrilmaz(live_server):
+def test_menuyon_sil_confirm_reddedilirse_cagrilmaz(live_server, browser):
     """Regresyon: menuSil kendi içinde de confirm() çağırıyor. Buton tarafında
     AYRICA data-confirm ekleyip çift onay hatası yapmadığımızı doğruluyoruz —
     burada tek confirm (bizim test dialog handler'ımız) reddedince hiç
     çağrılmamalı."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
-        page.on("dialog", lambda d: d.dismiss())
+    context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+    page.on("dialog", lambda d: d.dismiss())
 
-        page.click('[data-action="menuSil"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="menuSil"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [], f"confirm() reddedildiği halde çağrıldı: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_menuyon_hedef_sec_uc_string_argumani(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+def test_menuyon_hedef_sec_uc_string_argumani(live_server, browser):
+    context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="menuHedefSec"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{
-            "fn": "menuHedefSec",
-            "args": ["sayfa", "hakkimizda", "Hakkımızda · sayfa"],
-        }], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="menuHedefSec"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{
+        "fn": "menuHedefSec",
+        "args": ["sayfa", "hakkimizda", "Hakkımızda · sayfa"],
+    }], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_menuyon_admin_menu_ogelr_id_ve_slug(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
+def test_menuyon_admin_menu_ogelr_id_ve_slug(live_server, browser):
+    context, page, hatalar = _menuyon_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="adminMenuOgelr"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "adminMenuOgelr", "args": [2, "ana-menu"]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="adminMenuOgelr"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "adminMenuOgelr", "args": [2, "ana-menu"]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1077,50 +988,41 @@ def _kullanici_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_kullanici_onayla_id_argumani(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
+def test_kullanici_onayla_id_argumani(live_server, browser):
+    context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="kullaniciOnayla"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "kullaniciOnayla", "args": [8]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="kullaniciOnayla"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "kullaniciOnayla", "args": [8]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_profil_kaydet_argumansiz(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
+def test_profil_kaydet_argumansiz(live_server, browser):
+    context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="profilKaydet"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "profilKaydet", "args": []}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="profilKaydet"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "profilKaydet", "args": []}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_hero_font_sec_el_tek_argumanda(live_server):
+def test_hero_font_sec_el_tek_argumanda(live_server, browser):
     """heroFontSec(this) — __EL__ sentinel TEK argüman olarak; elementin
     kendi data-font attribute'una fonksiyon içinde erişilebilmeli."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
+    context, page, hatalar = _kullanici_sayfa_ac(browser, live_server)
 
-        page.click('#font-secim')
-        page.wait_for_timeout(500)
-        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
-        assert cagri["fn"] == "heroFontSec"
-        assert cagri["elIsElement"] is True
-        assert cagri["font"] == "Playfair Display"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#font-secim')
+    page.wait_for_timeout(500)
+    cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+    assert cagri["fn"] == "heroFontSec"
+    assert cagri["elIsElement"] is True
+    assert cagri["font"] == "Playfair Display"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1179,21 +1081,18 @@ def _songrup_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_songrup_slider_git_negatif_yon(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+def test_songrup_slider_git_negatif_yon(live_server, browser):
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="sliderGit"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "sliderGit", "args": ["anasayfa", -1]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="sliderGit"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "sliderGit", "args": ["anasayfa", -1]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_kars_sifirla_ve_listeye_don_iki_cagri_yapar(live_server):
+def test_songrup_kars_sifirla_ve_listeye_don_iki_cagri_yapar(live_server, browser):
     """Regresyon: eskiden onclick="karsSifirla();sayfaGit('ilanlar')" tek
     attribute'ta İKİ ayrı fonksiyon çağırıyordu. Artık karsSifirlaVeListeyeDon()
     adlı BİRLEŞİK bir fonksiyon bu ikisini sırayla çağırıyor.
@@ -1203,151 +1102,385 @@ def test_songrup_kars_sifirla_ve_listeye_don_iki_cagri_yapar(live_server):
     (modüllerde üst-seviye fonksiyon bildirimleri window'a otomatik
     bağlanmaz). Bu yüzden burada stub yerine GERÇEK yan etkileri
     (DOM state değişimi) doğruluyoruz."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        page.click('#kars-donus-btn')
-        page.wait_for_timeout(700)
+    page.click('#kars-donus-btn')
+    page.wait_for_timeout(700)
 
-        # sayfaGit('ilanlar') çalıştıysa: #sayfa-ilanlar 'aktif' sınıfını almalı
-        ilanlar_aktif = page.evaluate(
-            "document.getElementById('sayfa-ilanlar')?.classList.contains('aktif')"
-        )
-        assert ilanlar_aktif is True, "sayfaGit('ilanlar') çalışmadı (sayfa-ilanlar aktif değil)"
+    # sayfaGit('ilanlar') çalıştıysa: #sayfa-ilanlar 'aktif' sınıfını almalı
+    ilanlar_aktif = page.evaluate(
+        "document.getElementById('sayfa-ilanlar')?.classList.contains('aktif')"
+    )
+    assert ilanlar_aktif is True, "sayfaGit('ilanlar') çalışmadı (sayfa-ilanlar aktif değil)"
 
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_durum_degistir_id_ve_yeni_durum(live_server):
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+def test_songrup_durum_degistir_id_ve_yeni_durum(live_server, browser):
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        page.click('[data-action="durumDegistir"]')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{"fn": "durumDegistir", "args": [7, "Taslak"]}], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('[data-action="durumDegistir"]')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{"fn": "durumDegistir", "args": [7, "Taslak"]}], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_dinamik_fonksiyon_adi_katFiltrele(live_server):
+def test_songrup_dinamik_fonksiyon_adi_katFiltrele(live_server, browser):
     """katYukle()'de fonksiyon adı bir DEĞİŞKENDEN (tiklama) geliyordu
     (onclick="${tiklama}(this,'')"). daAttr(tiklama, [...]) ile de aynı
     şekilde çalıştığını doğruluyoruz."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        page.click('#kat-tumu')
-        page.wait_for_timeout(500)
-        cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
-        assert cagri["fn"] == "katFiltrele"
-        assert cagri["elIsElement"] is True
-        assert cagri["elId"] == "kat-tumu"
-        assert cagri["k"] == ""
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#kat-tumu')
+    page.wait_for_timeout(500)
+    cagri = page.evaluate("window.__cagrilar[window.__cagrilar.length-1]")
+    assert cagri["fn"] == "katFiltrele"
+    assert cagri["elIsElement"] is True
+    assert cagri["elId"] == "kat-tumu"
+    assert cagri["k"] == ""
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_belge_input_ac_gizli_input_tetikler(live_server):
+def test_songrup_belge_input_ac_gizli_input_tetikler(live_server, browser):
     """onclick="document.getElementById('belge-input').click()" yerine
     window.belgeInputAc() yardımcı fonksiyonu — gerçek dosya input'unun
     tıklanmasını tetiklediğini (gizli file input) doğruluyoruz."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        # Gerçek belge-input elementini ekleyip tıklamayı yakalıyoruz
-        page.evaluate("""() => {
-            const inp = document.createElement('input');
-            inp.type = 'file';
-            inp.id = 'belge-input';
-            inp.style.display = 'none';
-            window.__belgeInputTiklandi = false;
-            inp.addEventListener('click', (e) => { e.preventDefault(); window.__belgeInputTiklandi = true; });
-            document.body.appendChild(inp);
-        }""")
+    # Gerçek belge-input elementini ekleyip tıklamayı yakalıyoruz
+    page.evaluate("""() => {
+        const inp = document.createElement('input');
+        inp.type = 'file';
+        inp.id = 'belge-input';
+        inp.style.display = 'none';
+        window.__belgeInputTiklandi = false;
+        inp.addEventListener('click', (e) => { e.preventDefault(); window.__belgeInputTiklandi = true; });
+        document.body.appendChild(inp);
+    }""")
 
-        page.click('#drop-zone-test')
-        page.wait_for_timeout(500)
-        tiklandi = page.evaluate("window.__belgeInputTiklandi")
-        assert tiklandi is True, "belge-input'a tıklama tetiklenmedi"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#drop-zone-test')
+    page.wait_for_timeout(500)
+    tiklandi = page.evaluate("window.__belgeInputTiklandi")
+    assert tiklandi is True, "belge-input'a tıklama tetiklenmedi"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_modal_backdrop_dogrudan_tiklamada_kapanir(live_server):
+def test_songrup_modal_backdrop_dogrudan_tiklamada_kapanir(live_server, browser):
     """data-backdrop-close: zemine DOĞRUDAN tıklanınca element kaldırılmalı."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        # Zeminin boş bir köşesine tıkla (içerik kutusunun DIŞINDA — içerik
-        # varsayılan block akışında üst-sol köşede (0,0)-(50,50) durduğu için
-        # zeminin sağ-alt köşesine tıklıyoruz)
-        page.click('#modal-zemin-test', position={"x": 90, "y": 90})
-        page.wait_for_timeout(500)
-        assert page.locator('#modal-zemin-test').count() == 0, \
-            "Zemine doğrudan tıklanınca modal kapanmadı"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    # Zeminin boş bir köşesine tıkla (içerik kutusunun DIŞINDA — içerik
+    # varsayılan block akışında üst-sol köşede (0,0)-(50,50) durduğu için
+    # zeminin sağ-alt köşesine tıklıyoruz)
+    page.click('#modal-zemin-test', position={"x": 90, "y": 90})
+    page.wait_for_timeout(500)
+    assert page.locator('#modal-zemin-test').count() == 0, \
+        "Zemine doğrudan tıklanınca modal kapanmadı"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_modal_backdrop_icerige_tiklamada_kapanmaz(live_server):
+def test_songrup_modal_backdrop_icerige_tiklamada_kapanmaz(live_server, browser):
     """data-backdrop-close: modal İÇERİĞİNE tıklanınca (bubble ile zemine
     ulaşsa bile) KAPANMAMALI — bu yüzden closest() değil, doğrudan e.target
     kontrolü kullanıyoruz."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        page.click('#modal-icerik-test')
-        page.wait_for_timeout(500)
-        assert page.locator('#modal-zemin-test').count() == 1, \
-            "İçeriğe tıklanınca modal yanlışlıkla kapandı"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#modal-icerik-test')
+    page.wait_for_timeout(500)
+    assert page.locator('#modal-zemin-test').count() == 1, \
+        "İçeriğe tıklanınca modal yanlışlıkla kapandı"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
-def test_songrup_belge_form_ac_obje_argumani(live_server):
+def test_songrup_belge_form_ac_obje_argumani(live_server, browser):
     """belgeFormAc(veri) — eskiden onclick='...JSON.stringify(d).replace(/'/g,"&#39;")...'
     gibi kırılgan manuel escape kullanıyordu. daAttr() artık objeyi doğrudan
     JSON.stringify ile güvenle taşıyor — tırnak içeren bir değerle doğruluyoruz."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
+    context, page, hatalar = _songrup_sayfa_ac(browser, live_server)
 
-        page.evaluate("""() => {
-            const div = document.createElement('div');
-            div.innerHTML = `<button id="belge-form-btn" data-action="belgeFormAc" style="width:60px;height:20px">Aç</button>`;
-            document.body.appendChild(div);
-            const veri = { portfoy: { baslik: "Ev (Sahibinden'e Yakın)", id: 5 } };
-            document.getElementById('belge-form-btn').setAttribute('data-action-args', JSON.stringify([veri]));
-        }""")
+    page.evaluate("""() => {
+        const div = document.createElement('div');
+        div.innerHTML = `<button id="belge-form-btn" data-action="belgeFormAc" style="width:60px;height:20px">Aç</button>`;
+        document.body.appendChild(div);
+        const veri = { portfoy: { baslik: "Ev (Sahibinden'e Yakın)", id: 5 } };
+        document.getElementById('belge-form-btn').setAttribute('data-action-args', JSON.stringify([veri]));
+    }""")
 
-        page.click('#belge-form-btn')
-        page.wait_for_timeout(500)
-        cagrilar = page.evaluate("window.__cagrilar")
-        assert cagrilar == [{
-            "fn": "belgeFormAc",
-            "args": [{"portfoy": {"baslik": "Ev (Sahibinden'e Yakın)", "id": 5}}],
-        }], f"Beklenmedik: {cagrilar}"
-        assert not hatalar, f"JS hatası: {hatalar}"
-        context.close()
-        browser.close()
+    page.click('#belge-form-btn')
+    page.wait_for_timeout(500)
+    cagrilar = page.evaluate("window.__cagrilar")
+    assert cagrilar == [{
+        "fn": "belgeFormAc",
+        "args": [{"portfoy": {"baslik": "Ev (Sahibinden'e Yakın)", "id": 5}}],
+    }], f"Beklenmedik: {cagrilar}"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# NOT: app.js'teki onclick="" → data-action geçişi bu bölümle TAMAMLANDI.
-# Kalan iş: index.html (85) + widget-renderer.js (1) + menu-renderer.js (2)
-# + admin-sistem.js (1) içindeki KALAN onclick attribute'ları (varsa).
+# BÖLÜM 12 — index.html'deki özel desenler (mobil nav, modal gizleme,
+# şifre sıfırlama adım geçişi, gizli input tetikleme)
+# Bu bölümle birlikte TÜM projede (app.js + index.html + diğer src/ui/*.js)
+# hiç onclick="" attribute'u kalmamıştır — unsafe-inline artık script-src'den
+# kaldırılabilir (bkz. deploy/security-headers.conf).
+# ═══════════════════════════════════════════════════════════════════════
+SONINDEX_STUB_JS = """
+() => {
+  window.__navMobilKapatCagrildi = false;
+  window.navMobilKapat = () => { window.__navMobilKapatCagrildi = true; };
+}
+"""
+
+SONINDEX_INJECT_BUTTONS_JS = """
+() => {
+  const div = document.createElement('div');
+  div.id = 'test-sonindex-butonlari';
+  div.innerHTML = `
+    <div id="modal-gizle-test" style="display:block">
+      <button id="modal-gizle-btn" data-action="modalGizle" data-action-args="[&quot;modal-gizle-test&quot;]">Kapat</button>
+    </div>
+    <button id="ssm-geri-btn" data-action="ssmAdim1eDon">← Geri</button>
+    <div id="backdrop-hide-test" data-backdrop-hide="backdrop-hide-test" style="width:100px;height:100px;display:block">
+      <div id="backdrop-hide-icerik" style="width:50px;height:50px">İçerik</div>
+    </div>
+    <button id="sgm-test-btn" data-action="sayfaGitMobil" data-action-args="[&quot;ilanlar&quot;]">Git</button>
+    <button id="blog-resim-input-ac-btn" data-action="blogResimInputAc">🖼 Resim Ekle</button>
+  `;
+  document.body.appendChild(div);
+
+  // blog-resim-input SAYFADA ZATEN GERÇEK OLARAK VAR (id çakışmasın diye
+  // duplike ETMİYORUZ) — ona bir tıklama gözlemcisi ekliyoruz.
+  const gercekInput = document.getElementById('blog-resim-input');
+  window.__blogResimInputTiklandi = false;
+  if (gercekInput) {
+    gercekInput.addEventListener('click', (e) => { e.preventDefault(); window.__blogResimInputTiklandi = true; });
+  }
+}
+"""
+
+
+def _sonindex_sayfa_ac(browser, live_server):
+    context = browser.new_context()
+    page = context.new_page()
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+    hatalar = []
+    page.on("pageerror", lambda exc: hatalar.append(str(exc)))
+    page.goto(f"{live_server}/static/index.html")
+    page.wait_for_selector("#giris-btn", timeout=10000)
+    page.evaluate(SONINDEX_STUB_JS)
+    page.evaluate(SONINDEX_INJECT_BUTTONS_JS)
+    return context, page, hatalar
+
+
+def _js_tikla(page, selector):
+    """Playwright'ın fiziksel fare tıklaması yerine JS ile doğrudan bir click
+    event'i dispatch eder. Gerçek index.html kendi CSS/layout'una sahip
+    olduğu için, fiziksel tıklama bazı ortamlarda üstte duran başka bir
+    elementin (nav, sabit konumlu bir şey vb.) tıklamayı 'yutmasına' karşı
+    kırılgan olabilir — JS dispatch bu belirsizliği tamamen ortadan kaldırır,
+    doğrudan hedef elementi tıklar."""
+    page.evaluate(f"document.querySelector('{selector}')?.click()")
+
+
+def test_sonindex_sayfa_git_mobil_sayfa_degistir_ve_menu_kapat(live_server, browser):
+    """sayfaGitMobil: eskiden onclick="sayfaGit('ilanlar'); navMobilKapat()"
+    iki ayrı çağrıydı — artık birleşik fonksiyon her ikisini de yapmalı."""
+    context, page, hatalar = _sonindex_sayfa_ac(browser, live_server)
+
+    # NOT: #sgm-test-btn zaten SONINDEX_INJECT_BUTTONS_JS içinde oluşturuluyor —
+    # burada TEKRAR oluşturmuyoruz (eskiden aynı id'yle 2. bir buton daha
+    # ekleniyordu, bu belirsiz/kırılgan bir durumdu, kaldırıldı).
+    _js_tikla(page, '#sgm-test-btn')
+    _bekle_kosul(
+        page,
+        "document.getElementById('sayfa-ilanlar')?.classList.contains('aktif') && window.__navMobilKapatCagrildi === true",
+        mesaj="sayfaGitMobil sayfa değiştirmedi veya navMobilKapat çağrılmadı",
+    )
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
+
+
+def test_sonindex_modal_gizle_display_none_yapar(live_server, browser):
+    context, page, hatalar = _sonindex_sayfa_ac(browser, live_server)
+
+    assert page.locator('#modal-gizle-test').is_visible()
+    _js_tikla(page, '#modal-gizle-btn')
+    _bekle_kosul(
+        page,
+        "document.getElementById('modal-gizle-test')?.style.display === 'none'",
+        mesaj="modalGizle çalışmadı",
+    )
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
+
+
+def test_sonindex_ssm_adim1e_don_iki_elementi_birden_degistirir(live_server, browser):
+    """ssmAdim1eDon: eskiden tek onclick'te İKİ ayrı DOM manipülasyonu vardı
+    (adım1 göster + adım2 gizle) — ikisinin de doğru çalıştığını doğruluyoruz.
+    Not: gerçek index.html'de #ssm-adim1 varsayılan olarak görünür, #ssm-adim2
+    gizlidir (style="display:none") — yani "adım 1" başlangıç durumudur. Bu
+    testin anlamlı olması için önce "adım 2'deyim" durumunu simüle edip
+    (adım1 gizle, adım2 göster), SONRA "geri" butonuna tıklayıp adım 1'e
+    dönüldüğünü doğruluyoruz."""
+    context, page, hatalar = _sonindex_sayfa_ac(browser, live_server)
+
+    # "Adım 2'deyim" durumunu simüle et
+    page.evaluate("""() => {
+        document.getElementById('ssm-adim1').style.display = 'none';
+        document.getElementById('ssm-adim2').style.display = '';
+    }""")
+    assert page.locator('#ssm-adim1').get_attribute('style') == 'display: none;' \
+        or page.evaluate("document.getElementById('ssm-adim1').style.display") == 'none'
+
+    _js_tikla(page, '#ssm-geri-btn')
+    _bekle_kosul(
+        page,
+        "document.getElementById('ssm-adim1')?.style.display === '' && document.getElementById('ssm-adim2')?.style.display === 'none'",
+        mesaj="ssmAdim1eDon iki adımı da doğru değiştirmedi",
+    )
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
+
+
+def test_sonindex_blog_resim_input_ac_gizli_input_tetikler(live_server, browser):
+    context, page, hatalar = _sonindex_sayfa_ac(browser, live_server)
+
+    _js_tikla(page, '#blog-resim-input-ac-btn')
+    _bekle_kosul(page, "window.__blogResimInputTiklandi === true", mesaj="blog-resim-input'a tıklama tetiklenmedi")
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
+
+
+def test_sonindex_backdrop_hide_dogrudan_tiklamada_gizler(live_server, browser):
+    context, page, hatalar = _sonindex_sayfa_ac(browser, live_server)
+
+    # e.target'ın DOĞRUDAN zemin elementi olduğu bir click event'i dispatch
+    # ediyoruz (position-bazlı fiziksel tıklama yerine) — bu, gerçek sayfada
+    # olası layout/overlay farklarından tamamen bağımsız, deterministik.
+    page.evaluate("""() => {
+        const el = document.getElementById('backdrop-hide-test');
+        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    }""")
+    _bekle_kosul(
+        page,
+        "document.getElementById('backdrop-hide-test')?.style.display === 'none'",
+        mesaj="Zemine doğrudan tıklanınca gizlenmedi",
+    )
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
+
+
+def test_sonindex_backdrop_hide_icerige_tiklamada_gizlenmez(live_server, browser):
+    context, page, hatalar = _sonindex_sayfa_ac(browser, live_server)
+
+    _js_tikla(page, '#backdrop-hide-icerik')
+    page.wait_for_timeout(500)
+    gizli = page.evaluate("document.getElementById('backdrop-hide-test')?.style.display === 'none'")
+    assert not gizli, "İçeriğe tıklanınca yanlışlıkla gizlendi"
+    assert not hatalar, f"JS hatası: {hatalar}"
+    context.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# BÖLÜM 12 — CSP ENFORCEMENT REGRESYON TESTİ (en kritik test)
+#
+# Şimdiye kadarki tüm testler CSP header'ı OLMADAN (dev sunucusunda) çalıştı
+# — yani JS'in çalıştığını kanıtladılar ama CSP'nin gerçekten izin verdiğini
+# değil (CSP production'da nginx tarafından ekleniyor, uvicorn dev sunucusu
+# eklemiyor). Bu test, deploy/security-headers.conf'taki GERÇEK CSP
+# header'ını Playwright ile response'lara enjekte ederek nginx'i simüle
+# eder ve tarayıcı konsolunda SIFIR "Content Security Policy" / "Refused to"
+# ihlali olduğunu doğrular. Bu, en güçlü regresyon korumasıdır: ileride biri
+# yanlışlıkla bir onclick="" veya inline <script> eklerse, bu test kırmızı
+# yanar.
+# ═══════════════════════════════════════════════════════════════════════
+PROD_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' https://www.google.com https://www.gstatic.com; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src 'self' https://fonts.gstatic.com data:; "
+    "img-src 'self' data: blob: https: http:; "
+    "connect-src 'self' https:; "
+    "worker-src 'self'; manifest-src 'self'; media-src 'self'; "
+    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+)
+
+
+def _csp_ile_sayfa_ac(browser, url):
+    """Gerçek production CSP header'ını response'lara enjekte ederek nginx'i
+    simüle eder (dev sunucusu CSP eklemez)."""
+    page = browser.new_page()
+    # Service worker'ı devre dışı bırak — aktifse ESKİ (onclick'li) bir
+    # sürümü cache'den servis edip yanlış-pozitif CSP ihlaline yol açabilir.
+    page.add_init_script(_sw_devre_disi_birak_init_script())
+
+    def handle_route(route):
+        response = route.fetch()
+        headers = dict(response.headers)
+        headers["content-security-policy"] = PROD_CSP
+        route.fulfill(response=response, headers=headers)
+    page.route("**/*", handle_route)
+
+    ihlaller = []
+    page.on("console", lambda msg: ihlaller.append(msg.text)
+            if msg.type == "error" and ("Content Security Policy" in msg.text or "Refused to" in msg.text)
+            else None)
+    return page, ihlaller
+
+
+def test_csp_index_html_sifir_ihlal(live_server, browser):
+    page, ihlaller = _csp_ile_sayfa_ac(browser, f"{live_server}/static/index.html")
+    try:
+        page.goto(f"{live_server}/static/index.html")
+        page.wait_for_selector("#giris-btn", timeout=10000)
+        page.wait_for_timeout(1000)  # geç tetiklenen (async) ihlaller için ek pay
+        assert ihlaller == [], f"CSP ihlalleri bulundu: {ihlaller}"
+    finally:
+        page.close()
+
+
+def test_csp_offline_html_sifir_ihlal(live_server, browser):
+    page, ihlaller = _csp_ile_sayfa_ac(browser, f"{live_server}/static/offline.html")
+    try:
+        page.goto(f"{live_server}/static/offline.html")
+        page.wait_for_selector("#tekrar-dene-btn", timeout=5000)
+        assert ihlaller == [], f"CSP ihlalleri bulundu: {ihlaller}"
+    finally:
+        page.close()
+
+
+def test_csp_altinda_navigasyon_tiklamasi_calisir(live_server, browser):
+    """Sadece 'ihlal yok' yetmez — gerçek CSP altında bir tıklamanın da
+    fonksiyonel olarak çalıştığını (delegated listener engellenmedi)
+    kanıtlıyoruz."""
+    page, ihlaller = _csp_ile_sayfa_ac(browser, f"{live_server}/static/index.html")
+    try:
+        page.goto(f"{live_server}/static/index.html")
+        page.wait_for_selector("#giris-btn", timeout=10000)
+
+        page.click('[data-sayfa="ilanlar"]')
+        page.wait_for_timeout(800)
+        ilanlar_aktif = page.evaluate(
+            "document.getElementById('sayfa-ilanlar')?.classList.contains('aktif')"
+        )
+        assert ilanlar_aktif is True, "CSP altında navigasyon tıklaması çalışmadı"
+        assert ihlaller == [], f"CSP ihlalleri bulundu: {ihlaller}"
+    finally:
+        page.close()
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# PROJE GENELİ onclick="" TEMİZLİĞİ TAMAMLANDI (2026-07).
+# app.js + index.html + offline.html + widget-renderer.js + menu-renderer.js
+# + admin-sistem.js hiçbirinde artık gerçek bir onclick="" attribute'u yok.
+# CSP script-src'den 'unsafe-inline' KALDIRILDI (deploy/security-headers.conf)
+# ve BÖLÜM 12'deki testlerle gerçek CSP enforcement altında sıfır ihlal
+# olduğu kanıtlandı (sadece statik analiz değil).
 # ═══════════════════════════════════════════════════════════════════════

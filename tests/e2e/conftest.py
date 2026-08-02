@@ -13,15 +13,17 @@ gerçek tarayıcı ortamında kanıtlamak (statik kod analizi yetmez).
 Testleri çalıştırmak için:
     python3 -m pytest tests/e2e/ -v
 """
+import os
 import socket
+import sqlite3
+import sys
+import tempfile
 import threading
 import time
+from pathlib import Path
 
 import pytest
 import uvicorn
-
-import sys
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
@@ -34,9 +36,50 @@ def _bos_port_bul() -> int:
         return s.getsockname()[1]
 
 
+def _test_db_hazirla() -> str:
+    """
+    Gerçek (production) emlak_web.db'ye HİÇ dokunmadan, izole bir test
+    veritabanı oluşturur ve admin@test.com / admin123 kullanıcısını ekler.
+    tests/test_api.py'deki setup_test_db ile aynı prensip.
+
+    ÖNEMLİ: dönen path, backend.* importlarından ÖNCE os.environ'a yazılmalı —
+    aksi halde backend.core.settings modülü (import zamanında okunan) yanlış
+    (varsayılan/production) DB yoluna sabitlenir.
+    """
+    fd, path = tempfile.mkstemp(suffix=".db", prefix="e2e_test_")
+    os.close(fd)
+    return path
+
+
+def _test_db_doldur(path: str) -> None:
+    """DB dosyasına şema + admin kullanıcısını yazar (env var set edildikten SONRA çağrılmalı)."""
+    from backend.db.schema import SCHEMA_SQL
+    from backend.core.password import hash_sifre
+
+    conn = sqlite3.connect(path)
+    conn.executescript(SCHEMA_SQL)
+    try:
+        conn.execute("ALTER TABLE kullanicilar ADD COLUMN onay INTEGER DEFAULT 1")
+    except sqlite3.OperationalError:
+        pass
+    conn.execute(
+        "INSERT INTO kullanicilar (ad_soyad,email,sifre,rol,aktif,onay_durumu,onay) VALUES (?,?,?,?,?,?,?)",
+        ("Test Admin", "admin@test.com", hash_sifre("admin123"), "admin", 1, "onaylandi", 1),
+    )
+    conn.commit()
+    conn.close()
+
+
 @pytest.fixture(scope="session")
 def live_server():
-    """Gerçek uygulamayı (app.py'deki app nesnesi) arka planda başlatır."""
+    """Gerçek uygulamayı (app.py'deki app nesnesi), izole bir test DB'siyle arka planda başlatır."""
+    # ÖNEMLİ: app import edilmeden ÖNCE env var set edilmeli (settings.py import
+    # zamanında okur). Böylece gerçek emlak_web.db'ye asla dokunulmaz.
+    _db_path = _test_db_hazirla()
+    os.environ["EMLAK_DB_PATH"] = _db_path
+    os.environ.setdefault("JWT_SECRET", "e2e-test-only-secret")
+    _test_db_doldur(_db_path)
+
     from app import app as fastapi_app
 
     port = _bos_port_bul()
@@ -61,3 +104,47 @@ def live_server():
 
     server.should_exit = True
     thread.join(timeout=5)
+
+
+@pytest.fixture(scope="session")
+def admin_token(live_server):
+    """admin@test.com ile giriş yapar, JWT döner (admin paneli testleri için)."""
+    import httpx
+    r = httpx.post(
+        f"{live_server}/api/auth/giris",
+        json={"email": "admin@test.com", "sifre": "admin123"},
+    )
+    r.raise_for_status()
+    body = r.json()
+    assert body.get("success"), f"Login başarısız: {body}"
+    token = body["data"]["access_token"]
+    assert token, f"Login'den token alınamadı: {body}"
+    return token
+
+
+@pytest.fixture(scope="session")
+def browser():
+    """
+    TÜM test oturumu boyunca TEK bir Chromium tarayıcı süreci paylaşılır.
+
+    ÖNEMLİ (2026-07 hata düzeltmesi): eskiden her test kendi
+    `with sync_playwright() as p: browser = p.chromium.launch()` bloğunu
+    açıyordu. Bir test assertion hatasıyla düşünce (exception), o testin
+    `browser.close()` satırına HİÇ ulaşılmıyordu — tarayıcı süreci "zombi"
+    olarak açık kalıyordu. 50+ test arka arkaya çalışınca, her başarısız
+    testin arkasında bir zombi Chromium süreci birikiyor, sistem kaynakları
+    tükeniyor ve SONRAKİ testler sayfa bile açamadan (Page.goto timeout)
+    başarısız oluyordu (gerçek bir kullanıcıda 24+ dakika süren, art arda
+    18 testin patladığı bir çöküş zinciri olarak gözlemlendi).
+
+    Çözüm: tek bir paylaşılan tarayıcı + her testte YENİ bir context/page
+    (izolasyon için) + her testte try/finally ile context.close() garantisi.
+    Bir context/page'in kapanmaması çok küçük bir sızıntıdır (tüm tarayıcı
+    süreci değil), zincirleme çöküşe yol açmaz.
+    """
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        b = p.chromium.launch()
+        yield b
+        b.close()

@@ -120,7 +120,7 @@ async function katYukle() {
     if (!el) return;
     const isIlan = id === 'ilan-kat-bant';
     const tiklama = isIlan ? 'katFiltrelIlan' : 'katFiltrele';
-    el.innerHTML = `<div class="kat-chip aktif" data-kat="" onclick="${tiklama}(this,'')">🏘 Tümü</div>`;
+    el.innerHTML = `<div class="kat-chip aktif" data-kat="" ${daAttr(tiklama,['__EL__',''])}>🏘 Tümü</div>`;
     const emojiler = { 'Konut':'🏠','İş Yeri':'🏢','Arsa':'🌿','Konut Projeleri':'🏗','Bina':'🏛','Devre Mülk':'🌅','Turistik Tesis':'🏨' };
     Object.keys(kategoriler).forEach(k => {
       const chip = document.createElement('div');
@@ -449,7 +449,7 @@ async function detayGoster(ilan) {
       </select>
       <button class="btn btn-ntr btn-sm" ${daAttr('pdfIndir',[d.id])}>📄 PDF Broşür</button>
       <button class="btn btn-ntr btn-sm" ${daAttr('fiyatAnaliziGoster',[d.id])}>📊 Fiyat Analizi</button>
-      <button class="btn btn-hat btn-sm" onclick="if(confirm('Silinsin mi?'))ilanSilDetay(${d.id})">🗑 Sil</button>
+      <button class="btn btn-hat btn-sm" ${daAttr('ilanSilDetay',[d.id],'Silinsin mi?')}>🗑 Sil</button>
     </div>
     <div id="fiyat-analiz-kutu" style="display:none;margin-bottom:1.25rem"></div>` : '';
 
@@ -935,7 +935,7 @@ async function adminPortfoyler() {
   ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
   const [istat, ilanlar] = await Promise.all([api.getIstatistik(), api.getPortfoyler({ durum: '' })]);
   let html = `<div class="admin-baslik">Portföyler
-    <button class="btn btn-kirm" onclick="adminSayfa('yeni')">+ Yeni Portföy</button>
+    <button class="btn btn-kirm" ${daAttr('adminSayfa',['yeni'])}>+ Yeni Portföy</button>
   </div>`;
   if (istat) {
     html += `<div class="stat-grid">
@@ -960,8 +960,8 @@ async function adminPortfoyler() {
         <td><span class="durum-pill dp-${p.durum}">${p.durum}</span></td>
         <td><div class="tablo-eylemler">
           <button class="btn btn-ntr btn-sm" ${daAttr('ilanDuzenle',[p.id])}>✏</button>
-          <button class="btn btn-sm" style="background:${p.durum==='Aktif'?'#FEF3C7;color:#92400E':'#D1FAE5;color:#065F46'}" onclick="durumDegistir(${p.id},'${p.durum==='Aktif'?'Taslak':'Aktif'}')">${p.durum==='Aktif'?'⏸':'▶'}</button>
-          <button class="btn btn-hat btn-sm" onclick="if(confirm('Silinsin mi?'))ilanSilAdmin(${p.id})">🗑</button>
+          <button class="btn btn-sm" style="background:${p.durum==='Aktif'?'#FEF3C7;color:#92400E':'#D1FAE5;color:#065F46'}" ${daAttr('durumDegistir',[p.id, p.durum==='Aktif'?'Taslak':'Aktif'])}>${p.durum==='Aktif'?'⏸':'▶'}</button>
+          <button class="btn btn-hat btn-sm" ${daAttr('ilanSilAdmin',[p.id],'Silinsin mi?')}>🗑</button>
         </div></td>
       </tr>`;
     });
@@ -994,7 +994,7 @@ function adminBelge() {
       Masaüstü programdan oluşturduğunuz portföy belgesini yükleyin.<br>
       Sistem içeriği otomatik analiz ederek formu dolduracak.
     </p>
-    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('belge-input').click()">
+    <div class="drop-zone" id="drop-zone" ${daAttr('belgeInputAc',[])}>
       <div class="drop-zone-ikon">📄</div>
       <div class="drop-zone-metin">
         <strong>Dosyayı buraya tıklayın veya sürükleyin</strong><br>
@@ -1042,8 +1042,8 @@ async function belgeIsleDogrudan(dosya) {
         <div><span style="color:var(--gri-metin)">Teknik alan: </span><strong>${Object.keys(p.alanlar||{}).length} alan çıkarıldı</strong></div>
       </div>
       <div style="display:flex; gap:.75rem; flex-wrap:wrap">
-        <button class="btn btn-ntr" onclick='belgeFormAc(${JSON.stringify(d).replace(/'/g,"&#39;")})'>✏ Formu Aç & Düzenle</button>
-        <button class="btn btn-zey" onclick='belgeYayinla(${JSON.stringify(d).replace(/'/g,"&#39;")})'>🚀 Direkt Yayınla</button>
+        <button class="btn btn-ntr" ${daAttr('belgeFormAc',[d])}>✏ Formu Aç & Düzenle</button>
+        <button class="btn btn-zey" ${daAttr('belgeYayinla',[d])}>🚀 Direkt Yayınla</button>
       </div>
     </div>`;
 }
@@ -1162,7 +1162,7 @@ async function adminKullanicilar() {
       </td>
       <td style="font-size:.75rem;color:var(--gri-metin)">${(k.olusturma||'').substring(0,10)}</td>
       <td>
-        ${k.id > 1 ? `<button class="btn btn-hat btn-sm" onclick="if(confirm('Kullanıcı kalıcı olarak silinsin mi?'))kullaniciSil(${k.id})">🗑</button>` : ''}
+        ${k.id > 1 ? `<button class="btn btn-hat btn-sm" ${daAttr('kullaniciSil',[k.id],'Kullanıcı kalıcı olarak silinsin mi?')}>🗑</button>` : ''}
       </td>
     </tr>`;
   });
@@ -1952,7 +1952,7 @@ function karsBantGuncelle() {
   liste.innerHTML = karsListesi.map(k =>
     `<div class="kars-mini">
       <span>${k.baslik.substring(0,22)}${k.baslik.length>22?'…':''}</span>
-      <button class="kars-mini-kapat" onclick="karsKaldir(${k.id})">✕</button>
+      <button class="kars-mini-kapat" ${daAttr('karsKaldir',[k.id])}>✕</button>
     </div>`
   ).join('');
   bant.classList.toggle('gorunur', karsListesi.length >= 2);
@@ -1970,6 +1970,13 @@ function karsSifirla() {
   karsListesi = [];
   document.querySelectorAll('.kars-btn.aktif').forEach(b => b.classList.remove('aktif'));
   karsBantGuncelle();
+}
+
+// "← Listeye Dön" butonu: karşılaştırmayı sıfırlar VE ilan listesine döner
+// (eskiden onclick="karsSifirla();sayfaGit('ilanlar')" iki ayrı çağrıydı).
+function karsSifirlaVeListeyeDon() {
+  karsSifirla();
+  sayfaGit('ilanlar');
 }
 
 async function karsGoster() {
@@ -2016,7 +2023,7 @@ async function karsGoster() {
   }).join('');
 
   kont.innerHTML = `
-    <div class="detay-geri" onclick="geriGit()" style="margin-bottom:1rem">← Geri dön</div>
+    <div class="detay-geri" ${daAttr('geriGit',[])} style="margin-bottom:1rem">← Geri dön</div>
     <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;margin-bottom:1.25rem">
       ⚖ İlan Karşılaştırma
     </div>
@@ -2035,7 +2042,7 @@ async function karsGoster() {
     </div>
     <div style="display:flex;gap:.75rem;margin-top:1.25rem">
       ${gecerli.map(d => `<button class="btn btn-kirm btn-sm" ${daAttr('haritaIlanAc',[d.id])}>→ ${d.baslik.substring(0,20)}…</button>`).join('')}
-      <button class="btn btn-ntr btn-sm" onclick="karsSifirla();sayfaGit('ilanlar')">← Listeye Dön</button>
+      <button class="btn btn-ntr btn-sm" ${daAttr('karsSifirlaVeListeyeDon',[])}>← Listeye Dön</button>
     </div>`;
 }
 
@@ -2448,7 +2455,7 @@ function blogModalAc(yazi = null) {
   ic.innerHTML = `
     <div class="admin-baslik" style="margin-bottom:1.25rem">
       ${yazi ? 'Yazıyı Düzenle' : 'Yeni Blog Yazısı'}
-      <button class="btn btn-ntr btn-sm" onclick="adminBlog()">← Geri</button>
+      <button class="btn btn-ntr btn-sm" ${daAttr('adminBlog',[])}>← Geri</button>
     </div>
     <div style="max-width:780px;display:flex;flex-direction:column;gap:1rem">
       <div class="form-grup"><label class="form-etiket z">Başlık</label>
@@ -2495,7 +2502,7 @@ function blogModalAc(yazi = null) {
 
       <div style="display:flex;gap:.75rem">
         <button class="btn btn-kirm btn-lg" ${daAttr('blogKaydet',[])}>💾 ${yazi ? 'Güncelle' : 'Kaydet'}</button>
-        <button class="btn btn-ntr" onclick="adminBlog()">Vazgeç</button>
+        <button class="btn btn-ntr" ${daAttr('adminBlog',[])}>Vazgeç</button>
       </div>
     </div>`;
 }
@@ -2869,10 +2876,10 @@ async function bannerlariYukle(konum) {
         </div>`).join('')}
       </div>
       ${sliderler.length > 1 ? `
-      <button class="slider-ok slider-ok-sol" onclick="sliderGit('${konum}',-1)">‹</button>
-      <button class="slider-ok slider-ok-sag" onclick="sliderGit('${konum}',1)">›</button>
+      <button class="slider-ok slider-ok-sol" ${daAttr('sliderGit',[konum,-1])}>‹</button>
+      <button class="slider-ok slider-ok-sag" ${daAttr('sliderGit',[konum,1])}>›</button>
       <div class="slider-noktalar" id="slider-noktalar-${konum}">
-        ${sliderler.map((_,i) => `<button class="slider-nokta${i===0?' aktif':''}" onclick="sliderGitDirekt('${konum}',${i})"></button>`).join('')}
+        ${sliderler.map((_,i) => `<button class="slider-nokta${i===0?' aktif':''}" ${daAttr('sliderGitDirekt',[konum,i])}></button>`).join('')}
       </div>` : ''}
     </div>`;
 
@@ -2895,7 +2902,7 @@ async function bannerlariYukle(konum) {
         ${b.alt_metin  ? `<div class="duyuru-metin">${b.alt_metin}</div>`   : ''}
       </div>
       ${b.link_url ? `<a href="${b.link_url}" class="slider-btn" style="background:rgba(0,0,0,.2);flex-shrink:0;color:inherit">${b.link_metin||'İncele'} →</a>` : ''}
-      <button class="duyuru-kapat" onclick="duyuruKapat(${b.id})">✕</button>
+      <button class="duyuru-kapat" ${daAttr('duyuruKapat',[b.id])}>✕</button>
     </div>`;
   });
 
@@ -3396,6 +3403,7 @@ window.karsEkle = karsEkle;
 window.karsBantGuncelle = karsBantGuncelle;
 window.karsKaldir = karsKaldir;
 window.karsSifirla = karsSifirla;
+window.karsSifirlaVeListeyeDon = karsSifirlaVeListeyeDon;
 window.karsGoster = karsGoster;
 window.gelismisFiltreToogle = gelismisFiltreToogle;
 window.filtreleriSifirla = filtreleriSifirla;
@@ -3439,6 +3447,34 @@ function daAttr(fnAdi, args, confirmMsg) {
   const confirmPart = confirmMsg ? ` data-confirm="${esc(confirmMsg)}"` : '';
   return `data-action="${esc(fnAdi)}" data-action-args="${argsJson}"${confirmPart}`;
 }
+
+// Doğrudan DOM API çağrısı gerektiren tekil onclick'ler için küçük yardımcılar
+// (CSP uyumu için isimli fonksiyona sarılıp daAttr ile kullanılır).
+window.belgeInputAc = () => { const el = document.getElementById('belge-input'); if (el) el.click(); };
+window.bolumModalKapat = () => { const el = document.getElementById('bolum-modal'); if (el) el.remove(); };
+
+// Mobil navbar linkleri: sayfa değiştir + mobil menüyü kapat (2 ayrı çağrıydı,
+// tek birleşik fonksiyonda topladık — CSP uyumu için).
+window.sayfaGitMobil = (sayfa) => {
+  sayfaGit(sayfa);
+  if (typeof window.navMobilKapat === 'function') window.navMobilKapat();
+};
+window.cikisYapMobil = () => {
+  cikisYap();
+  if (typeof window.navMobilKapat === 'function') window.navMobilKapat();
+};
+// Modal'ı gizle (display:none) — remove() ile kalıcı silen bolumModalKapat'tan
+// farklı: bu modal'lar tekrar açılabilmek için DOM'da kalmalı.
+window.modalGizle = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+// Şifre sıfırlama modalı: adım 1'e geri dön (adım 2'yi gizle).
+window.ssmAdim1eDon = () => {
+  const a1 = document.getElementById('ssm-adim1');
+  const a2 = document.getElementById('ssm-adim2');
+  if (a1) a1.style.display = '';
+  if (a2) a2.style.display = 'none';
+};
+// Blog resim input'unu (gizli file input) tetikle.
+window.blogResimInputAc = () => { const el = document.getElementById('blog-resim-input'); if (el) el.click(); };
 
 // ─── Menü Şablonları (görsel ön tanımlı yapılar) ────────────────────────────
 
@@ -4106,7 +4142,7 @@ window.sayfaDuzenleModal = async function(id) {
 
   ic.innerHTML = `
     <div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-      <button class="btn btn-sm btn-ntr" onclick="adminSayfalar()">← Geri</button>
+      <button class="btn btn-sm btn-ntr" ${daAttr('adminSayfalar',[])}>← Geri</button>
       <span>${yeniMi ? 'Yeni Sayfa' : 'Sayfayı Düzenle'}</span>
     </div>
     <div style="max-width:840px;display:flex;flex-direction:column;gap:1rem">
@@ -4154,7 +4190,7 @@ window.sayfaDuzenleModal = async function(id) {
       </details>
       <div style="display:flex;gap:.75rem;align-items:center;margin-top:.5rem">
         <button class="btn btn-kirm btn-lg" ${daAttr('sayfaKaydet',[id||null])}>💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
-        <button class="btn btn-ntr" onclick="adminSayfalar()">Vazgeç</button>
+        <button class="btn btn-ntr" ${daAttr('adminSayfalar',[])}>Vazgeç</button>
         ${!yeniMi && s.slug ? `<a href="#/sayfa/${esc(s.slug)}" target="_blank" class="btn btn-ntr btn-sm" style="text-decoration:none">👁 Önizle</a>` : ''}
       </div>
     </div>`;
@@ -4320,7 +4356,7 @@ window.widgetDuzenleModal = async function(id) {
 
   ic.innerHTML = `
     <div class="admin-baslik" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-      <button class="btn btn-sm btn-ntr" onclick="adminWidgetler()">← Geri</button>
+      <button class="btn btn-sm btn-ntr" ${daAttr('adminWidgetler',[])}>← Geri</button>
       <span>${yeniMi ? 'Yeni Widget' : 'Widget Düzenle'}</span>
     </div>
     <div style="max-width:760px;display:flex;flex-direction:column;gap:1rem">
@@ -4360,7 +4396,7 @@ window.widgetDuzenleModal = async function(id) {
       </div>
       <div style="display:flex;gap:.75rem;margin-top:.5rem">
         <button class="btn btn-kirm btn-lg" ${daAttr('widgetKaydet',[id||null])}>💾 ${yeniMi?'Oluştur':'Kaydet'}</button>
-        <button class="btn btn-ntr" onclick="adminWidgetler()">Vazgeç</button>
+        <button class="btn btn-ntr" ${daAttr('adminWidgetler',[])}>Vazgeç</button>
       </div>
     </div>`;
 };
@@ -4782,7 +4818,7 @@ window.sablonBolumDuzenle = async function(id) {
   const isSlider = bolum.section_key === 'slider';
   const isServices = bolum.section_key === 'services';
 
-  const html = `<div class="modal-zemin" id="bolum-modal" data-key="${esc(bolum.section_key)}" onclick="if(event.target===this)document.getElementById('bolum-modal').remove()">
+  const html = `<div class="modal-zemin" id="bolum-modal" data-key="${esc(bolum.section_key)}" data-backdrop-close="bolum-modal">
     <div class="modal-kapsul" style="max-width:520px">
       <h3 style="margin-bottom:1rem">Bölüm Ayarları <code style="font-size:.75em">${esc(bolum.section_key)}</code></h3>
       <div style="display:grid;gap:.75rem">
@@ -4818,7 +4854,7 @@ window.sablonBolumDuzenle = async function(id) {
       </div>
       <div style="display:flex;gap:8px;margin-top:1rem">
         <button class="btn btn-kirm" ${daAttr('sablonBolumKaydet',[id])}>💾 Kaydet</button>
-        <button class="btn btn-ntr" onclick="document.getElementById('bolum-modal').remove()">İptal</button>
+        <button class="btn btn-ntr" ${daAttr('bolumModalKapat',[])}>İptal</button>
       </div>
     </div>
   </div>`;
@@ -5161,7 +5197,7 @@ async function adminMarketplace() {
         <div class="market-baslik">${esc(p.ad)}</div>
         <div class="market-acik">${esc(p.aciklama || '')}</div>
         <div class="market-vers">v${esc(p.versiyon || '1.0.0')}</div>
-        <button class="btn btn-${p.aktif ? 'kirm' : 'cik'}" onclick="adminPluginToggle(${p.id})" style="margin-top:.5rem;font-size:.8rem">${p.aktif ? 'Devre Dışı Bırak' : 'Aktif Et'}</button>
+        <button class="btn btn-${p.aktif ? 'kirm' : 'cik'}" ${daAttr('adminPluginToggle',[p.id])} style="margin-top:.5rem;font-size:.8rem">${p.aktif ? 'Devre Dışı Bırak' : 'Aktif Et'}</button>
       </div>`;
     });
   }
@@ -5514,6 +5550,26 @@ document.addEventListener('click', function(e) {
   args = args.map(a => a === '__EL__' ? el : a);
   const fn = window[fnAdi];
   if (typeof fn === 'function') fn.apply(el, args);
+});
+
+// Delegated click: onclick="if(event.target===this)...remove()" (modal zemin
+// tıklamasıyla kapatma) yerine data-backdrop-close="<elementId>" (CSP uyumu için).
+// e.target (closest DEĞİL) kontrolü: sadece zemine DOĞRUDAN tıklanırsa çalışır,
+// modal içeriğine tıklayıp da event bubble olduğunda tetiklenmemeli.
+document.addEventListener('click', function(e) {
+  const backdropId = e.target.getAttribute && e.target.getAttribute('data-backdrop-close');
+  if (backdropId) {
+    const el2 = document.getElementById(backdropId);
+    if (el2) el2.remove();
+  }
+  // data-backdrop-hide: aynı mantık ama remove() yerine display:none — bu
+  // modal'lar tekrar açılabilmek için DOM'da kalmalı (index.html'deki
+  // sabit modal'lar için, dinamik oluşturulan bolum-modal'dan farklı).
+  const hideId = e.target.getAttribute && e.target.getAttribute('data-backdrop-hide');
+  if (hideId) {
+    const el3 = document.getElementById(hideId);
+    if (el3) el3.style.display = 'none';
+  }
 });
 
 syncTokenFromApi();
