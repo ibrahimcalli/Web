@@ -10,7 +10,6 @@ from backend.db.database import Database
 from backend.db.schema import init_db
 from backend.services.api_marketplace_service import ApiMarketplaceService
 from backend.services.backup_service import BackupService
-from backend.services.tenant_service import TenantService
 from backend.services.update_service import UpdateService
 
 
@@ -20,12 +19,6 @@ def make_db():
     db = Database(path)
     init_db(db)
     return db
-
-
-def test_saas_tenant_list():
-    db = make_db()
-    service = TenantService(db)
-    assert isinstance(service.listele(), list)
 
 
 def test_saas_update_status():

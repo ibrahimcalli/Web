@@ -51,6 +51,7 @@ function sayfaGit(sayfa, data = null) {
   if (sayfa === 'blog')         { blogListeYukle(); }
   if (sayfa === 'blog-detay' && data) blogDetayGoster(data);
   if (sayfa === 'sayfa' && data && data.slug) sayfaGoster(data.slug);
+  if (sayfa === 'forum')        { forumKategorileriYukle(); }
   if (sayfa === 'admin')        { adminKontrol(); adminSayfa('portfoyler'); }
   if (sayfa === 'detay' && data) detayGoster(data);
   window.scrollTo(0, 0);
@@ -900,7 +901,7 @@ let _aktifAdminSayfa = '';
 function adminSayfa(sayfa) {
   _aktifAdminSayfa = sayfa;
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('aktif'));
-  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, istekler:5, kullanicilar:6, ayarlar:7, hesabim:8, menuler:9, sayfalar:10, widgetler:11, tema:12, sablonlar:13, wizard:14 };
+  const harita = { portfoyler:0, yeni:1, belge:2, bannerlar:3, blog:4, forum:5, istekler:6, kullanicilar:7, ayarlar:8, hesabim:9, menuler:10, sayfalar:11, widgetler:12, tema:13, sablonlar:14, wizard:15 };
   const items = document.querySelectorAll('.sidebar-item');
   if (items[harita[sayfa]]) items[harita[sayfa]].classList.add('aktif');
   const ic = document.getElementById('admin-ic');
@@ -916,6 +917,7 @@ function adminSayfa(sayfa) {
   else if (sayfa === 'belge')  adminBelge();
   else if (sayfa === 'bannerlar') adminBannerlar();
   else if (sayfa === 'blog') adminBlog();
+  else if (sayfa === 'forum') adminForum();
   else if (sayfa === 'istekler') adminIstekler();
   else if (sayfa === 'kullanicilar') adminKullanicilar();
   else if (sayfa === 'ayarlar') adminAyarlar();
@@ -2396,6 +2398,192 @@ async function blogDetayGoster(yazi) {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// FORUM — Genel (public) sayfalar
+// ══════════════════════════════════════════════════════════════════
+let forumAktifCache = null;   // /forum/durum sonucu (nav linkini göstermek için)
+let forumMisafirYazabilirCache = false;  // aynı uç noktadan gelir (giriş yapmamış kullanıcı yazabilir mi)
+let forumAktifKategoriId = null;
+let forumAktifKategoriAd = '';
+
+// baslat() sırasında çağrılır — forum kapalıysa nav linkini hiç göstermez
+async function forumDurumKontrolEt() {
+  try {
+    const d = await api.request('/api/forum/durum');
+    forumAktifCache = !!(d && d.aktif);
+    forumMisafirYazabilirCache = !!(d && d.misafir_yazabilir);
+  } catch (e) {
+    forumAktifCache = false;
+    forumMisafirYazabilirCache = false;
+  }
+  const link1 = document.getElementById('nav-forum-link');
+  const link2 = document.getElementById('nav-forum-link-mob');
+  if (link1) link1.style.display = forumAktifCache ? '' : 'none';
+  if (link2) link2.style.display = forumAktifCache ? '' : 'none';
+}
+
+async function forumKategorileriYukle() {
+  const ic = document.getElementById('forum-kategoriler-ic');
+  if (!ic) return;
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+  try {
+    const kategoriler = await api.request('/api/forum/kategoriler');
+    if (!kategoriler || !kategoriler.length) {
+      ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">💬</div><h3>Henüz kategori yok</h3></div>';
+      return;
+    }
+    ic.innerHTML = `<div class="blog-grid">${kategoriler.map(k => `
+      <div class="blog-kart" ${daAttr('forumKategoriAc', [k.id, k.ad])} style="cursor:pointer">
+        <div style="padding:1.25rem">
+          <h3 style="font-size:1.05rem;margin-bottom:.4rem">${esc(k.ad)}</h3>
+          <p style="color:var(--gri-metin);font-size:.85rem;margin:0">${esc(k.aciklama || '')}</p>
+        </div>
+      </div>`).join('')}</div>`;
+  } catch (e) {
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Forum yüklenemedi</h3><p>' + esc(e.message || '') + '</p></div>';
+  }
+}
+
+function forumKategoriAc(kategoriId, kategoriAd) {
+  forumAktifKategoriId = kategoriId;
+  forumAktifKategoriAd = kategoriAd;
+  sayfaGit('forum-konular');
+  forumKonulariYukle(kategoriId, kategoriAd);
+}
+
+async function forumKonulariYukle(kategoriId, kategoriAd) {
+  const ic = document.getElementById('forum-konular-ic');
+  if (!ic) return;
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+  try {
+    const konular = await api.request(`/api/forum/konular?kategori_id=${encodeURIComponent(kategoriId)}`);
+    const girisli = !!kullanici;
+    const misafirYazabilir = forumMisafirYazabilirCache;
+    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.5rem">
+      <h2 style="margin:0;font-size:1.2rem">${esc(kategoriAd || '')}</h2>
+      ${(girisli || misafirYazabilir) ? `<button class="btn btn-kirm btn-sm" ${daAttr('forumYeniKonuFormAc', [kategoriId])}>+ Yeni Konu</button>` : `<span style="font-size:.8rem;color:var(--gri-metin)">Konu açmak için <span style="text-decoration:underline;cursor:pointer" ${daAttr('sayfaGit',['giris'])}>giriş yapın</span></span>`}
+    </div>
+    <div id="forum-yeni-konu-form"></div>`;
+    if (!konular || !konular.length) {
+      html += '<div class="bos-durum"><div class="bos-ikon">💬</div><h3>Henüz konu yok</h3><p>İlk konuyu siz açın!</p></div>';
+    } else {
+      html += '<div class="forum-konu-liste">' + konular.map(k => `
+        <div class="forum-konu-satir" ${daAttr('forumKonuAc', [k.id])} style="cursor:pointer;padding:.9rem 1rem;border-bottom:1px solid var(--kumtasi);display:flex;justify-content:space-between;align-items:center;gap:1rem">
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${k.sabit ? '📌 ' : ''}${esc(k.baslik)}${k.kapali ? ' <span style="font-size:.7rem;color:var(--gri-metin)">(kapalı)</span>' : ''}
+            </div>
+            <div style="font-size:.78rem;color:var(--gri-metin);margin-top:.15rem">${esc(k.kullanici_ad || 'Misafir')} · ${esc((k.olusturma || '').slice(0, 10))}</div>
+          </div>
+          <div style="font-size:.78rem;color:var(--gri-metin);white-space:nowrap">👁 ${k.goruntuleme || 0}</div>
+        </div>`).join('') + '</div>';
+    }
+    ic.innerHTML = html;
+  } catch (e) {
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Konular yüklenemedi</h3></div>';
+  }
+}
+
+function forumYeniKonuFormAc(kategoriId) {
+  const kapsayici = document.getElementById('forum-yeni-konu-form');
+  if (!kapsayici) return;
+  kapsayici.innerHTML = `<div class="panel-kart" style="margin-bottom:1.5rem">
+    <h3 style="margin-top:0;font-size:1rem">Yeni Konu</h3>
+    <input class="form-girdi" id="fk-baslik" placeholder="Konu başlığı" style="margin-bottom:.6rem">
+    <textarea class="form-girdi" id="fk-icerik" rows="4" placeholder="Mesajınız…" style="margin-bottom:.6rem"></textarea>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-kirm btn-sm" ${daAttr('forumKonuKaydet', [kategoriId])}>Konuyu Aç</button>
+      <button class="btn btn-ntr btn-sm" ${daAttr('forumYeniKonuFormKapat', [])}>Vazgeç</button>
+    </div>
+  </div>`;
+}
+
+function forumYeniKonuFormKapat() {
+  const kapsayici = document.getElementById('forum-yeni-konu-form');
+  if (kapsayici) kapsayici.innerHTML = '';
+}
+
+async function forumKonuKaydet(kategoriId) {
+  const baslik = document.getElementById('fk-baslik')?.value.trim();
+  const icerik = document.getElementById('fk-icerik')?.value.trim();
+  if (!baslik) { bildirim('Başlık gerekli', 'hata'); return; }
+  try {
+    const konu = await api.request('/api/forum/konular', {
+      method: 'POST',
+      body: JSON.stringify({ category_id: kategoriId, baslik, icerik: icerik || '' }),
+    });
+    bildirim(konu && konu.durum === 'beklemede' ? 'Konunuz onay bekliyor' : 'Konu açıldı', 'basari');
+    forumYeniKonuFormKapat();
+    forumKonulariYukle(kategoriId, forumAktifKategoriAd);
+  } catch (e) {
+    bildirim(e.message || 'Konu açılamadı', 'hata');
+  }
+}
+
+async function forumKonuAc(konuId) {
+  sayfaGit('forum-konu');
+  await forumKonuYukle(konuId);
+}
+
+async function forumKonuYukle(konuId) {
+  const ic = document.getElementById('forum-konu-ic');
+  const geri = document.getElementById('forum-konu-geri');
+  if (!ic) return;
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>';
+  try {
+    const [konu, yanitlar] = await Promise.all([
+      api.request(`/api/forum/konular/${konuId}`),
+      api.request(`/api/forum/konular/${konuId}/yanitlar`),
+    ]);
+    if (geri) geri.setAttribute('data-action-args', JSON.stringify(['forum-konular']));
+    const girisli = !!kullanici;
+    let html = `<h1 style="font-family:'Playfair Display',serif;font-size:1.35rem;margin-bottom:.3rem">${esc(konu.baslik)}</h1>
+      <div style="font-size:.8rem;color:var(--gri-metin);margin-bottom:1.25rem">${esc(konu.kullanici_ad || 'Misafir')} · ${esc((konu.olusturma || '').slice(0, 10))} · 👁 ${konu.goruntuleme || 0}</div>
+      <div style="white-space:pre-wrap;line-height:1.6;margin-bottom:2rem">${esc(konu.icerik || '')}</div>
+      <h3 style="font-size:1rem;border-top:1px solid var(--kumtasi);padding-top:1.25rem">Yanıtlar (${(yanitlar || []).length})</h3>
+      <div id="forum-yanit-liste">`;
+    if (!yanitlar || !yanitlar.length) {
+      html += '<p style="color:var(--gri-metin);font-size:.85rem">Henüz yanıt yok.</p>';
+    } else {
+      yanitlar.forEach(y => {
+        html += `<div style="padding:.9rem 0;border-bottom:1px solid var(--kumtasi)">
+          <div style="font-size:.78rem;color:var(--gri-metin);margin-bottom:.3rem">${esc(y.kullanici_ad || 'Misafir')} · ${esc((y.olusturma || '').slice(0, 10))}</div>
+          <div style="white-space:pre-wrap;font-size:.92rem">${esc(y.icerik)}</div>
+        </div>`;
+      });
+    }
+    html += '</div>';
+    if (konu.kapali) {
+      html += '<p style="margin-top:1.25rem;font-size:.85rem;color:var(--gri-metin)">Bu konu kapatılmış, yeni yanıt yazılamaz.</p>';
+    } else if (girisli || forumMisafirYazabilirCache) {
+      html += `<div style="margin-top:1.25rem">
+        <textarea class="form-girdi" id="fy-icerik" rows="3" placeholder="Yanıtınız…" style="margin-bottom:.6rem"></textarea>
+        <button class="btn btn-kirm btn-sm" ${daAttr('forumYanitGonder', [konuId])}>Yanıtla</button>
+      </div>`;
+    } else {
+      html += `<p style="margin-top:1.25rem;font-size:.85rem;color:var(--gri-metin)">Yanıt yazmak için <span style="text-decoration:underline;cursor:pointer" ${daAttr('sayfaGit',['giris'])}>giriş yapın</span>.</p>`;
+    }
+    ic.innerHTML = html;
+  } catch (e) {
+    ic.innerHTML = '<div class="bos-durum"><div class="bos-ikon">⚠️</div><h3>Konu yüklenemedi</h3></div>';
+  }
+}
+
+async function forumYanitGonder(konuId) {
+  const icerik = document.getElementById('fy-icerik')?.value.trim();
+  if (!icerik) { bildirim('Yanıt boş olamaz', 'hata'); return; }
+  try {
+    const yanit = await api.request(`/api/forum/konular/${konuId}/yanitlar`, {
+      method: 'POST',
+      body: JSON.stringify({ icerik }),
+    });
+    bildirim(yanit && yanit.durum === 'beklemede' ? 'Yanıtınız onay bekliyor' : 'Yanıt gönderildi', 'basari');
+    forumKonuYukle(konuId);
+  } catch (e) {
+    bildirim(e.message || 'Yanıt gönderilemedi', 'hata');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // FAZ 3 — ADMIN BLOG PANELİ
 // ══════════════════════════════════════════════════════════════════
 let blogDuzenleId = null;
@@ -3265,6 +3453,7 @@ async function baslat() {
   await blogListeYukle();
   BANNER_KONUMLAR.forEach(k => bannerlariYukle(k));
   favBantGuncelle();
+  forumDurumKontrolEt();  // forum nav linkini göster/gizle (kapalıysa gizlenir)
   // URL'de ilan parametresi varsa direkt aç
   const urlParams = new URLSearchParams(window.location.search);
   const ilanId = urlParams.get('ilan');
@@ -3429,6 +3618,13 @@ window.profilResmiYukle = profilResmiYukle;
 window.profilResmiSil = profilResmiSil;
 window.pdfIndir = pdfIndir;
 window.fiyatAnaliziGoster = fiyatAnaliziGoster;
+// Forum — genel (public) sayfalar (data-action ile çağrılıyor, window'da olmalı)
+window.forumKategoriAc = forumKategoriAc;
+window.forumYeniKonuFormAc = forumYeniKonuFormAc;
+window.forumYeniKonuFormKapat = forumYeniKonuFormKapat;
+window.forumKonuKaydet = forumKonuKaydet;
+window.forumKonuAc = forumKonuAc;
+window.forumYanitGonder = forumYanitGonder;
 window.adminFiyatAnaliziGenel = adminFiyatAnaliziGenel;
 window.aiAyarlariKaydet = aiAyarlariKaydet;
 window.blogResimModalAc = blogResimModalAc;
@@ -5214,12 +5410,277 @@ async function adminPluginToggle(id) {
 window.adminMarketplace = adminMarketplace;
 window.adminPluginToggle = adminPluginToggle;
 
+// ── Forum Yönetimi ───────────────────────────────────────────────────────
+const FORUM_AYAR_ETIKETLERI = {
+  forum_aktif:       { etiket: '🟢 Forum Aktif',            aciklama: 'Kapalıyken ziyaretçiler foruma erişemez, menüde görünmez.' },
+  uye_kaydi:         { etiket: 'Üye Kaydına İzin Ver',       aciklama: 'Kapalıysa yeni kullanıcı kaydı forumdan yönlendirilmez.' },
+  misafir_yazabilir: { etiket: 'Misafir Yazabilir',          aciklama: 'Açıksa giriş yapmamış ziyaretçiler de konu/yanıt yazabilir.' },
+  moderasyon:        { etiket: 'Moderasyon (Onay Bekletme)', aciklama: 'Açıksa yeni konu/yanıtlar önce "beklemede" olur, admin onaylar.' },
+  spam_korumasi:     { etiket: 'Spam Koruması',              aciklama: 'Aynı kullanıcının kısa sürede çok sayıda gönderisini sınırlar.' },
+  captcha:           { etiket: 'CAPTCHA',                    aciklama: 'Şu an sadece ayar olarak saklanır — gerçek bir captcha servisi (reCAPTCHA/hCaptcha) bağlanmadıkça etkisi yoktur.' },
+};
+
+async function adminForum() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const [ayarlar, kategoriler] = await Promise.all([
+      api.request('/api/admin/forum/ayarlar'),
+      api.request('/api/admin/forum/kategoriler'),
+    ]);
+    const aktif = ayarlar && ayarlar.forum_aktif === '1';
+
+    let html = `<div class="admin-baslik">💬 Forum Yönetimi
+      <span class="durum-pill ${aktif ? 'dp-Aktif' : 'dp-Taslak'}" style="margin-left:.6rem">${aktif ? 'AKTİF' : 'KAPALI'}</span>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
+      <button class="btn ${aktif ? 'btn-hat' : 'btn-zey'}" ${daAttr('adminForumAktifToggle',[!aktif])}>
+        ${aktif ? '⏸ Forumu Kapat' : '▶ Forumu Aktif Et'}
+      </button>
+      <button class="btn btn-ntr" ${daAttr('adminForumKonular',[])}>📋 Konu / Yanıt Moderasyonu</button>
+    </div>
+
+    <div class="panel-kart" style="margin-bottom:1.5rem">
+      <h3 style="margin-top:0">⚙️ Ayarlar</h3>
+      <div id="forum-ayarlar-form">`;
+    Object.keys(FORUM_AYAR_ETIKETLERI).forEach(k => {
+      if (k === 'forum_aktif') return; // yukarıda ayrı buton olarak zaten var
+      const bilgi = FORUM_AYAR_ETIKETLERI[k];
+      const acik = ayarlar && ayarlar[k] === '1';
+      html += `<label style="display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.7rem;cursor:pointer">
+        <input type="checkbox" id="fa-${esc(k)}" ${acik ? 'checked' : ''} style="margin-top:.2rem">
+        <span><strong style="font-size:.88rem">${bilgi.etiket}</strong><br>
+        <span style="font-size:.76rem;color:var(--gri-metin)">${bilgi.aciklama}</span></span>
+      </label>`;
+    });
+    html += `</div>
+      <button class="btn btn-kirm" ${daAttr('adminForumAyarKaydet',[])}>💾 Ayarları Kaydet</button>
+    </div>
+
+    <div class="panel-kart">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0">📁 Kategoriler</h3>
+        <button class="btn btn-kirm btn-sm" ${daAttr('adminForumKategoriEkle',[])}>+ Yeni Kategori</button>
+      </div>`;
+
+    if (!kategoriler || !kategoriler.length) {
+      html += '<div class="bos-durum"><p>Henüz kategori yok. "Forum Aktif Et" öncesi en az bir kategori ekleyin.</p></div>';
+    } else {
+      html += `<table class="tablo"><thead><tr><th>Ad</th><th>Slug</th><th>Sıra</th><th>Durum</th><th></th></tr></thead><tbody>`;
+      kategoriler.forEach(k => {
+        html += `<tr>
+          <td><strong style="font-size:.88rem">${esc(k.ad)}</strong>
+            <div style="font-size:.75rem;color:var(--gri-metin)">${esc(k.aciklama || '')}</div></td>
+          <td style="font-size:.8rem;color:var(--gri-metin)">${esc(k.slug)}</td>
+          <td style="font-size:.8rem">${k.sira}</td>
+          <td><span class="durum-pill ${k.aktif ? 'dp-Aktif' : 'dp-Taslak'}">${k.aktif ? 'Aktif' : 'Pasif'}</span></td>
+          <td><div class="tablo-eylemler">
+            <button class="btn btn-ntr btn-sm" ${daAttr('adminForumKategoriDuzenle',[k.id, k.ad, k.aciklama || '', k.sira, !k.aktif])}>✏</button>
+            <button class="btn btn-hat btn-sm" ${daAttr('adminForumKategoriSil',[k.id],'Kategori silinsin mi? İçindeki konular da silinir.')}>🗑</button>
+          </div></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+    ic.innerHTML = html;
+  } catch (e) {
+    ic.innerHTML = `<p style="color:red">${e.message}</p>`;
+  }
+}
+
+async function adminForumAktifToggle(yeniDurum) {
+  try {
+    await api.request('/api/admin/forum/ayarlar', {
+      method: 'PUT',
+      body: JSON.stringify({ anahtar: 'forum_aktif', deger: yeniDurum ? '1' : '0' }),
+    });
+    bildirim(yeniDurum ? 'Forum aktif edildi' : 'Forum kapatıldı', 'basari');
+    adminForum();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumAyarKaydet() {
+  const anahtarlar = Object.keys(FORUM_AYAR_ETIKETLERI).filter(k => k !== 'forum_aktif');
+  try {
+    for (const k of anahtarlar) {
+      const el = document.getElementById(`fa-${k}`);
+      if (!el) continue;
+      await api.request('/api/admin/forum/ayarlar', {
+        method: 'PUT',
+        body: JSON.stringify({ anahtar: k, deger: el.checked ? '1' : '0' }),
+      });
+    }
+    bildirim('Ayarlar kaydedildi', 'basari');
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKategoriEkle() {
+  const ad = prompt('Kategori adı:');
+  if (!ad) return;
+  const slug = ad.toLowerCase()
+    .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  const aciklama = prompt('Açıklama (opsiyonel):') || '';
+  try {
+    await api.request('/api/admin/forum/kategoriler', {
+      method: 'POST',
+      body: JSON.stringify({ slug, ad, aciklama, sira: 0, aktif: true }),
+    });
+    bildirim('Kategori eklendi', 'basari');
+    adminForum();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKategoriDuzenle(id, mevcutAd, mevcutAciklama, mevcutSira, mevcutAktif) {
+  const ad = prompt('Kategori adı:', mevcutAd);
+  if (!ad) return;
+  const aciklama = prompt('Açıklama:', mevcutAciklama);
+  try {
+    await api.request(`/api/admin/forum/kategoriler/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ad, aciklama, sira: mevcutSira, aktif: mevcutAktif }),
+    });
+    bildirim('Kategori güncellendi', 'basari');
+    adminForum();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKategoriSil(id) {
+  try {
+    await api.request(`/api/admin/forum/kategoriler/${id}`, { method: 'DELETE' });
+    bildirim('Kategori silindi', 'basari');
+    adminForum();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKonular() {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const konular = await api.request('/api/admin/forum/konular');
+    let html = `<div class="admin-baslik">📋 Konu Moderasyonu
+      <button class="btn btn-sm btn-ntr" ${daAttr('adminForum',[])}>← Forum</button>
+    </div>`;
+    if (!konular || !konular.length) {
+      html += '<div class="bos-durum"><p>Henüz konu yok.</p></div>';
+    } else {
+      html += `<table class="tablo"><thead><tr><th>Başlık</th><th>Yazan</th><th>Durum</th><th>Tarih</th><th></th></tr></thead><tbody>`;
+      konular.forEach(k => {
+        const tarih = k.olusturma ? new Date(k.olusturma).toLocaleDateString('tr-TR') : '';
+        const bekliyor = k.durum === 'beklemede';
+        html += `<tr>
+          <td><strong style="font-size:.86rem">${esc(k.baslik)}</strong>
+            ${k.sabit ? ' <span title="Sabitlenmiş">📌</span>' : ''}${k.kapali ? ' <span title="Kapalı">🔒</span>' : ''}
+          </td>
+          <td style="font-size:.8rem">${esc(k.kullanici_ad || 'Misafir')}</td>
+          <td><span class="durum-pill ${k.durum === 'yayin' ? 'dp-Aktif' : 'dp-Taslak'}">${bekliyor ? 'Beklemede' : (k.durum === 'yayin' ? 'Yayında' : k.durum)}</span></td>
+          <td style="font-size:.78rem;color:var(--gri-metin)">${tarih}</td>
+          <td><div class="tablo-eylemler">
+            ${bekliyor ? `<button class="btn btn-zey btn-sm" ${daAttr('adminForumKonuOnayla',[k.id])}>✓ Onayla</button>` : ''}
+            <button class="btn btn-ntr btn-sm" ${daAttr('adminForumKonuYanitlar',[k.id, k.baslik])}>💬 Yanıtlar</button>
+            <button class="btn btn-ntr btn-sm" ${daAttr('adminForumKonuKapatAc',[k.id, !k.kapali])}>${k.kapali ? '🔓' : '🔒'}</button>
+            <button class="btn btn-hat btn-sm" ${daAttr('adminForumKonuSil',[k.id],'Konu (ve tüm yanıtları) silinsin mi?')}>🗑</button>
+          </div></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    ic.innerHTML = html;
+  } catch (e) {
+    ic.innerHTML = `<p style="color:red">${e.message}</p>`;
+  }
+}
+
+async function adminForumKonuOnayla(konuId) {
+  try {
+    await api.request(`/api/admin/forum/konular/${konuId}`, {
+      method: 'PUT', body: JSON.stringify({ durum: 'yayin' }),
+    });
+    bildirim('Konu onaylandı', 'basari');
+    adminForumKonular();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKonuKapatAc(konuId, yeniKapaliDurum) {
+  try {
+    await api.request(`/api/admin/forum/konular/${konuId}`, {
+      method: 'PUT', body: JSON.stringify({ kapali: yeniKapaliDurum }),
+    });
+    bildirim(yeniKapaliDurum ? 'Konu kapatıldı' : 'Konu yeniden açıldı', 'basari');
+    adminForumKonular();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKonuSil(konuId) {
+  try {
+    await api.request(`/api/admin/forum/konular/${konuId}`, { method: 'DELETE' });
+    bildirim('Konu silindi', 'basari');
+    adminForumKonular();
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumKonuYanitlar(konuId, baslik) {
+  const ic = document.getElementById('admin-ic');
+  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
+  try {
+    const yanitlar = await api.request(`/api/admin/forum/konular/${konuId}/yanitlar`);
+    let html = `<div class="admin-baslik">💬 Yanıtlar — ${esc(baslik)}
+      <button class="btn btn-sm btn-ntr" ${daAttr('adminForumKonular',[])}>← Konular</button>
+    </div>`;
+    if (!yanitlar || !yanitlar.length) {
+      html += '<div class="bos-durum"><p>Henüz yanıt yok.</p></div>';
+    } else {
+      yanitlar.forEach(y => {
+        const tarih = y.olusturma ? new Date(y.olusturma).toLocaleString('tr-TR') : '';
+        const bekliyor = y.durum === 'beklemede';
+        html += `<div class="panel-kart" style="margin-bottom:.7rem">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem">
+            <div>
+              <strong style="font-size:.84rem">${esc(y.kullanici_ad || 'Misafir')}</strong>
+              <span style="font-size:.74rem;color:var(--gri-metin)"> · ${tarih}</span>
+              ${bekliyor ? '<span class="durum-pill dp-Taslak" style="margin-left:.4rem">Beklemede</span>' : ''}
+              <p style="margin:.4rem 0 0;font-size:.86rem">${esc(y.icerik)}</p>
+            </div>
+            <div class="tablo-eylemler" style="flex-shrink:0">
+              ${bekliyor ? `<button class="btn btn-zey btn-sm" ${daAttr('adminForumYanitOnayla',[y.id, konuId, baslik])}>✓</button>` : ''}
+              <button class="btn btn-hat btn-sm" ${daAttr('adminForumYanitSil',[y.id, konuId, baslik],'Yanıt silinsin mi?')}>🗑</button>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    ic.innerHTML = html;
+  } catch (e) {
+    ic.innerHTML = `<p style="color:red">${e.message}</p>`;
+  }
+}
+
+async function adminForumYanitOnayla(yanitId, konuId, baslik) {
+  try {
+    await api.request(`/api/admin/forum/yanitlar/${yanitId}`, {
+      method: 'PUT', body: JSON.stringify({ durum: 'yayin' }),
+    });
+    bildirim('Yanıt onaylandı', 'basari');
+    adminForumKonuYanitlar(konuId, baslik);
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
+async function adminForumYanitSil(yanitId, konuId, baslik) {
+  try {
+    await api.request(`/api/admin/forum/yanitlar/${yanitId}`, { method: 'DELETE' });
+    bildirim('Yanıt silindi', 'basari');
+    adminForumKonuYanitlar(konuId, baslik);
+  } catch (e) { bildirim(e.message, 'hata'); }
+}
+
 // ── SaaS Yönetimi (FAZ 4) ───────────────────────────────────────────────
+// NOT: Multi-Tenant modülü 2026-08'de kaldırıldı (tek site işletildiği için
+// gereksiz karmaşıklıktı). İleride gerekirse git geçmişinden geri eklenebilir.
 async function adminSaaS() {
   const ic = document.getElementById('admin-ic');
   let html = `<div class="admin-baslik">☁️ SaaS Yönetimi</div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem">
-      <button class="btn btn-kirm" ${daAttr('saasTenant',[])}>🏢 Multi-Tenant</button>
       <button class="btn btn-kirm" ${daAttr('saasBackup',[])}>💾 Yedekleme</button>
       <button class="btn btn-kirm" ${daAttr('saasUpdate',[])}>🔄 Güncelleme</button>
       <button class="btn btn-kirm" ${daAttr('saasApi',[])}>🔌 API Marketplace</button>
@@ -5228,55 +5689,6 @@ async function adminSaaS() {
       <p style="color:var(--gri-metin)">Bir modül seçin.</p>
     </div>`;
   ic.innerHTML = html;
-}
-
-// ── 4.1 — Multi-Tenant ───────────────────────────────────────────────────
-async function saasTenant() {
-  const ic = document.getElementById('saas-ic');
-  ic.innerHTML = '<div class="yukleniyor"><div class="spinner"></div></div>';
-  try {
-    const list = await api.request('/api/admin/saas/tenant');
-    let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <h3 style="margin:0">🏢 Multi-Tenant Domainler</h3>
-      <button class="btn btn-kirm" ${daAttr('saasTenantEkle',[])}>+ Yeni Domain</button>
-    </div>`;
-    if (!list || !list.length) {
-      html += '<div class="bos-durum"><p>Henüz domain eklenmemiş.</p></div>';
-    } else {
-      html += '<table class="admin-table"><tr><th>Domain</th><th>Firma</th><th>Lisans</th><th></th></tr>';
-      list.forEach(t => {
-        html += `<tr>
-          <td>${esc(t.domain)}</td>
-          <td>${esc(t.firma_adi)}</td>
-          <td>${esc(t.paket || '-')}</td>
-          <td><button class="btn btn-hat btn-sm" ${daAttr('saasTenantSil',[t.id])}>🗑</button></td>
-        </tr>`;
-      });
-      html += '</table>';
-    }
-    ic.innerHTML = html;
-  } catch (e) { ic.innerHTML = `<p style="color:red">${e.message}</p>`; }
-}
-
-async function saasTenantEkle() {
-  const domain = prompt('Domain (ör: firma.domain.com):');
-  if (!domain) return;
-  const firma = prompt('Firma adı:');
-  if (!firma) return;
-  try {
-    await api.request('/api/admin/saas/tenant', { method: 'POST', body: JSON.stringify({ domain, firma_adi: firma }) });
-    bildirim('Domain eklendi', 'basari');
-    saasTenant();
-  } catch (e) { bildirim(e.message, 'hata'); }
-}
-
-async function saasTenantSil(id) {
-  if (!confirm('Emin misiniz?')) return;
-  try {
-    await api.request(`/api/admin/saas/tenant/${id}`, { method: 'DELETE' });
-    bildirim('Silindi', 'basari');
-    saasTenant();
-  } catch (e) { bildirim(e.message, 'hata'); }
 }
 
 // ── 4.2 — Yedekleme ─────────────────────────────────────────────────────
@@ -5448,10 +5860,20 @@ async function saasApiTest(saglayici) {
   } catch (e) { bildirim(e.message, 'hata'); }
 }
 
+window.adminForum = adminForum;
+window.adminForumAktifToggle = adminForumAktifToggle;
+window.adminForumAyarKaydet = adminForumAyarKaydet;
+window.adminForumKategoriEkle = adminForumKategoriEkle;
+window.adminForumKategoriDuzenle = adminForumKategoriDuzenle;
+window.adminForumKategoriSil = adminForumKategoriSil;
+window.adminForumKonular = adminForumKonular;
+window.adminForumKonuOnayla = adminForumKonuOnayla;
+window.adminForumKonuKapatAc = adminForumKonuKapatAc;
+window.adminForumKonuSil = adminForumKonuSil;
+window.adminForumKonuYanitlar = adminForumKonuYanitlar;
+window.adminForumYanitOnayla = adminForumYanitOnayla;
+window.adminForumYanitSil = adminForumYanitSil;
 window.adminSaaS = adminSaaS;
-window.saasTenant = saasTenant;
-window.saasTenantEkle = saasTenantEkle;
-window.saasTenantSil = saasTenantSil;
 window.saasBackup = saasBackup;
 window.saasBackupOlustur = saasBackupOlustur;
 window.saasBackupRestore = saasBackupRestore;

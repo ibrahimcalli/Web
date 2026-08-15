@@ -1,4 +1,11 @@
-"""FAZ 4 Router — Multi-tenant, Backup, Update, API Marketplace."""
+"""FAZ 4 Router — Backup, Update, API Marketplace.
+
+NOT: Multi-tenant (çoklu-domain barındırma) desteği kaldırıldı (2026-08) —
+tek site işletildiği için gereksiz karmaşıklıktı. İleride birden fazla
+emlakçıya bu yazılımı kiralamak/satmak gerekirse backend/core/tenant_middleware.py
+ve backend/services/tenant_service.py dosyaları git geçmişinde durur,
+referans alınarak geri eklenebilir.
+"""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -8,44 +15,9 @@ from backend.db.database import db
 from backend.schemas.response import fail, ok
 from backend.services.api_marketplace_service import ApiMarketplaceService
 from backend.services.backup_service import BackupService
-from backend.services.tenant_service import TenantService
 from backend.services.update_service import UpdateService
 
 router = APIRouter(tags=["CMS - SaaS"])
-
-
-# ─── Tenant (FAZ 4.1) ─────────────────────────────────────────────────────
-@router.get("/admin/saas/tenant")
-async def tenant_listele(_=Depends(require_admin)):
-    ts = TenantService(db)
-    return ok(ts.listele())
-
-
-@router.post("/admin/saas/tenant")
-async def tenant_ekle(data: dict, _=Depends(require_admin)):
-    try:
-        tid = TenantService(db).ekle(data)
-        return ok({"id": tid})
-    except Exception as e:
-        return fail(str(e))
-
-
-@router.put("/admin/saas/tenant/{tid}")
-async def tenant_guncelle(tid: int, data: dict, _=Depends(require_admin)):
-    try:
-        TenantService(db).guncelle(tid, data)
-        return ok({"guncellendi": True})
-    except Exception as e:
-        return fail(str(e))
-
-
-@router.delete("/admin/saas/tenant/{tid}")
-async def tenant_sil(tid: int, _=Depends(require_admin)):
-    try:
-        TenantService(db).sil(tid)
-        return ok({"silindi": True})
-    except Exception as e:
-        return fail(str(e))
 
 
 # ─── Backup (FAZ 4.2) ──────────────────────────────────────────────────────

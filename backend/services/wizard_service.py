@@ -125,9 +125,11 @@ class WizardService:
 
     def forum_ayarla(self, wizard_id: int, forum_aktif: bool) -> dict:
         self.wizard_repo.kaydet(wizard_id, 8, {"forum_aktif": forum_aktif})
-        if forum_aktif:
-            import os
-            os.environ["CMS_FORUM_ENABLED"] = "1"
+        # NOT: Eskiden sadece os.environ set ediliyordu, bunun hiçbir etkisi
+        # yoktu (router zaten her zaman kayıtlı, gerçek aç/kapat kontrolü
+        # veritabanındaki forum_settings.forum_aktif'ten okunuyor).
+        from backend.repositories.forum_repository import ForumSettingRepository
+        ForumSettingRepository().set("forum_aktif", "1" if forum_aktif else "0")
         return {"wizard_id": wizard_id, "adim": 8, "forum_aktif": forum_aktif}
 
     def seo_ayarla(self, wizard_id: int, seo_data: dict) -> dict:

@@ -553,7 +553,7 @@ def test_appbanner_ic_ice_json_arguman_dogru_iletilir(live_server, browser):
 SAAS_STUB_JS = """
 () => {
   window.__cagrilar = [];
-  window.saasTenantSil = (...args) => window.__cagrilar.push({ fn: 'saasTenantSil', args });
+  window.ilanSilAdmin = (...args) => window.__cagrilar.push({ fn: 'ilanSilAdmin', args });
   window.sayfaKaydet = (...args) => window.__cagrilar.push({ fn: 'sayfaKaydet', args });
   window.sablonBolumTasi = (...args) => window.__cagrilar.push({ fn: 'sablonBolumTasi', args });
   window.editorEkle = (...args) => window.__cagrilar.push({ fn: 'editorEkle', args });
@@ -566,7 +566,7 @@ SAAS_INJECT_BUTTONS_JS = r"""
   const div = document.createElement('div');
   div.id = 'test-saas-sayfa-editor-butonlari';
   div.innerHTML = `
-    <button data-action="saasTenantSil" data-action-args="[5]" data-confirm="Emin misiniz?">Sil</button>
+    <button data-action="ilanSilAdmin" data-action-args="[5]" data-confirm="Silinsin mi?">Sil</button>
     <button data-action="sayfaKaydet" data-action-args="[null]">Kaydet</button>
     <button data-action="sablonBolumTasi" data-action-args="[3,7]">Taşı</button>
     <button data-action="editorEkle" id="btn-editor-ekle">H2</button>
@@ -595,14 +595,14 @@ def _saas_sayfa_ac(browser, live_server):
     return context, page, hatalar
 
 
-def test_appsaas_saas_tenant_sil_confirm_kabul(live_server, browser):
+def test_appsaas_ilan_sil_admin_confirm_kabul(live_server, browser):
     context, page, hatalar = _saas_sayfa_ac(browser, live_server)
     page.on("dialog", lambda d: d.accept())
 
-    page.click('[data-action="saasTenantSil"]')
+    page.click('[data-action="ilanSilAdmin"]')
     page.wait_for_timeout(500)
     cagrilar = page.evaluate("window.__cagrilar")
-    assert cagrilar == [{"fn": "saasTenantSil", "args": [5]}], f"Beklenmedik: {cagrilar}"
+    assert cagrilar == [{"fn": "ilanSilAdmin", "args": [5]}], f"Beklenmedik: {cagrilar}"
     assert not hatalar, f"JS hatası: {hatalar}"
     context.close()
 

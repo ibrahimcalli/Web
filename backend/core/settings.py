@@ -168,12 +168,13 @@ class Settings:
     CMS_PAGE_ENABLED: bool = _env_bool("CMS_PAGE_ENABLED", True)
     CMS_WIDGET_ENABLED: bool = _env_bool("CMS_WIDGET_ENABLED", True)
     CMS_THEME_ENABLED: bool = _env_bool("CMS_THEME_ENABLED", True)
-    CMS_FORUM_ENABLED: bool = _env_bool("CMS_FORUM_ENABLED", False)  # opsiyonel
+    # NOT: Forum artık her zaman kayıtlı (açık/kapalı durumu admin panelden,
+    # veritabanı üzerinden yönetiliyor — bkz. forum_router.py / forum_aktif).
     CMS_DASHBOARD_ENABLED: bool = _env_bool("CMS_DASHBOARD_ENABLED", True)
     CMS_TEMPLATE_ENABLED: bool = _env_bool("CMS_TEMPLATE_ENABLED", True)
     CMS_WIZARD_ENABLED: bool = _env_bool("CMS_WIZARD_ENABLED", True)
     CMS_MARKETPLACE_ENABLED: bool = _env_bool("CMS_MARKETPLACE_ENABLED", True)
-    CMS_MULTI_TENANT_ENABLED: bool = _env_bool("CMS_MULTI_TENANT_ENABLED", False)
+    # NOT: Multi-tenant desteği 2026-08'de kaldırıldı (bkz. saas_router.py).
 
     # ─── Computed / Convenience ─────────────────────────────────────────────
     def is_production(self) -> bool:

@@ -1,4 +1,4 @@
-"""Forum Router — Forum yönetimi API endpoint'leri."""
+"""Forum Router — Forum yönetimi + genel kullanım API endpoint'leri."""
 from __future__ import annotations
 
 from typing import Optional
@@ -8,9 +8,11 @@ from fastapi import APIRouter, Depends
 from backend.core.dependencies import (
     get_current_user, get_forum_service, require_admin,
 )
+from backend.core.errors import AppError
 from backend.schemas.forum import (
     ForumCategoryCreate, ForumCategoryUpdate, ForumPostCreate,
-    ForumTopicCreate, ForumTopicUpdate,
+    ForumPostCreatePublic, ForumSettingUpdate, ForumTopicCreate,
+    ForumTopicCreatePublic, ForumTopicUpdate,
 )
 from backend.schemas.response import fail, ok
 from backend.services.forum_service import ForumService
@@ -18,12 +20,33 @@ from backend.services.forum_service import ForumService
 router = APIRouter(tags=["CMS - Forum"])
 
 
+def _forum_kapali_kontrolu(forum_service: ForumService) -> None:
+    """Forum kapalıysa AppError fırlatır — global ErrorHandler middleware'i
+    bunu doğru HTTP 403 yanıtına çevirir (projedeki standart hata deseni)."""
+    if not forum_service.forum_aktif_mi():
+        raise AppError("Forum şu anda kapalı", 403)
+
+
 # ─── Public ─────────────────────────────────────────────────────────────────
+@router.get("/forum/durum")
+async def forum_durumu(
+    forum_service: ForumService = Depends(get_forum_service),
+):
+    """Ziyaretçilerin (giriş yapmadan) forum aktif mi / misafir yazabilir mi
+    diye kontrol edebileceği hafif endpoint — nav menüde forum linkini
+    gösterip göstermemek ve yeni konu formunu misafirlere açıp açmamak için."""
+    return ok({
+        "aktif": forum_service.forum_aktif_mi(),
+        "misafir_yazabilir": forum_service.misafir_yazabilir_mi(),
+    })
+
+
 @router.get("/forum/kategoriler")
 async def kategorileri_listele(
     forum_service: ForumService = Depends(get_forum_service),
     _user: dict = Depends(get_current_user),
 ):
+    _forum_kapali_kontrolu(forum_service)
     try:
         return ok(forum_service.kategori_listele(aktif_only=True))
     except Exception as e:
@@ -36,6 +59,7 @@ async def konulari_listele(
     forum_service: ForumService = Depends(get_forum_service),
     _user: dict = Depends(get_current_user),
 ):
+    _forum_kapali_kontrolu(forum_service)
     try:
         return ok(forum_service.konu_listele(category_id=kategori_id))
     except Exception as e:
@@ -48,8 +72,22 @@ async def konu_getir(
     forum_service: ForumService = Depends(get_forum_service),
     _user: dict = Depends(get_current_user),
 ):
+    _forum_kapali_kontrolu(forum_service)
     try:
         return ok(forum_service.konu_getir(konu_id))
+    except Exception as e:
+        return fail(str(e))
+
+
+@router.post("/forum/konular")
+async def konu_olustur(
+    data: ForumTopicCreatePublic,
+    forum_service: ForumService = Depends(get_forum_service),
+    user: Optional[dict] = Depends(get_current_user),
+):
+    """Genel kullanıcı (veya ayar açıksa misafir) yeni konu açar."""
+    try:
+        return ok(forum_service.konu_olustur_kullanici(data.model_dump(), user))
     except Exception as e:
         return fail(str(e))
 
@@ -60,8 +98,25 @@ async def yanitlari_listele(
     forum_service: ForumService = Depends(get_forum_service),
     _user: dict = Depends(get_current_user),
 ):
+    _forum_kapali_kontrolu(forum_service)
     try:
         return ok(forum_service.yanit_listele(konu_id))
+    except Exception as e:
+        return fail(str(e))
+
+
+@router.post("/forum/konular/{konu_id}/yanitlar")
+async def yanit_olustur(
+    konu_id: int,
+    data: ForumPostCreatePublic,
+    forum_service: ForumService = Depends(get_forum_service),
+    user: Optional[dict] = Depends(get_current_user),
+):
+    """Genel kullanıcı (veya ayar açıksa misafir) konuya yanıt yazar."""
+    try:
+        gonderilen = data.model_dump()
+        gonderilen["topic_id"] = konu_id
+        return ok(forum_service.yanit_olustur_kullanici(gonderilen, user))
     except Exception as e:
         return fail(str(e))
 
@@ -190,6 +245,21 @@ async def admin_yanit_olustur(
         return fail(str(e))
 
 
+@router.put("/admin/forum/yanitlar/{yanit_id}")
+async def admin_yanit_guncelle(
+    yanit_id: int,
+    data: dict,
+    forum_service: ForumService = Depends(get_forum_service),
+    _=Depends(require_admin),
+):
+    """Moderasyon: örn. {"durum": "yayin"} göndererek onay bekleyen bir
+    yanıtı yayınlamak veya {"durum": "reddedildi"} ile reddetmek için."""
+    try:
+        return ok(forum_service.yanit_guncelle(yanit_id, data))
+    except Exception as e:
+        return fail(str(e))
+
+
 @router.delete("/admin/forum/yanitlar/{yanit_id}")
 async def admin_yanit_sil(
     yanit_id: int,
@@ -216,11 +286,14 @@ async def admin_forum_ayarlari(
 
 @router.put("/admin/forum/ayarlar")
 async def admin_forum_ayar_guncelle(
-    data: ForumCategoryUpdate,
+    data: ForumSettingUpdate,
     forum_service: ForumService = Depends(get_forum_service),
     _=Depends(require_admin),
 ):
+    """NOT: Bu endpoint eskiden yanlış şema (ForumCategoryUpdate) ve yanlış
+    servis çağrısı (data.model_dump() — servis 2 ayrı string bekliyor)
+    kullanıyordu, bu yüzden çalışmıyordu. 2026-08'de düzeltildi."""
     try:
-        return ok(forum_service.ayar_guncelle(data.model_dump()))
+        return ok(forum_service.ayar_guncelle(data.anahtar, data.deger))
     except Exception as e:
         return fail(str(e))

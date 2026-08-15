@@ -44,6 +44,16 @@ class ForumTopicCreate(BaseModel):
     durum: str = "yayin"
 
 
+class ForumTopicCreatePublic(BaseModel):
+    """Genel (public) kullanıcıların konu açma formu — kullanici_id/ad/durum
+    burada YOK: bunlar sunucu tarafında, doğrulanmış token'dan atanır.
+    Bir kullanıcının başka biri adına konu açmasını / kendi konusunu
+    doğrudan yayına almasını engeller."""
+    category_id: int
+    baslik: str = Field(..., min_length=1, max_length=200)
+    icerik: str = ""
+
+
 class ForumTopicUpdate(BaseModel):
     baslik: Optional[str] = None
     icerik: Optional[str] = None
@@ -76,6 +86,16 @@ class ForumPostCreate(BaseModel):
     kullanici_id: Optional[int] = None
     kullanici_ad: str = ""
     ip: str = ""
+
+
+class ForumPostCreatePublic(BaseModel):
+    """Genel (public) kullanıcıların yanıt yazma formu — bkz.
+    ForumTopicCreatePublic'teki güvenlik notu. topic_id opsiyonel: zaten
+    URL path'inden (/forum/konular/{konu_id}/yanitlar) geliyor, router
+    bunu ezerek ayarlıyor — body'de tekrar istemeye gerek yok."""
+    topic_id: Optional[int] = None
+    parent_id: Optional[int] = None
+    icerik: str = Field(..., min_length=1)
 
 
 class ForumPostUpdate(BaseModel):
