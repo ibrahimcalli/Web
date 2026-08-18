@@ -99,13 +99,19 @@
 <link rel="stylesheet" href="/src/styles/components.min.css">
 <link rel="stylesheet" href="/src/styles/desktop.min.css">
 
-<!-- Critical CSS (inline, render-blocking) — LCP iyileştirme -->
+<!-- Critical CSS (inline, render-blocking) — LCP iyileştirme
+     NOT: background/color artık var(--krem)/var(--toprak) kullanıyor
+     (fallback'li) — önceden sabit #FAF7F2/#2D2016 kodluydu, bu yüzden
+     tema paleti değiştirilince body arka planı hep aynı kalıyordu (bu
+     blok, kaynak sırasında harici CSS'ten SONRA geldiği için onu eziyordu).
+     :root'taki --krem/--toprak tanımı bu bloktan önce (harici CSS'te)
+     geldiği için var() ilk boyamada da doğru değeri bulur. -->
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{font-family:system-ui,sans-serif;background:#FAF7F2;color:#2D2016;line-height:1.6;font-size:14px;overflow-x:hidden}
+body{font-family:system-ui,sans-serif;background:var(--krem,#FAF7F2);color:var(--toprak,#2D2016);line-height:1.6;font-size:14px;overflow-x:hidden}
 img{max-width:100%;height:auto}
-.skip-link{position:absolute;left:-9999px;top:0;background:#C45C35;color:#fff;padding:12px 20px;z-index:9999;font-weight:600;border-radius:4px}
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--kiremit,#C45C35);color:#fff;padding:12px 20px;z-index:9999;font-weight:600;border-radius:4px}
 .skip-link:focus{left:8px;top:8px}
 </style>
 </head>
@@ -130,6 +136,7 @@ img{max-width:100%;height:auto}
     <span class="nav-link aktif" data-sayfa="anasayfa" data-action="sayfaGit" data-action-args="[&quot;anasayfa&quot;]">Ana Sayfa</span>
     <span class="nav-link" data-sayfa="ilanlar" data-action="sayfaGit" data-action-args="[&quot;ilanlar&quot;]">İlanlar</span>
     <span class="nav-link" data-sayfa="blog" data-action="sayfaGit" data-action-args="[&quot;blog&quot;]">Haberler</span>
+    <span class="nav-link" id="nav-forum-link" style="display:none" data-sayfa="forum" data-action="sayfaGit" data-action-args="[&quot;forum&quot;]">Forum</span>
   </div>
   <div class="nav-eylemler">
     <button class="nav-admin-btn" id="admin-btn" style="display:none" data-action="sayfaGit" data-action-args="[&quot;admin&quot;]">⚙ Yönetim</button>
@@ -148,6 +155,7 @@ img{max-width:100%;height:auto}
   <span class="nav-link aktif" data-sayfa="anasayfa" data-action="sayfaGitMobil" data-action-args="[&quot;anasayfa&quot;]">Ana Sayfa</span>
   <span class="nav-link" data-sayfa="ilanlar" data-action="sayfaGitMobil" data-action-args="[&quot;ilanlar&quot;]">İlanlar</span>
   <span class="nav-link" data-sayfa="blog" data-action="sayfaGitMobil" data-action-args="[&quot;blog&quot;]">Haberler</span>
+  <span class="nav-link" id="nav-forum-link-mob" style="display:none" data-sayfa="forum" data-action="sayfaGitMobil" data-action-args="[&quot;forum&quot;]">Forum</span>
   <button class="nav-admin-btn" id="admin-btn-mob" style="display:none" data-action="sayfaGitMobil" data-action-args="[&quot;admin&quot;]">⚙ Yönetim</button>
   <button class="nav-giris-btn nav-giris-btn-mob" id="giris-btn-mob" style="width:100%" data-action="sayfaGitMobil" data-action-args="[&quot;giris&quot;]">Giriş Yap</button>
   <button class="nav-cikis-btn nav-cikis-btn-mob" id="cikis-btn-mob" style="display:none" data-action="cikisYapMobil">Çıkış</button>
@@ -401,6 +409,38 @@ img{max-width:100%;height:auto}
   </div>
 </div>
 
+<!-- ════════════════ FORUM — KATEGORİLER ════════════════ -->
+<div class="sayfa" id="sayfa-forum">
+  <div style="max-width:1000px;margin:0 auto;padding:2rem clamp(1rem,4vw,2.5rem)">
+    <div class="bant-baslik" style="margin-bottom:1.5rem">
+      <h1 style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--toprak)">💬 Forum</h1>
+    </div>
+    <div id="forum-kategoriler-ic">
+      <div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ FORUM — KONU LİSTESİ ════════════════ -->
+<div class="sayfa" id="sayfa-forum-konular">
+  <div style="max-width:1000px;margin:0 auto;padding:2rem clamp(1rem,4vw,2.5rem)">
+    <div class="detay-geri" data-action="sayfaGit" data-action-args="[&quot;forum&quot;]">← Forum Ana Sayfa</div>
+    <div id="forum-konular-ic">
+      <div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ FORUM — KONU DETAYI ════════════════ -->
+<div class="sayfa" id="sayfa-forum-konu">
+  <div style="max-width:860px;margin:0 auto;padding:2rem clamp(1rem,4vw,2.5rem)">
+    <div class="detay-geri" id="forum-konu-geri" data-action="sayfaGit" data-action-args="[&quot;forum&quot;]">← Forum</div>
+    <div id="forum-konu-ic">
+      <div class="yukleniyor"><div class="spinner"></div>Yükleniyor…</div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════ SAYFA (CMS Pages) ════════════════ -->
 <div class="sayfa" id="sayfa-sayfa">
   <div style="max-width:860px; margin:0 auto; padding:2rem clamp(1rem,4vw,2.5rem)">
@@ -451,6 +491,7 @@ img{max-width:100%;height:auto}
       <div class="sidebar-sect" style="margin-top:1rem;">YÖNETİM</div>
       <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;bannerlar&quot;]"><span class="sidebar-ikon">🖼</span> Bannerlar</div>
       <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;blog&quot;]"><span class="sidebar-ikon">✍️</span> Blog / Haberler</div>
+      <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;forum&quot;]"><span class="sidebar-ikon">💬</span> Forum</div>
       <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;istekler&quot;]"><span class="sidebar-ikon">📬</span> Müşteri İstekleri</div>
       <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;kullanicilar&quot;]"><span class="sidebar-ikon">👥</span> Kullanıcılar</div>
       <div class="sidebar-item" data-action="adminSayfa" data-action-args="[&quot;ayarlar&quot;]"><span class="sidebar-ikon">⚙️</span> Site Ayarları</div>
@@ -885,9 +926,9 @@ img{max-width:100%;height:auto}
   </div>
 </div>
 
-<script type="module" src="/src/ui/app.js?v=hotfix20260721d"></script>
-<script type="module" src="/src/ui/menu-renderer.js?v=m5"></script>
-<script type="module" src="/src/ui/widget-renderer.js?v=w3"></script>
+<script type="module" src="/src/ui/app.js?v=20260818tema"></script>
+<script type="module" src="/src/ui/menu-renderer.js?v=20260818"></script>
+<script type="module" src="/src/ui/widget-renderer.js?v=20260818"></script>
 
 <!-- Production Runtime — SEO, PWA, Image Optimizer (mevcut JS'i etkilemez) -->
 <script src="/src/ui/seo.js"></script>
@@ -895,7 +936,7 @@ img{max-width:100%;height:auto}
 <script src="/src/ui/img-optimizer.js"></script>
 
 <!-- Admin Sistem Paneli — Durum, Log, Test, Komutlar, Bakım, AI Tanılama, Kılavuz -->
-<script src="/src/ui/admin-sistem.js"></script>
+<script src="/src/ui/admin-sistem.js?v=20260818"></script>
 
 <!-- Hamburger Menü + Admin Sidebar Toggle + Tablo data-label (mevcut JS'i etkilemez) -->
 <!-- CSP uyumu için nav-toggle.js dosyasına taşındı, davranış aynı -->
